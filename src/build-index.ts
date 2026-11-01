@@ -208,6 +208,7 @@ async function main(): Promise<void> {
   let versions: IndexedVersion[] = [];
   const packages: Record<string, PackageFacts> = {};
   const metas = new Map<string, any>();
+  const unread = new Set<string>();
   let featured: string[] = [];
 
   // A local tarball checks only the package itself: it has no registry record.
@@ -242,6 +243,7 @@ async function main(): Promise<void> {
           versions.push(await indexVersion(app, checks, cache, name, version, meta, packument.time?.[version], keys));
         } catch (error) {
           if (!(error instanceof DownloadError)) throw error;
+          unread.add(name);
           console.warn(`left out ${name}@${version} for now: its tarball didn't download (${error.message})`);
         }
       }
@@ -257,7 +259,7 @@ async function main(): Promise<void> {
       });
       return dates.length ? [[name, dates.sort()[0]!] as const] : [];
     }));
-    versions = applyBlocks(applyClaims(versions, firstPublished), parseBlocked(await readFile(path.join(here, "..", "blocked.json"), "utf8")));
+    versions = applyBlocks(applyClaims(versions, firstPublished, unread), parseBlocked(await readFile(path.join(here, "..", "blocked.json"), "utf8")));
     featured = featuredPlugins(parseFeatured(await readFile(path.join(here, "..", "featured.json"), "utf8")), versions);
     const now = Date.now();
     for (const [name, version] of newestInstallable(versions)) {

@@ -3,7 +3,7 @@
 // stars and downloads. Parsing and decisions are here; build-index.ts reads the
 // network through FactSources.
 
-import type { IndexedVersion } from "./checks.ts";
+import { pluginIdsFor, type IndexedVersion } from "./checks.ts";
 
 const PLUGIN_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const NPM_NAME = /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
@@ -16,6 +16,9 @@ export interface Block {
   reason: string;
 }
 
+// Blocks match a version literally, so a range like "*" or "1.0" would block nothing.
+const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+
 /** A typo must not quietly leave a package unblocked, so anything unexpected fails the run. */
 export function parseBlocked(text: string): Block[] {
   const list: unknown = JSON.parse(text);
@@ -25,7 +28,7 @@ export function parseBlocked(text: string): Block[] {
     if (
       typeof name !== "string" || !NPM_NAME.test(name) ||
       typeof reason !== "string" || !reason.trim() ||
-      (version !== undefined && (typeof version !== "string" || !/^\S+$/.test(version))) ||
+      (version !== undefined && (typeof version !== "string" || !EXACT_VERSION.test(version))) ||
       Object.keys(rest).length
     )
       throw new Error(`blocked.json entry ${index} must have package, reason and optionally version`);
@@ -60,9 +63,11 @@ export function applyBlocks(versions: IndexedVersion[], blocks: Block[]): Indexe
  * other's versions are rejected. A package's date is its first version's,
  * whatever became of that version, so blocking a version or failing to download
  * one can't move a plugin to the other package. A package with no known date
- * never comes before one with a date. Run this before applyBlocks.
+ * never comes before one with a date. A package with a version this run couldn't
+ * read might hold a plugin it shows nothing for, so it still counts until it's
+ * read. Run this before applyBlocks.
  */
-export function applyClaims(versions: IndexedVersion[], firstPublished: ReadonlyMap<string, string>): IndexedVersion[] {
+export function applyClaims(versions: IndexedVersion[], firstPublished: ReadonlyMap<string, string>, unread: Iterable<string> = []): IndexedVersion[] {
   const earlier = (a: string, b: string) => {
     const [dateA, dateB] = [firstPublished.get(a), firstPublished.get(b)];
     if (dateA !== dateB) return dateB === undefined || (dateA !== undefined && dateA < dateB);
@@ -74,6 +79,11 @@ export function applyClaims(versions: IndexedVersion[], firstPublished: Readonly
     const holder = holders.get(plugin.id);
     if (holder === undefined || earlier(name, holder)) holders.set(plugin.id, name);
   }
+  for (const name of unread)
+    for (const id of pluginIdsFor(name)) {
+      const holder = holders.get(id);
+      if (holder !== undefined && earlier(name, holder)) holders.set(id, name);
+    }
   return versions.map((version) => {
     const holder = version.plugin && holders.get(version.plugin.id);
     return holder !== undefined && holder !== version.package
@@ -187,7 +197,8 @@ export async function packageFacts(
 ): Promise<{ entry: CachedFacts; complete: boolean }> {
   const repository = parseRepository(meta.repository);
   const url = repository && `https://github.com/${repository.owner}/${repository.repo}`;
-  const source = repository && [repository.owner, repository.repo, repository.directory ?? ""].join("/").toLowerCase();
+  // GitHub ignores case in a repository's name, not in a path inside it.
+  const source = repository && `${repository.owner}/${repository.repo}`.toLowerCase() + `/${repository.directory ?? ""}`;
   // A source verdict holds only for the version and source it was reached on.
   const same = cached?.version === version && cached.source === source;
   if (cached && same && now - cached.checkedAt < DAY) return { entry: cached, complete: true };

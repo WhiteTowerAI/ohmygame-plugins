@@ -34,7 +34,8 @@ describe("blocked.json and featured.json", () => {
 
   it("refuse what would quietly do nothing", () => {
     assert.deepEqual(parseBlocked('[{"package":"@a/b","reason":"malware"}]'), [{ package: "@a/b", reason: "malware" }]);
-    for (const text of ["{}", '[{"package":"@a/b"}]', '[{"reason":"x"}]', '[{"packages":"@a/b","reason":"x"}]', '[{"package":"@a/b","reason":"x","version":1}]', '[{"package":"@a/b ","reason":"x"}]', '[{"package":"@a/b","reason":"x","version":"1.0.0 "}]', '[{"package":"@A/b","reason":"x"}]', "[null]"])
+    assert.equal(parseBlocked('[{"package":"@a/b","reason":"x","version":"1.0.0-beta.1+b2"}]')[0]!.version, "1.0.0-beta.1+b2");
+    for (const text of ["{}", '[{"package":"@a/b"}]', '[{"reason":"x"}]', '[{"packages":"@a/b","reason":"x"}]', '[{"package":"@a/b","reason":"x","version":1}]', '[{"package":"@a/b ","reason":"x"}]', '[{"package":"@a/b","reason":"x","version":"1.0.0 "}]', '[{"package":"@a/b","reason":"x","version":"*"}]', '[{"package":"@a/b","reason":"x","version":"latest"}]', '[{"package":"@a/b","reason":"x","version":"1.0"}]', '[{"package":"@A/b","reason":"x"}]', "[null]"])
       assert.throws(() => parseBlocked(text), /blocked\.json/);
     for (const text of ["{}", '["Acme/Tiles"]', '["acme"]', "[1]", '["a/b","a/b"]'])
       assert.throws(() => parseFeatured(text), /featured\.json/);
@@ -75,6 +76,16 @@ describe("applyClaims", () => {
     ], first({ "@acme/tiles": "2026-01-01", "@acme/ohmygame-plugin-tiles": "2026-02-01" }));
     assert.ok(claimed[0]!.plugin);
     assert.deepEqual(claimed[1]!.rejected, ["plugin acme/tiles is already published as @acme/tiles"]);
+  });
+
+  it("doesn't move a plugin when none of the earlier package's versions could be read", () => {
+    const dates = first({ "@acme/tiles": "2026-01-01", "@acme/ohmygame-plugin-tiles": "2026-02-01" });
+    const later = [version("@acme/ohmygame-plugin-tiles", "1.0.0", "2026-02-01")];
+    assert.deepEqual(applyClaims(later, dates, ["@acme/tiles"])[0]!.rejected, ["plugin acme/tiles is already published as @acme/tiles"]);
+    // Unread and later changes nothing.
+    assert.ok(applyClaims([version("@acme/tiles", "1.0.0", "2026-01-01")], dates, ["@acme/ohmygame-plugin-tiles"])[0]!.plugin);
+    // Nor does an unread package touch a plugin it couldn't hold.
+    assert.ok(applyClaims(later, first({ "@acme/tiles": "2026-02-01", "@other/tiles": "2026-01-01" }), ["@other/tiles"])[0]!.plugin);
   });
 
   it("ignores a package that can't be installed, which holds nothing", () => {
@@ -207,6 +218,12 @@ describe("packageFacts", () => {
     const moved = await read({ repository: "o/other" }, named, entry, 1e12 + 60_000);
     assert.deepEqual(moved.entry.facts, { repository: "https://github.com/o/other", weeklyDownloads: 100 });
     const folder = await read({ repository: { url: "o/r", directory: "packages/x" } }, named, entry, 1e12 + 60_000);
+    // Paths in a repository are case-sensitive, so this is another folder.
+    const verifiedFolder: CachedFacts = { ...folder.entry, checkedAt: 1e12, facts: { ...folder.entry.facts, sourceVerified: true } };
+    const otherCase = await read({ repository: { url: "O/R", directory: "packages/X" } }, named, verifiedFolder, 1e12 + 60_000);
+    assert.ok(!otherCase.entry.facts.sourceVerified);
+    // The repository's own name isn't: same source, same answer.
+    assert.equal((await read({ repository: { url: "O/R", directory: "packages/x" } }, named, verifiedFolder, 1e12 + 60_000)).entry, verifiedFolder);
     assert.equal(folder.entry.facts.sourceVerified, undefined);
     // A folder that can't be read now doesn't keep what the top of the repository earned.
     const down = sources({ packageJson: async () => { throw new Error("down"); } });
