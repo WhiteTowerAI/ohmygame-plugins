@@ -17,8 +17,19 @@ import { promisify } from "node:util";
 import { createGunzip } from "node:zlib";
 import { Header, Parser, type ReadEntry } from "tar";
 
-/** Packages named `@<publisher>/ohmygame-plugin-<name>` hold plugin `<publisher>/<name>`. */
-export const PACKAGE_NAME = /^@([a-z0-9]+(?:-[a-z0-9]+)*)\/ohmygame-plugin-([a-z0-9]+(?:-[a-z0-9]+)*)$/;
+const PACKAGE_NAME = /^@([a-z0-9]+(?:-[a-z0-9]+)*)\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
+
+/**
+ * The plugins a package may hold, by the app's rule: its scope is what npm vouches
+ * for, so it's the publisher, and an `ohmygame-plugin-` prefix can be left out of
+ * the plugin's name. An unscoped package holds none.
+ */
+export function pluginIdsFor(name: string): string[] {
+  const match = PACKAGE_NAME.exec(name);
+  if (!match) return [];
+  const [, scope, rest] = match as unknown as [string, string, string];
+  return [...new Set([`${scope}/${rest}`, `${scope}/${rest.replace(/^ohmygame-plugin-(?=.)/, "")}`])];
+}
 const LOCALES = ["en", "zh-CN"] as const;
 
 /** The npm registry's signature over one version, as its packument gives it. */
@@ -309,9 +320,9 @@ export async function judgeTarball(app: AppChecks, name: string, version: string
     if (!result.ok) return { rejected: [...rejected, ...result.issues.map((issue) => `${issue.path || "package"} ${issue.message}`)] };
     const { entry } = result;
     const manifest = entry.manifest;
-    const match = PACKAGE_NAME.exec(name);
-    if (!match) rejected.push("package name must be @<publisher>/ohmygame-plugin-<name>");
-    else if (`${match[1]}/${match[2]}` !== manifest.id) rejected.push(`package ${name} must hold plugin ${match[1]}/${match[2]}, not ${manifest.id}`);
+    const allowed = pluginIdsFor(name);
+    if (!allowed.length) rejected.push("package name must be @<publisher>/<name> or @<publisher>/ohmygame-plugin-<name>");
+    else if (!allowed.includes(manifest.id)) rejected.push(`package ${name} can't hold plugin ${manifest.id}`);
     if (manifest.version !== version) rejected.push(`plugin.json says version ${manifest.version}, the package ${version}`);
     const apiIssue = app.pluginApiIssue(manifest);
     if (apiIssue) rejected.push(apiIssue);

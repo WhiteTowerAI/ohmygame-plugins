@@ -76,8 +76,13 @@ describe("judgeTarball", () => {
   it("rejects a package whose name, version or scripts disagree with the plugin", async () => {
     const reasons = async (name: string, version: string, bytes: Promise<Buffer>) =>
       (await judgeTarball(app, name, version, await bytes)).rejected;
-    assert.deepEqual(await reasons("ohmygame-plugin-tiles", "1.2.0", plugin()), ["package name must be @<publisher>/ohmygame-plugin-<name>"]);
-    assert.deepEqual(await reasons("@other/ohmygame-plugin-tiles", "1.2.0", plugin()), ["package @other/ohmygame-plugin-tiles must hold plugin other/tiles, not acme/tiles"]);
+    assert.deepEqual(await reasons("ohmygame-plugin-tiles", "1.2.0", plugin()), ["package name must be @<publisher>/<name> or @<publisher>/ohmygame-plugin-<name>"]);
+    assert.deepEqual(await reasons("@other/ohmygame-plugin-tiles", "1.2.0", plugin()), ["package @other/ohmygame-plugin-tiles can't hold plugin acme/tiles"]);
+    // Either name can hold it, and only what the app itself would accept.
+    assert.equal(await reasons("@acme/tiles", "1.2.0", plugin()), undefined);
+    assert.equal(await reasons("@acme/ohmygame-plugin-tiles", "1.2.0", plugin()), undefined);
+    assert.equal(await reasons("@acme/ohmygame-plugin-tiles", "1.2.0", plugin({ id: "acme/ohmygame-plugin-tiles" })), undefined);
+    assert.deepEqual(await reasons("@acme/tiles", "1.2.0", plugin({ id: "acme/ohmygame-plugin-tiles" })), ["package @acme/tiles can't hold plugin acme/ohmygame-plugin-tiles"]);
     assert.deepEqual(await reasons("@acme/ohmygame-plugin-tiles", "1.3.0", plugin()), ["plugin.json says version 1.2.0, the package 1.3.0"]);
     assert.deepEqual(await reasons("@acme/ohmygame-plugin-tiles", "1.2.0", plugin({}, { scripts: { postinstall: "node evil.js" } })), ["has a postinstall script, which the app never runs"]);
   });

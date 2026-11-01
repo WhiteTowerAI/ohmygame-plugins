@@ -6,15 +6,22 @@ every download against it.
 
 ## Publishing a plugin
 
-A plugin is a [format 2](https://github.com/WhiteTowerAI/ohmygame/blob/dev/docs/plugins-v2.md)
-package published to npmjs.org:
+A plugin is a [plugin package](https://github.com/WhiteTowerAI/ohmygame/blob/dev/docs/plugins.md)
+published to npmjs.org:
 
-- named `@<publisher>/ohmygame-plugin-<name>` for plugin `<publisher>/<name>`;
+- scoped: `@<publisher>/<name>` or `@<publisher>/ohmygame-plugin-<name>` for plugin
+  `<publisher>/<name>`. If both are published, the one published first keeps the
+  plugin and the other's versions are rejected;
 - with the keyword `ohmygame-plugin`;
 - with the same version in `package.json` and `.ohmygame-plugin/plugin.json`;
 - with no `preinstall`, `install` or `postinstall` script (the app never runs
   them);
 - under the app's archive size limit.
+
+To have the plugin marked as source verified, set `repository` in `package.json` to
+its GitHub repository (with `directory` if it's in a repository of several) and
+either publish with [provenance](https://docs.npmjs.com/generating-provenance-statements)
+or keep that same package name in the repository's `package.json`.
 
 `npm pack` leaves out `.gitignore` files, so a project template keeps its
 `.gitignore` as `gitignore`.
@@ -35,7 +42,10 @@ Every 30 minutes, `.github/workflows/index.yml`:
 5. writes its files to a private temporary folder and checks them with the
    app's own package check, from a checkout of WhiteTowerAI/ohmygame
    (`OHMYGAME_REF`, `dev` by default). Nothing from a package is run;
-6. writes `index.<sha256>.json`, then `index.json` pointing at it.
+6. applies `blocked.json`, and keeps each plugin with its first published
+   package;
+7. reads each package's source, stars and weekly downloads;
+8. writes `index.<sha256>.json`, then `index.json` pointing at it.
 
 The workflow cache keeps each version's verdict on its contents, keyed by its
 integrity and the app commit that judged it, so only new versions, or all of
@@ -46,6 +56,33 @@ Each version in the index keeps its `integrity` and the registry's
 `signatures`, so the app can verify them with npm's keys and download the
 tarball from npmjs.org or a mirror without trusting the mirror's metadata.
 A version that fails a check stays in the index with `rejected` reasons.
+
+## What's in the index
+
+Beside `versions`:
+
+- `packages`, by package name, read at most once a day for each package's newest
+  installable version. What can't be read keeps its last value or is left out, and
+  never fails a run:
+  - `repository`: the GitHub repository it claims;
+  - `sourceVerified`: `true` when npm's SLSA provenance for that version names this
+    repository, or the repository's `package.json` names this package. This is read
+    from npm and GitHub over HTTPS; the job doesn't verify the Sigstore bundle
+    itself, and relies on npm having checked it at publish;
+  - `stars`: only when the source is verified, so a package can't borrow another
+    project's stars;
+  - `weeklyDownloads`.
+- `featured`: the plugins in `featured.json` that can be installed, in its order.
+
+## Curating
+
+Both files are read every run, and one that doesn't parse fails it, so a typo can't
+quietly unblock a package.
+
+- `blocked.json` is a list of `{ "package": "@a/b", "version": "1.0.0", "reason": "…" }`.
+  Leave out `version` to block every version. A blocked version stays in the index,
+  rejected with `blocked: <reason>`, so the app can say why it's gone.
+- `featured.json` is a list of plugin ids, like `"acme/tiles"`.
 
 ## Configuration
 
