@@ -1,0 +1,23 @@
+{
+  "name": "ohmygame-plugins",
+  "private": true,
+  "type": "module",
+  "description": "Builds the index of OhMyGame plugins published on npm.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "tsx src/build-index.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "tar": "7.5.22",
+    "tsx": "4.20.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  }
+}

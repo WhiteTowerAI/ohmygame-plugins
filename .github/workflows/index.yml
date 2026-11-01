@@ -1,0 +1,66 @@
+name: Index
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: index
+  cancel-in-progress: false
+
+env:
+  OHMYGAME_REF: ${{ vars.OHMYGAME_REF || 'dev' }}
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      # Versions already judged; losing it only means downloading them again.
+      - uses: actions/cache/restore@v4
+        with:
+          path: cache.json
+          key: index-cache-${{ github.run_id }}
+          restore-keys: index-cache-
+      - run: npm run build -- --app app --out out --cache cache.json
+      - uses: actions/cache/save@v4
+        with:
+          path: cache.json
+          key: index-cache-${{ github.run_id }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: index
+          path: out
+          retention-days: 7
+      - name: Upload to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          R2_PLUGIN_INDEX_PREFIX: ${{ vars.R2_PLUGIN_INDEX_PREFIX }}
+        run: |
+          for name in R2_ACCOUNT_ID R2_BUCKET R2_PLUGIN_INDEX_PREFIX AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::warning::$name is not configured; the index stays a workflow artifact"
+              exit 0
+            fi
+          done
+          case "$R2_PLUGIN_INDEX_PREFIX" in
+            /*|*/) echo "::error::R2_PLUGIN_INDEX_PREFIX must not start or end with a slash"; exit 1 ;;
+          esac
+          endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
+          latest=$(node -p 'require("./out/index.json").latest')
+          # The content file first, cached for good (its name is its hash), then the pointer, never cached.
+          aws s3 cp "out/$latest" "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/$latest" \
+            --endpoint-url "$endpoint" --content-type application/json \
+            --cache-control "public, max-age=31536000, immutable"
+          aws s3 cp out/index.json "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/index.json" \
+            --endpoint-url "$endpoint" --content-type application/json \
+            --cache-control "no-cache"

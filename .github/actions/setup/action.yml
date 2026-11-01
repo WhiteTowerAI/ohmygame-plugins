@@ -1,0 +1,23 @@
+name: Set up
+description: Checks out OhMyGame (whose manifest checks the index uses) and installs both projects.
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        repository: WhiteTowerAI/ohmygame
+        ref: ${{ env.OHMYGAME_REF }}
+        path: app
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version-file: app/package.json
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+        cache: npm
+    # Only the source and its dependencies are needed; nothing of the app runs.
+    - shell: bash
+      working-directory: app
+      run: bun install --frozen-lockfile --ignore-scripts
+    - shell: bash
+      run: npm ci
