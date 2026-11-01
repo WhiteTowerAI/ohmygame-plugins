@@ -35,7 +35,7 @@ describe("blocked.json and featured.json", () => {
   it("refuse what would quietly do nothing", () => {
     assert.deepEqual(parseBlocked('[{"package":"@a/b","reason":"malware"}]'), [{ package: "@a/b", reason: "malware" }]);
     assert.equal(parseBlocked('[{"package":"@a/b","reason":"x","version":"1.0.0-beta.1+b2"}]')[0]!.version, "1.0.0-beta.1+b2");
-    for (const text of ["{}", '[{"package":"@a/b"}]', '[{"reason":"x"}]', '[{"packages":"@a/b","reason":"x"}]', '[{"package":"@a/b","reason":"x","version":1}]', '[{"package":"@a/b ","reason":"x"}]', '[{"package":"@a/b","reason":"x","version":"1.0.0 "}]', '[{"package":"@a/b","reason":"x","version":"*"}]', '[{"package":"@a/b","reason":"x","version":"latest"}]', '[{"package":"@a/b","reason":"x","version":"1.0"}]', '[{"package":"@A/b","reason":"x"}]', "[null]"])
+    for (const text of ["{}", '[{"package":"@a/b"}]', '[{"reason":"x"}]', '[{"packages":"@a/b","reason":"x"}]', '[{"package":"@a/b","reason":"x","version":1}]', '[{"package":"@a/b ","reason":"x"}]', '[{"package":"@a/b","reason":"x","version":"1.0.0 "}]', '[{"package":"@a/b","reason":"x","version":"*"}]', '[{"package":"@a/b","reason":"x","version":"latest"}]', '[{"package":"@a/b","reason":"x","version":"1.0"}]', '[{"package":"@a/b","reason":"x","version":"01.0.0"}]', '[{"package":"@a/b","reason":"x","version":"1.0.0-rc..1"}]', '[{"package":"@A/b","reason":"x"}]', "[null]"])
       assert.throws(() => parseBlocked(text), /blocked\.json/);
     for (const text of ["{}", '["Acme/Tiles"]', '["acme"]', "[1]", '["a/b","a/b"]'])
       assert.throws(() => parseFeatured(text), /featured\.json/);
