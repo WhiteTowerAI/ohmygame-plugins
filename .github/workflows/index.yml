@@ -28,6 +28,9 @@ jobs:
           key: index-cache-${{ github.run_id }}
           restore-keys: index-cache-
       - run: npm run build -- --app app --out out --cache cache.json
+        env:
+          # Only for reading public repositories' star counts.
+          GITHUB_TOKEN: ${{ github.token }}
       - uses: actions/cache/save@v4
         with:
           path: cache.json

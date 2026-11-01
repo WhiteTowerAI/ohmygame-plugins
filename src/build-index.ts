@@ -6,13 +6,16 @@
 // Finds packages by keyword on registry.npmjs.org and, for each version,
 // checks the registry's signature, downloads the tarball, checks its
 // integrity, and checks the package with the app's own code (src/checks.ts).
-// Writes `index.<sha256>.json` and `index.json`, which names it.
+// Applies blocked.json, keeps each plugin with the package published first, and
+// adds each package's source, stars and downloads (src/catalog.ts) and the plugins
+// in featured.json. Writes `index.<sha256>.json` and `index.json`, which names it.
 //
 // --cache keeps each version's verdict on its contents, by integrity and by
 // the checks that gave it (the app commit, this indexer's source and its tar
 // version), so a run downloads only what is new or what changed checks must
 // look at again. Only bytes matching the signed integrity are ever judged and
-// cached. Signatures are checked every run.
+// cached. Signatures and blocks are checked every run. A package's facts are read
+// at most daily, and what can't be read never fails a run.
 // A registry that can't be read fails the run, so no partial index is
 // published; a tarball that can't be downloaded is left out until a later
 // run gets it.
@@ -22,6 +25,17 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  applyBlocks,
+  applyClaims,
+  featuredPlugins,
+  newestInstallable,
+  packageFacts,
+  parseBlocked,
+  parseFeatured,
+  type CachedFacts,
+  type PackageFacts,
+} from "./catalog.ts";
 import {
   integrityIssue,
   judgeTarball,
@@ -34,8 +48,8 @@ import {
   type RegistryKeys,
   type Verdict,
 } from "./checks.ts";
+import { factSources, fetchWithRetry, REGISTRY } from "./network.ts";
 
-const REGISTRY = "https://registry.npmjs.org";
 
 interface Options {
   app: string;
@@ -69,20 +83,6 @@ function options(argv: string[]): Options {
     else throw new Error(`Unknown flag ${flag}`);
   }
   return result;
-}
-
-/** A fetch that tries again on a network error or a 5xx/429 answer. */
-async function fetchWithRetry(url: string, init?: RequestInit): Promise<Response> {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      const response = await fetch(url, init);
-      if (response.ok || attempt >= 3 || (response.status < 500 && response.status !== 429)) return response;
-      await response.body?.cancel();
-    } catch (error) {
-      if (attempt >= 3) throw error;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-  }
 }
 
 async function json(url: string): Promise<any> {
@@ -202,10 +202,14 @@ async function main(): Promise<void> {
   const opts = options(process.argv.slice(2));
   const app = await loadAppChecks(opts.app);
   const checks = await checksVersion(app);
-  const cache: Record<string, CachedVerdict> = opts.cache
-    ? JSON.parse(await readFile(opts.cache, "utf8").catch(() => "{}"))
-    : {};
-  const versions: IndexedVersion[] = [];
+  const saved = opts.cache ? JSON.parse(await readFile(opts.cache, "utf8").catch(() => "{}")) : {};
+  const cache: Record<string, CachedVerdict> = saved.versions ?? {};
+  const factsCache: Record<string, CachedFacts> = saved.packages ?? {};
+  let versions: IndexedVersion[] = [];
+  const packages: Record<string, PackageFacts> = {};
+  const metas = new Map<string, any>();
+  const unread = new Set<string>();
+  let featured: string[] = [];
 
   // A local tarball checks only the package itself: it has no registry record.
   for (const file of opts.tarballs) {
@@ -231,6 +235,7 @@ async function main(): Promise<void> {
     for (const name of names) {
       // One that can't be read fails the run: leaving it out would drop its plugins from the catalog.
       const packument = await json(`${REGISTRY}/${name.replace("/", "%2f")}`);
+      metas.set(name, packument);
       const only = opts.packages.filter((spec) => spec.slice(0, spec.lastIndexOf("@")) === name).map((spec) => spec.slice(spec.lastIndexOf("@") + 1));
       for (const [version, meta] of Object.entries<any>(packument.versions ?? {})) {
         if (only.length && !only.includes(version)) continue;
@@ -238,20 +243,42 @@ async function main(): Promise<void> {
           versions.push(await indexVersion(app, checks, cache, name, version, meta, packument.time?.[version], keys));
         } catch (error) {
           if (!(error instanceof DownloadError)) throw error;
+          unread.add(name);
           console.warn(`left out ${name}@${version} for now: its tarball didn't download (${error.message})`);
         }
       }
     }
   }
 
+  if (!opts.tarballs.length) {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const firstPublished = new Map([...metas].flatMap(([name, packument]) => {
+      const dates = Object.keys(packument.versions ?? {}).flatMap((version) => {
+        const date = packument.time?.[version];
+        return typeof date === "string" ? [date] : [];
+      });
+      return dates.length ? [[name, dates.sort()[0]!] as const] : [];
+    }));
+    versions = applyBlocks(applyClaims(versions, firstPublished, unread), parseBlocked(await readFile(path.join(here, "..", "blocked.json"), "utf8")));
+    featured = featuredPlugins(parseFeatured(await readFile(path.join(here, "..", "featured.json"), "utf8")), versions);
+    const now = Date.now();
+    for (const [name, version] of newestInstallable(versions)) {
+      const meta = metas.get(name)?.versions?.[version.version] ?? {};
+      const { entry, complete } = await packageFacts(name, version.version, { repository: meta.repository, hasProvenance: Boolean(version.provenance) }, factsCache[name], now, factSources);
+      if (!complete) console.warn(`couldn't read all of ${name}'s facts; trying again next run`);
+      factsCache[name] = entry;
+      packages[name] = entry.facts;
+    }
+  }
+
   versions.sort((a, b) => a.package.localeCompare(b.package) || (a.publishedAt ?? "").localeCompare(b.publishedAt ?? "") || a.version.localeCompare(b.version));
-  const index = { schemaVersion: 1, versions };
+  const index = { schemaVersion: 1, versions, packages, featured };
   const text = `${JSON.stringify(index, null, 2)}\n`;
   const digest = createHash("sha256").update(text).digest("hex");
   await mkdir(opts.out, { recursive: true });
   await writeFile(path.join(opts.out, `index.${digest}.json`), text);
   await writeFile(path.join(opts.out, "index.json"), `${JSON.stringify({ schemaVersion: 1, latest: `index.${digest}.json`, sha256: digest, generatedAt: new Date().toISOString() })}\n`);
-  if (opts.cache) await writeFile(opts.cache, `${JSON.stringify(cache, null, 2)}\n`);
+  if (opts.cache) await writeFile(opts.cache, `${JSON.stringify({ versions: cache, packages: factsCache }, null, 2)}\n`);
   for (const item of versions)
     console.log(`${item.rejected ? "rejected" : "ok      "} ${item.package}@${item.version}${item.rejected ? `: ${item.rejected.join("; ")}` : ` -> ${item.plugin?.id}`}`);
 }
