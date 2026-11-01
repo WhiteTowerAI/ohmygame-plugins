@@ -6,6 +6,7 @@
 import type { IndexedVersion } from "./checks.ts";
 
 const PLUGIN_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const NPM_NAME = /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
 const DAY = 24 * 60 * 60 * 1000;
 
 /** One line of blocked.json: a package, or one of its versions. */
@@ -22,9 +23,9 @@ export function parseBlocked(text: string): Block[] {
   return list.map((item, index) => {
     const { package: name, version, reason, ...rest } = (item ?? {}) as Record<string, unknown>;
     if (
-      typeof name !== "string" || !name.trim() ||
+      typeof name !== "string" || !NPM_NAME.test(name) ||
       typeof reason !== "string" || !reason.trim() ||
-      (version !== undefined && (typeof version !== "string" || !version.trim())) ||
+      (version !== undefined && (typeof version !== "string" || !/^\S+$/.test(version))) ||
       Object.keys(rest).length
     )
       throw new Error(`blocked.json entry ${index} must have package, reason and optionally version`);
@@ -54,19 +55,29 @@ export function applyBlocks(versions: IndexedVersion[], blocks: Block[]): Indexe
   });
 }
 
-/** Both names can hold one plugin. The one published first keeps it; the other's versions are rejected. */
-export function applyClaims(versions: IndexedVersion[]): IndexedVersion[] {
-  const holders = new Map<string, { package: string; publishedAt: string }>();
-  for (const { plugin, package: name, publishedAt = "" } of versions) {
+/**
+ * Both names can hold one plugin. The package published first keeps it and the
+ * other's versions are rejected. A package's date is its first version's,
+ * whatever became of that version, so blocking a version or failing to download
+ * one can't move a plugin to the other package. A package with no known date
+ * never comes before one with a date. Run this before applyBlocks.
+ */
+export function applyClaims(versions: IndexedVersion[], firstPublished: ReadonlyMap<string, string>): IndexedVersion[] {
+  const earlier = (a: string, b: string) => {
+    const [dateA, dateB] = [firstPublished.get(a), firstPublished.get(b)];
+    if (dateA !== dateB) return dateB === undefined || (dateA !== undefined && dateA < dateB);
+    return a < b;
+  };
+  const holders = new Map<string, string>();
+  for (const { plugin, package: name } of versions) {
     if (!plugin) continue;
     const holder = holders.get(plugin.id);
-    if (!holder || publishedAt < holder.publishedAt || (publishedAt === holder.publishedAt && name < holder.package))
-      holders.set(plugin.id, { package: name, publishedAt });
+    if (holder === undefined || earlier(name, holder)) holders.set(plugin.id, name);
   }
   return versions.map((version) => {
     const holder = version.plugin && holders.get(version.plugin.id);
-    return holder && holder.package !== version.package
-      ? reject(version, `plugin ${version.plugin!.id} is already published as ${holder.package}`)
+    return holder !== undefined && holder !== version.package
+      ? reject(version, `plugin ${version.plugin!.id} is already published as ${holder}`)
       : version;
   });
 }
@@ -97,10 +108,12 @@ export function parseRepository(value: unknown): GitHubRepository | undefined {
   const [, owner, repo] = match as unknown as [string, string, string];
   if (!NAME_PART.test(owner) || !NAME_PART.test(repo) || /^\.+$/.test(owner) || /^\.+$/.test(repo)) return undefined;
   const directory = typeof value === "object" ? (value as { directory?: unknown }).directory : undefined;
-  const parts = typeof directory === "string" ? directory.split("/").filter((part) => part && part !== ".") : [];
-  // A folder that can't be named safely is left out, so the top of the repository is read.
-  const safe = parts.length > 0 && parts.every((part) => NAME_PART.test(part) && part !== "..");
-  return { owner, repo, ...(safe ? { directory: parts.join("/") } : {}) };
+  if (directory === undefined) return { owner, repo };
+  // Its own package.json couldn't be read, and the top of the repository may name another package.
+  if (typeof directory !== "string") return undefined;
+  const parts = directory.split("/").filter((part) => part && part !== ".");
+  if (parts.some((part) => part === ".." || /[\\\0-\x1f]/.test(part))) return undefined;
+  return { owner, repo, ...(parts.length ? { directory: parts.join("/") } : {}) };
 }
 
 const sameRepository = (a: GitHubRepository | undefined, b: GitHubRepository) =>
@@ -144,6 +157,8 @@ export interface PackageFacts {
 export interface CachedFacts {
   /** The newest version they were read for; a new one checks the source again. */
   version: string;
+  /** The repository and folder it claims; another one checks the source again. */
+  source?: string;
   checkedAt: number;
   facts: PackageFacts;
 }
@@ -170,12 +185,14 @@ export async function packageFacts(
   now: number,
   sources: FactSources,
 ): Promise<{ entry: CachedFacts; complete: boolean }> {
-  if (cached && cached.version === version && now - cached.checkedAt < DAY) return { entry: cached, complete: true };
   const repository = parseRepository(meta.repository);
   const url = repository && `https://github.com/${repository.owner}/${repository.repo}`;
+  const source = repository && [repository.owner, repository.repo, repository.directory ?? ""].join("/").toLowerCase();
+  // A source verdict holds only for the version and source it was reached on.
+  const same = cached?.version === version && cached.source === source;
+  if (cached && same && now - cached.checkedAt < DAY) return { entry: cached, complete: true };
   const before = cached?.facts;
-  // A source verdict holds only for the version and repository it was reached on.
-  const held = cached?.version === version && before?.repository === url ? before : undefined;
+  const held = same ? before : undefined;
   let complete = true;
   const read = async <T>(get: () => Promise<T>, fallback: T | undefined): Promise<T | undefined> => {
     try {
@@ -202,8 +219,9 @@ export async function packageFacts(
   return {
     entry: {
       version,
+      ...(source ? { source } : {}),
       // What couldn't be read is tried again next run, not tomorrow.
-      checkedAt: complete ? now : cached?.checkedAt ?? 0,
+      checkedAt: complete ? now : 0,
       facts: {
         ...(url ? { repository: url } : {}),
         ...(verified ? { sourceVerified: true as const } : {}),

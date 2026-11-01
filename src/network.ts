@@ -25,20 +25,31 @@ async function factResponse(url: string, headers: Record<string, string> = {}): 
 
 const FACTS_MAX_BYTES = 1024 * 1024;
 
+/** A body within the limit; a bigger one stops being read. */
+async function limitedText(response: Response): Promise<string> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of (response.body ?? []) as unknown as AsyncIterable<Uint8Array>) {
+    size += chunk.length;
+    if (size > FACTS_MAX_BYTES) throw new Error(`larger than ${FACTS_MAX_BYTES} bytes`);
+    chunks.push(Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 export const factSources: FactSources = {
   async attestations(name, version) {
     const response = await factResponse(`${REGISTRY}/-/npm/v1/attestations/${name.replace("/", "%2f")}@${version}`);
     if (response.status === 404) return undefined;
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
+    return JSON.parse(await limitedText(response));
   },
   async packageJson({ owner, repo, directory }) {
     const file = [owner, repo, "HEAD", ...(directory ? directory.split("/") : []), "package.json"].map(encodeURIComponent).join("/");
     const response = await factResponse(`https://raw.githubusercontent.com/${file}`);
     if (response.status === 404) return undefined;
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const text = await response.text();
-    return text.length > FACTS_MAX_BYTES ? undefined : text;
+    return limitedText(response);
   },
   async stars({ owner, repo }) {
     const token = process.env.GITHUB_TOKEN;
@@ -47,7 +58,7 @@ export const factSources: FactSources = {
       ...(token ? { authorization: `Bearer ${token}` } : {}),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const { stargazers_count: stars } = await response.json() as { stargazers_count?: unknown };
+    const { stargazers_count: stars } = JSON.parse(await limitedText(response)) as { stargazers_count?: unknown };
     if (typeof stars !== "number") throw new Error("no star count");
     return stars;
   },
@@ -56,7 +67,7 @@ export const factSources: FactSources = {
     // A package too new for npm's counts has none yet.
     if (response.status === 404) return 0;
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const { downloads } = await response.json() as { downloads?: unknown };
+    const { downloads } = JSON.parse(await limitedText(response)) as { downloads?: unknown };
     if (typeof downloads !== "number") throw new Error("no download count");
     return downloads;
   },

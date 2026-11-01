@@ -42,8 +42,8 @@ Every 30 minutes, `.github/workflows/index.yml`:
 5. writes its files to a private temporary folder and checks them with the
    app's own package check, from a checkout of WhiteTowerAI/ohmygame
    (`OHMYGAME_REF`, `dev` by default). Nothing from a package is run;
-6. applies `blocked.json`, and keeps each plugin with its first published
-   package;
+6. keeps each plugin with its first published package, then applies
+   `blocked.json`, so a block can't move a plugin to another package;
 7. reads each package's source, stars and weekly downloads;
 8. writes `index.<sha256>.json`, then `index.json` pointing at it.
 

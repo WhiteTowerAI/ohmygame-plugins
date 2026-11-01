@@ -48,7 +48,7 @@ export interface Verdict {
     icon?: string;
     /** What it asks to be allowed, as the app's consent lists it. */
     grants: string[];
-    /** How many of each contribution it adds. */
+    /** How many of each contribution it adds, Skills included. */
     adds: Record<string, number>;
   };
   /** Why it can't be installed; absent when it can. */
@@ -81,6 +81,7 @@ interface AppEntry {
     contributes?: Record<string, unknown>;
   };
   strings: unknown;
+  skills: unknown[];
 }
 
 /** The app code the checks use. */
@@ -345,7 +346,8 @@ export async function judgeTarball(app: AppChecks, name: string, version: string
         adds: Object.fromEntries(
           Object.entries(manifest.contributes ?? {})
             .filter(([, value]) => Array.isArray(value))
-            .map(([key, value]) => [key, (value as unknown[]).length]),
+            .map(([key, value]) => [key, (value as unknown[]).length])
+            .concat(entry.skills.length ? [["skills", entry.skills.length]] : []),
         ),
       },
     };

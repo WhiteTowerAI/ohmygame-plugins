@@ -59,7 +59,7 @@ describe("judgeTarball", () => {
       // Falls back to English.
       description: { en: "Tile maps.", "zh-CN": "Tile maps." },
       grants: [],
-      adds: {},
+      adds: { skills: 1 },
     });
   });
 
@@ -70,7 +70,7 @@ describe("judgeTarball", () => {
     }));
     assert.equal(judged.rejected, undefined);
     assert.deepEqual(judged.plugin?.grants, ["network:tiles.example.com"]);
-    assert.deepEqual(judged.plugin?.adds, { themes: 1 });
+    assert.deepEqual(judged.plugin?.adds, { themes: 1, skills: 1 });
   });
 
   it("rejects a package whose name, version or scripts disagree with the plugin", async () => {

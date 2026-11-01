@@ -250,7 +250,14 @@ async function main(): Promise<void> {
 
   if (!opts.tarballs.length) {
     const here = path.dirname(fileURLToPath(import.meta.url));
-    versions = applyClaims(applyBlocks(versions, parseBlocked(await readFile(path.join(here, "..", "blocked.json"), "utf8"))));
+    const firstPublished = new Map([...metas].flatMap(([name, packument]) => {
+      const dates = Object.keys(packument.versions ?? {}).flatMap((version) => {
+        const date = packument.time?.[version];
+        return typeof date === "string" ? [date] : [];
+      });
+      return dates.length ? [[name, dates.sort()[0]!] as const] : [];
+    }));
+    versions = applyBlocks(applyClaims(versions, firstPublished), parseBlocked(await readFile(path.join(here, "..", "blocked.json"), "utf8")));
     featured = featuredPlugins(parseFeatured(await readFile(path.join(here, "..", "featured.json"), "utf8")), versions);
     const now = Date.now();
     for (const [name, version] of newestInstallable(versions)) {
