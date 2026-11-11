@@ -91,7 +91,8 @@ Beside `versions`:
 ## Curating
 
 All three files are read every run, and one that doesn't parse fails it, so a typo can't
-quietly unblock a package.
+quietly unblock a package. The tests check them too, so a pull request that breaks one
+fails CI before it's merged, and the last good index stays up meanwhile.
 
 - `blocked.json` is a list of `{ "package": "@a/b", "version": "1.0.0", "reason": "…" }`.
   Leave out `version` to block every version. A blocked version stays in the index,

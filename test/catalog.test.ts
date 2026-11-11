@@ -16,7 +16,7 @@ import {
   type CachedFacts,
   type FactSources,
 } from "../src/catalog.ts";
-import type { IndexedVersion } from "../src/checks.ts";
+import { loadAppChecks, type IndexedVersion } from "../src/checks.ts";
 
 const version = (name: string, ver: string, publishedAt: string, id: string | null = "acme/tiles"): IndexedVersion => ({
   package: name,
@@ -31,10 +31,12 @@ const version = (name: string, ver: string, publishedAt: string, id: string | nu
 const KNOWN = ["engine", "art", "3d"];
 
 describe("blocked.json, featured.json and categories.json", () => {
+  // Checked on every pull request, so a typo never reaches the scheduled run, which stops on one.
   it("are valid as committed", async () => {
     parseBlocked(await readFile(new URL("../blocked.json", import.meta.url), "utf8"));
     parseFeatured(await readFile(new URL("../featured.json", import.meta.url), "utf8"));
-    parseCategories(await readFile(new URL("../categories.json", import.meta.url), "utf8"), KNOWN);
+    const { categories } = await loadAppChecks(process.env.OHMYGAME_APP ?? "app");
+    parseCategories(await readFile(new URL("../categories.json", import.meta.url), "utf8"), categories);
   });
 
   it("refuse what would quietly do nothing", () => {
