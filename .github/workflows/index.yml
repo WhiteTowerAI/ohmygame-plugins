@@ -21,19 +21,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      # Versions already judged; losing it only means downloading them again.
+      # Versions already judged, with the icons and screenshots they list; losing
+      # them only means downloading those versions again.
       - uses: actions/cache/restore@v4
         with:
-          path: cache.json
+          path: |
+            cache.json
+            images
           key: index-cache-${{ github.run_id }}
           restore-keys: index-cache-
-      - run: npm run build -- --app app --out out --cache cache.json
+      - run: npm run build -- --app app --out out --cache cache.json --images images
         env:
           # Only for reading public repositories' star counts.
           GITHUB_TOKEN: ${{ github.token }}
       - uses: actions/cache/save@v4
         with:
-          path: cache.json
+          path: |
+            cache.json
+            images
           key: index-cache-${{ github.run_id }}
       - uses: actions/upload-artifact@v4
         with:
@@ -60,10 +65,15 @@ jobs:
           esac
           endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
           latest=$(node -p 'require("./out/index.json").latest')
-          # The content file first, cached for good (its name is its hash), then the pointer, never cached.
+          # Images and the content file first, cached for good (their names are their hashes), then the pointer.
+          # Images already there are left as they are, and none is deleted: an app may still hold an older index.
+          aws s3 sync out/assets "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/assets" \
+            --endpoint-url "$endpoint" --size-only \
+            --cache-control "public, max-age=31536000, immutable"
           aws s3 cp "out/$latest" "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/$latest" \
             --endpoint-url "$endpoint" --content-type application/json \
             --cache-control "public, max-age=31536000, immutable"
+          # Every running app reads the pointer every 30 minutes; a minute's caching lets a CDN in front answer most.
           aws s3 cp out/index.json "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/index.json" \
             --endpoint-url "$endpoint" --content-type application/json \
-            --cache-control "no-cache"
+            --cache-control "public, max-age=60"

@@ -42,14 +42,20 @@ Every 30 minutes, `.github/workflows/index.yml`:
 5. writes its files to a private temporary folder and checks them with the
    app's own package check, from a checkout of WhiteTowerAI/ohmygame
    (`OHMYGAME_REF`, `dev` by default). Nothing from a package is run;
-6. keeps each plugin with its first published package, then applies
-   `blocked.json`, so a block can't move a plugin to another package;
-7. reads each package's source, stars and weekly downloads;
-8. writes `index.<sha256>.json`, then `index.json` pointing at it.
+6. copies the plugin's icon and screenshots out of the package, checked as the
+   app checks them (an icon a PNG, WebP or static SVG of the type its name
+   says; a screenshot a PNG, JPEG or WebP), named by their contents' hash. One
+   the app wouldn't show is left out, not the plugin;
+7. keeps each plugin with its first published package, then applies
+   `blocked.json` and `categories.json`, so a block can't move a plugin to
+   another package;
+8. reads each package's source, stars, avatar and weekly downloads;
+9. writes `assets/` and `index.<sha256>.json`, then `index.json` pointing at it.
 
 The workflow cache keeps each version's verdict on its contents, keyed by its
-integrity and the app commit that judged it, so only new versions, or all of
-them after the app's checks change, are downloaded. A tarball that can't be
+integrity and the app commit that judged it, and the images the verdicts list,
+so only new versions, or all of them after the app's checks change, are
+downloaded. A verdict whose images aren't in the cache is judged again. A tarball that can't be
 downloaded is left out until a later run gets it.
 
 Each version in the index keeps its `integrity` and the registry's
@@ -58,6 +64,13 @@ tarball from npmjs.org or a mirror without trusting the mirror's metadata.
 A version that fails a check stays in the index with `rejected` reasons.
 
 ## What's in the index
+
+Each installable version's `plugin` has its id, localized `displayName`,
+`description` and `longDescription`, `categories`, `appliesTo`, `beta`, what it
+asks for (`grants`) and adds, and its `icon` and `screenshots` (each with a
+localized `caption`) as paths beside the index: `assets/<sha256>.<ext>`. A
+version also has npm's `unpackedSize`. Images are named by their contents, so
+they never change and are cached for good.
 
 Beside `versions`:
 
@@ -69,20 +82,24 @@ Beside `versions`:
     repository, or the repository's `package.json` names this package. This is read
     from npm and GitHub over HTTPS; the job doesn't verify the Sigstore bundle
     itself, and relies on npm having checked it at publish;
-  - `stars`: only when the source is verified, so a package can't borrow another
-    project's stars;
+  - `stars` and `avatar` (the repository owner's GitHub `avatar_url`): only when the
+    source is verified, so a package can't borrow another project's stars or face;
+  - `createdAt`: when the package was first published;
   - `weeklyDownloads`.
 - `featured`: the plugins in `featured.json` that can be installed, in its order.
 
 ## Curating
 
-Both files are read every run, and one that doesn't parse fails it, so a typo can't
+All three files are read every run, and one that doesn't parse fails it, so a typo can't
 quietly unblock a package.
 
 - `blocked.json` is a list of `{ "package": "@a/b", "version": "1.0.0", "reason": "…" }`.
   Leave out `version` to block every version. A blocked version stays in the index,
   rejected with `blocked: <reason>`, so the app can say why it's gone.
 - `featured.json` is a list of plugin ids, like `"acme/tiles"`.
+- `categories.json` maps plugin ids to one to three categories the app knows, like
+  `{ "acme/tiles": ["art", "design"] }`, listed in place of what the plugin's
+  manifest says, for a plugin that has none or the wrong ones.
 
 ## Configuration
 
@@ -99,8 +116,13 @@ Repository secrets: `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`, an R2 API
 token with object write access to the bucket. Until they are set, the index
 stays a workflow artifact.
 
-`index.<sha256>.json` is uploaded with an immutable cache header and
-`index.json` with `no-cache`, so a client never sees a pointer before its file.
+`assets/` and `index.<sha256>.json` are uploaded first, with an immutable cache
+header, then `index.json`, so a client never sees a pointer before its file.
+Images already uploaded are left alone and none is deleted, since an app may
+still hold an older index. `index.json` is cached for a minute
+(`public, max-age=60`): every running app reads it every 30 minutes, so a CDN
+in front of the bucket (a Cloudflare Cache Rule on its domain) can answer most
+of those reads.
 
 ## Development
 
@@ -108,6 +130,6 @@ stays a workflow artifact.
 npm ci
 ln -s ../ohmygame app   # an OhMyGame checkout with its dependencies installed
 npm test
-npm run build -- --out out --cache cache.json
+npm run build -- --out out --cache cache.json --images images
 npm run build -- --tarball my-plugin-1.0.0.tgz   # check a local package
 ```

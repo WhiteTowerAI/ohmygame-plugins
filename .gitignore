@@ -1,4 +1,5 @@
 node_modules/
 /app
 /out
+/images
 cache.json

@@ -24,6 +24,7 @@ async function factResponse(url: string, headers: Record<string, string> = {}): 
 }
 
 const FACTS_MAX_BYTES = 1024 * 1024;
+const AVATAR = /^https:\/\/avatars\.githubusercontent\.com\/u\/[0-9]{1,12}(?:\?v=[0-9]{1,4})?$/;
 
 /** A body within the limit; a bigger one stops being read. */
 async function limitedText(response: Response): Promise<string> {
@@ -51,16 +52,18 @@ export const factSources: FactSources = {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return limitedText(response);
   },
-  async stars({ owner, repo }) {
+  async github({ owner, repo }) {
     const token = process.env.GITHUB_TOKEN;
     const response = await factResponse(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, {
       accept: "application/vnd.github+json",
       ...(token ? { authorization: `Bearer ${token}` } : {}),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const { stargazers_count: stars } = JSON.parse(await limitedText(response)) as { stargazers_count?: unknown };
+    const data = JSON.parse(await limitedText(response)) as { stargazers_count?: unknown; owner?: { avatar_url?: unknown } | null };
+    const stars = data.stargazers_count, avatar = data.owner?.avatar_url;
     if (typeof stars !== "number") throw new Error("no star count");
-    return stars;
+    // The app shows only an avatar at this address.
+    return { stars, ...(typeof avatar === "string" && AVATAR.test(avatar) ? { avatar } : {}) };
   },
   async weeklyDownloads(name) {
     const response = await factResponse(`https://api.npmjs.org/downloads/point/last-week/${name.replace("/", "%2f")}`);
