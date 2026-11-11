@@ -1,0 +1,9 @@
+{
+  "plugin.name": "语言模型",
+  "plugin.description": "把 NVIDIA 和 Command Code 作为 agent 的模型服务商。",
+  "plugin.longDescription": "在 设置 → 服务商 里加入 NVIDIA 托管的模型和 Command Code 的 Provider API。在这个页面填好服务商的 API key，它的模型就会出现在模型菜单里；模型列表从服务商读取，新模型会自动出现。不填 key 的服务商不会加入。",
+  "config.nvidia.title": "NVIDIA API key",
+  "config.nvidia.description": "以 nvapi- 开头。在 build.nvidia.com → API Keys 创建。",
+  "config.commandCode.title": "Command Code API key",
+  "config.commandCode.description": "在 Command Code Studio → Settings → API Keys 创建，需要 Provider 套餐。Claude 模型只能用 Command Code 自己的协议调用，不在列表里。"
+}

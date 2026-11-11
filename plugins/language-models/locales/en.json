@@ -1,0 +1,9 @@
+{
+  "plugin.name": "Language Models",
+  "plugin.description": "NVIDIA and Command Code as model providers for the agent.",
+  "plugin.longDescription": "Adds NVIDIA's hosted models and Command Code's Provider API to Settings → Providers. Enter a provider's API key on this page and its models appear in the model menu; the list is read from the provider, so new models show up by themselves. Leave a key empty to leave that provider out.",
+  "config.nvidia.title": "NVIDIA API key",
+  "config.nvidia.description": "Starts with nvapi-. Create one at build.nvidia.com → API Keys.",
+  "config.commandCode.title": "Command Code API key",
+  "config.commandCode.description": "From Command Code Studio → Settings → API Keys, on the Provider plan. Claude models are only served through Command Code's own protocol and aren't listed."
+}

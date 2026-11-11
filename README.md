@@ -1,8 +1,29 @@
 # ohmygame-plugins
 
 Builds the index of [OhMyGame](https://github.com/WhiteTowerAI/ohmygame)
-plugins published on npm. The app reads the index to list plugins and checks
-every download against it.
+plugins published on npm, and holds OhMyGame's official plugins. The app reads
+the index to list plugins and checks every download against it.
+
+## Official plugins
+
+Each folder in [`plugins/`](plugins) is published as `@ohmygame/<folder>`, the
+publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
+
+- [`language-models`](plugins/language-models): NVIDIA and Command Code as model providers.
+- [`acp-agents`](plugins/acp-agents): Antigravity CLI, CodeBuddy Code, Command Code and Gemini CLI as coding agents.
+
+`npm test` packs each one and judges it as the index will, so CI refuses one the
+market wouldn't list. To release one, raise `version` in both its `package.json`
+and `.ohmygame-plugin/plugin.json`; on `main`, the
+[Publish plugins](.github/workflows/publish.yml) workflow publishes every
+version npm doesn't have yet, with provenance.
+
+A package's first version needs the `NPM_TOKEN` secret, a token of an
+`@ohmygame` owner. After that, add this repository and `publish.yml` as the
+package's trusted publisher on npmjs.com and remove the secret.
+
+To try one in OhMyGame before releasing it, add its folder under Plugins › Add
+plugin › This computer with Develop on.
 
 ## Publishing a plugin
 

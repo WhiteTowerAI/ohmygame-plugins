@@ -1,0 +1,33 @@
+{
+  "name": "@ohmygame/language-models",
+  "version": "0.1.0",
+  "description": "NVIDIA and Command Code as model providers in OhMyGame.",
+  "keywords": [
+    "ohmygame-plugin",
+    "nvidia",
+    "command-code",
+    "llm"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/language-models"
+  },
+  "homepage": "https://github.com/WhiteTowerAI/ohmygame-plugins/tree/main/plugins/language-models#readme",
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales"
+  ],
+  "scripts": {
+    "check": "ohmygame-plugin check",
+    "pack": "ohmygame-plugin pack"
+  },
+  "devDependencies": {
+    "@ohmygame/plugin-cli": "^2.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

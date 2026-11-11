@@ -1,0 +1,64 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/acp-agents",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.3.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "capabilities": {
+    "processes": [
+      "agy",
+      "codebuddy",
+      "command-code",
+      "gemini"
+    ]
+  },
+  "contributes": {
+    "agents": [
+      {
+        "id": "antigravity",
+        "title": "Antigravity CLI",
+        "command": "agy",
+        "args": [
+          "acp"
+        ],
+        "installUrl": "https://antigravity.google/docs/cli/install",
+        "loginCommand": "agy acp --login"
+      },
+      {
+        "id": "codebuddy",
+        "title": "CodeBuddy Code",
+        "command": "codebuddy",
+        "args": [
+          "--acp"
+        ],
+        "installUrl": "https://www.codebuddy.ai/docs/cli/installation",
+        "loginCommand": "codebuddy"
+      },
+      {
+        "id": "command-code",
+        "title": "Command Code",
+        "command": "command-code",
+        "args": [
+          "acp"
+        ],
+        "installUrl": "https://commandcode.ai/docs/quickstart",
+        "loginCommand": "command-code login"
+      },
+      {
+        "id": "gemini",
+        "title": "Gemini CLI",
+        "command": "gemini",
+        "args": [
+          "--acp"
+        ],
+        "installUrl": "https://geminicli.com/docs/get-started/installation/",
+        "loginCommand": "gemini"
+      }
+    ]
+  }
+}

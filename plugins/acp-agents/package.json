@@ -1,0 +1,36 @@
+{
+  "name": "@ohmygame/acp-agents",
+  "version": "0.1.0",
+  "description": "Antigravity CLI, CodeBuddy Code, Command Code and Gemini CLI as coding agents in OhMyGame.",
+  "keywords": [
+    "ohmygame-plugin",
+    "acp",
+    "agent",
+    "antigravity",
+    "codebuddy",
+    "command-code",
+    "gemini"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/acp-agents"
+  },
+  "homepage": "https://github.com/WhiteTowerAI/ohmygame-plugins/tree/main/plugins/acp-agents#readme",
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales"
+  ],
+  "scripts": {
+    "check": "ohmygame-plugin check",
+    "pack": "ohmygame-plugin pack"
+  },
+  "devDependencies": {
+    "@ohmygame/plugin-cli": "^2.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
