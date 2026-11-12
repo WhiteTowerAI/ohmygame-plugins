@@ -51,7 +51,9 @@ export default {
       }
       const response = await host.fetch("https://api.siliconflow.cn/v1/video/submit", { method: "POST", auth: true, json: body });
       const { answer, message } = await read(response);
-      // A refused request isn't billed, so it can simply be tried again.
+      // A server error may come after SiliconFlow took the request: throwing has OhMyGame
+      // treat it as possibly sent, so a retry doesn't pay again. A refusal can be tried again.
+      if (response.status >= 500) throw new Error(message);
       if (!response.ok) return { error: message };
       const requestId = answer && answer.requestId;
       return typeof requestId === "string" && requestId ? { task: { requestId } } : { error: "SiliconFlow returned no request id" };
