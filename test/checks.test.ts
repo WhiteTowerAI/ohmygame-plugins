@@ -44,8 +44,8 @@ const plugin = (fields: Record<string, unknown> = {}, pkg: Record<string, unknow
   tarball({
     "package.json": JSON.stringify({ name: "@acme/ohmygame-plugin-tiles", version: "1.2.0", ...pkg }),
     ".ohmygame-plugin/plugin.json": JSON.stringify(manifest(fields)),
-    "locales/en.json": JSON.stringify({ displayName: "Tiles", description: "Tile maps.", long: "Paint tile maps.", shot: "A map" }),
-    "locales/zh-CN.json": JSON.stringify({ displayName: "瓦片", shot: "地图" }),
+    "locales/en.json": JSON.stringify({ displayName: "Tiles", description: "Tile maps.", long: "Paint tile maps.", shot: "A map", tilemap: "tilemap", agent: "Tile agent" }),
+    "locales/zh-CN.json": JSON.stringify({ displayName: "瓦片", shot: "地图", tilemap: "瓦片地图" }),
     "skills/tiles/SKILL.md": "---\nname: tiles\ndescription: Tile maps.\n---\n",
     ...extra,
   });
@@ -79,6 +79,9 @@ describe("judgeTarball", () => {
     const saved = new Map<string, Buffer>();
     const judge = async (icon: string | Buffer) => judgeTarball(app, "@acme/ohmygame-plugin-tiles", "1.2.0", await plugin({
       longDescription: "%long%", categories: ["art", "hologram"], appliesTo: ["web-game"], beta: true,
+      keywords: ["%tilemap%", "Tiled"],
+      contributes: { skills: "./skills/", agents: [{ id: "tiles", title: "%agent%", command: "tiles", args: ["--acp"] }] },
+      capabilities: { processes: ["tiles"] },
       icon: typeof icon === "string" ? "./assets/icon.svg" : "./assets/icon.png",
       screenshots: [{ path: "./shots/one.png", caption: "%shot%" }, { path: "./shots/page.png" }, { path: "./shots/two.jpg" }],
     }, {}, {
@@ -93,6 +96,9 @@ describe("judgeTarball", () => {
       longDescription: { en: "Paint tile maps.", "zh-CN": "Paint tile maps." },
       // The app passes over a category it doesn't know.
       categories: ["art"], appliesTo: ["web-game"], beta: true,
+      // Keywords, and what it adds by name, for search.
+      keywords: [{ en: "tilemap", "zh-CN": "瓦片地图" }, { en: "Tiled", "zh-CN": "Tiled" }],
+      names: [{ en: "Tile agent", "zh-CN": "Tile agent" }],
       icon: imagePath(png, "png"),
       // One that isn't a picture is left out.
       screenshots: [{ path: imagePath(png, "png"), caption: { en: "A map", "zh-CN": "地图" } }, { path: imagePath(jpeg, "jpg") }],
