@@ -131,7 +131,7 @@ function build(kind, input, d) {
   if (d.res && d.res.m[input.resolution]) put(body, d.res.f, d.res.m[input.resolution]);
   if (kind === "image" && d.bg && input.transparentBackground) put(body, d.bg, "transparent");
   if (kind === "video") {
-    if (d.dur) put(body, d.dur.f, d.dur.t === "string" ? String(input.duration) : input.duration);
+    if (d.dur) put(body, d.dur.f, d.dur.m && d.dur.m[input.duration] !== undefined ? d.dur.m[input.duration] : d.dur.t === "string" ? String(input.duration) : input.duration);
     if (input.referenceMode === "reference" && d.refs) {
       put(body, d.refs, refs.map(dataUri));
       return body;
@@ -230,10 +230,13 @@ function text(value, max) {
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 }
 
+/** A choice of length in seconds, which fal.ai writes as 5, "5" or "5s". */
+const secondsIn = (value) => typeof value === "string" ? Number(value.replace(/s$/, "")) : Number(value);
+
 /** Whole seconds from 1 to `cap` a duration field takes, from its choices or its range. */
 function secondsOf(schema, cap, ms) {
   const scale = ms ? 1000 : 1;
-  const listed = choices(schema).map((value) => Number(value) / scale).filter((value) => Number.isInteger(value) && value >= 1 && value <= cap);
+  const listed = choices(schema).map((value) => secondsIn(value) / scale).filter((value) => Number.isInteger(value) && value >= 1 && value <= cap);
   if (listed.length) return [...new Set(listed)].sort((a, b) => a - b);
   if (!range(schema)) return [];
   const low = Math.max(1, Math.ceil(schema.minimum / scale));
@@ -321,6 +324,9 @@ function describeVideo(model, s, category) {
       durations = seconds;
       const asText = choices(f.duration).some((value) => typeof value === "string") || f.duration.type === "string";
       d.dur = { f: "duration", t: asText ? "string" : "number" };
+      // Choices are sent as fal.ai writes them ("8s").
+      const written = Object.fromEntries(choices(f.duration).filter((value) => seconds.includes(secondsIn(value))).map((value) => [secondsIn(value), value]));
+      if (Object.keys(written).length) d.dur.m = written;
     }
   }
   let resolutions = ["720p"];
@@ -343,7 +349,7 @@ function describeVideo(model, s, category) {
     aspectRatios = Object.keys(ratio);
     d.ar = { f: "aspect_ratio", m: ratio };
   }
-  d.out = outOf(s, [["video", "url"]]);
+  d.out = outOf(s, [["video", "url"], ["video"]]);
   if (!d.out) return undefined;
   return { durations, resolutions, aspectRatios, maxReferenceImages, ...(referenceModes.length ? { referenceModes } : {}), data: d };
 }
@@ -409,7 +415,8 @@ function describeAudio(model, s, category) {
     }
   }
   if (!fills(s, [said])) return undefined;
-  d.out = outOf(s, [["audio", "url"], ["audio_file", "url"], ["audios", 0, "url"]]);
+  // Some models give the file as an object with a url, others as the url alone.
+  d.out = outOf(s, [["audio", "url"], ["audio"], ["audio_file", "url"], ["audios", 0, "url"]]);
   if (!d.out) return undefined;
   return { ...result, data: d };
 }
@@ -457,7 +464,8 @@ function describe3D(model, s, category) {
     result.pbr = true;
     d.pbr = pbr;
   }
-  d.out = outOf(s, [["model_glb", "url"], ["model_urls", "glb", "url"], ["model_mesh", "url"]]);
+  // model_urls.glb first: some models put the format asked for (OBJ, say) in model_glb.
+  d.out = outOf(s, [["model_urls", "glb", "url"], ["model_glb", "url"], ["model_mesh", "url"]]);
   if (!d.out) return undefined;
   return { ...result, data: d };
 }
