@@ -1,0 +1,5 @@
+{
+  "plugin.name": "ACP Agents",
+  "plugin.description": "把 Antigravity CLI、CodeBuddy Code、Command Code 和 Gemini CLI 作为编程 agent。",
+  "plugin.longDescription": "在 设置 → 智能体 里，和 Claude Code、Codex 并列加入四个支持 Agent Client Protocol 的编程 agent。先安装 agent，用它自己的命令登录，再到 设置 → 智能体 打开；OhMyGame 会从 agent 读取可用的模型。Gemini CLI 适用于 Gemini Code Assist 套餐，其他 Google 账号请用 Antigravity CLI。"
+}

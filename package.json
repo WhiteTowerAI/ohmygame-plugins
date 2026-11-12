@@ -2,7 +2,7 @@
   "name": "ohmygame-plugins",
   "private": true,
   "type": "module",
-  "description": "Builds the index of OhMyGame plugins published on npm.",
+  "description": "Builds the index of OhMyGame plugins published on npm, and holds the official plugins.",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=22.12.0"

@@ -1,0 +1,7 @@
+{
+  "plugin.name": "Command Code",
+  "plugin.description": "用你自己的 API key，让 agent 使用Command Code的模型。",
+  "plugin.longDescription": "把Command Code加入 设置 → 服务商。在这里或设置里填好 API key，它的模型就会出现在模型菜单里；模型列表从Command Code读取，新模型会自动出现。",
+  "config.apiKey.title": "Command Code API key",
+  "config.apiKey.description": "在 Command Code Studio → Settings → API Keys 创建，需要 Provider 套餐。Claude 模型只能用 Command Code 自己的协议调用，不在列表里。"
+}

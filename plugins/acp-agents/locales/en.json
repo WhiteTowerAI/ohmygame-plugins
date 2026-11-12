@@ -1,0 +1,5 @@
+{
+  "plugin.name": "ACP Agents",
+  "plugin.description": "Antigravity CLI, CodeBuddy Code, Command Code and Gemini CLI as coding agents.",
+  "plugin.longDescription": "Adds four coding agents that speak the Agent Client Protocol to Settings → Agents, beside Claude Code and Codex. Install an agent and sign in with its own command, then turn it on in Settings → Agents; OhMyGame reads its models from the agent. Gemini CLI is for Gemini Code Assist plans; other Google accounts use Antigravity CLI."
+}

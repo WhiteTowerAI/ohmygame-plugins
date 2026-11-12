@@ -1,0 +1,7 @@
+{
+  "plugin.name": "ModelScope",
+  "plugin.description": "ModelScope's models for the agent, with your own API key.",
+  "plugin.longDescription": "Adds ModelScope to Settings → Providers. Enter your API key here or in Settings and its models appear in the model menu; the list is read from ModelScope, so new models show up by themselves.",
+  "config.apiKey.title": "ModelScope API key",
+  "config.apiKey.description": "Your access token from modelscope.cn → Account → Access Token. It has a free daily quota once an Alibaba Cloud account is linked."
+}

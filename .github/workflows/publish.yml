@@ -1,0 +1,50 @@
+name: Publish plugins
+
+# Publishes each official plugin in plugins/ whose version isn't on npm yet,
+# with provenance, so the index shows its source as verified. npm trusted
+# publishing (this workflow, on each package) needs no token; NPM_TOKEN is only
+# for a package's first version, before it has a trusted publisher.
+
+on:
+  push:
+    branches: [main]
+    paths: ["plugins/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  OHMYGAME_REF: ${{ vars.OHMYGAME_REF || 'dev' }}
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      # Packs and judges each plugin as the index will, so npm never gets one it would refuse.
+      - run: npm test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Publish what's new
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          for dir in plugins/*/; do
+            name=$(node -p "require('./${dir}package.json').name")
+            version=$(node -p "require('./${dir}package.json').version")
+            if [ "$(npm view "$name@$version" version 2>/dev/null)" = "$version" ]; then
+              echo "$name@$version is already published"
+              continue
+            fi
+            (cd "$dir" && npx -y -p @ohmygame/plugin-cli@^2.3.0 ohmygame-plugin check && npm publish --provenance)
+          done

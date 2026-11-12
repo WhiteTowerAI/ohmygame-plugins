@@ -1,0 +1,7 @@
+{
+  "plugin.name": "SiliconFlow CN",
+  "plugin.description": "SiliconFlow CN's models for the agent, with your own API key.",
+  "plugin.longDescription": "Adds SiliconFlow to Settings → Providers. Enter your API key here or in Settings: its chat models appear in the model menu, read from SiliconFlow so new ones show up by themselves, and Kolors and Qwen-Image make pictures (on a recent OhMyGame).",
+  "config.apiKey.title": "SiliconFlow CN API key",
+  "config.apiKey.description": "From cloud.siliconflow.cn → API Keys."
+}
