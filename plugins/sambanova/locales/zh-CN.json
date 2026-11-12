@@ -1,0 +1,7 @@
+{
+  "plugin.name": "SambaNova",
+  "plugin.description": "用你自己的 API key，让 agent 使用SambaNova的模型。",
+  "plugin.longDescription": "把SambaNova加入 设置 → 服务商。在这里或设置里填好 API key，它的模型就会出现在模型菜单里；模型列表从SambaNova读取，新模型会自动出现。",
+  "config.apiKey.title": "SambaNova API key",
+  "config.apiKey.description": "在 cloud.sambanova.ai → APIs 创建。"
+}

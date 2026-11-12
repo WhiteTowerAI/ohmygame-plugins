@@ -1,0 +1,7 @@
+{
+  "plugin.name": "DeepInfra",
+  "plugin.description": "DeepInfra's models for the agent, with your own API key.",
+  "plugin.longDescription": "Adds DeepInfra to Settings → Providers. Enter your API key here or in Settings and its models appear in the model menu; the list is read from DeepInfra, so new models show up by themselves.",
+  "config.apiKey.title": "DeepInfra API key",
+  "config.apiKey.description": "From deepinfra.com → Dashboard → API Keys."
+}

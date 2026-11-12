@@ -1,0 +1,7 @@
+{
+  "plugin.name": "SiliconFlow CN",
+  "plugin.description": "SiliconFlow CN's models for the agent, with your own API key.",
+  "plugin.longDescription": "Adds SiliconFlow CN to Settings → Providers. Enter your API key here or in Settings and its models appear in the model menu; the list is read from SiliconFlow CN, so new models show up by themselves.",
+  "config.apiKey.title": "SiliconFlow CN API key",
+  "config.apiKey.description": "From cloud.siliconflow.cn → API Keys."
+}

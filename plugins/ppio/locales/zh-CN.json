@@ -1,0 +1,7 @@
+{
+  "plugin.name": "派欧云 PPIO",
+  "plugin.description": "用你自己的 API key，让 agent 使用派欧云 PPIO的模型。",
+  "plugin.longDescription": "把派欧云 PPIO加入 设置 → 服务商。在这里或设置里填好 API key，它的模型就会出现在模型菜单里；模型列表从派欧云 PPIO读取，新模型会自动出现。",
+  "config.apiKey.title": "派欧云 PPIO API key",
+  "config.apiKey.description": "在 ppio.com → 设置 → API 密钥管理 创建。"
+}

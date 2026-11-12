@@ -1,0 +1,7 @@
+{
+  "plugin.name": "百度千帆",
+  "plugin.description": "用你自己的 API key，让 agent 使用百度千帆的模型。",
+  "plugin.longDescription": "把百度千帆加入 设置 → 服务商。在这里或设置里填好 API key，它的模型就会出现在模型菜单里；模型列表从百度千帆读取，新模型会自动出现。",
+  "config.apiKey.title": "百度千帆 API key",
+  "config.apiKey.description": "在百度智能云控制台 → 千帆 → API Key 创建，以 bce-v3/ 开头。"
+}

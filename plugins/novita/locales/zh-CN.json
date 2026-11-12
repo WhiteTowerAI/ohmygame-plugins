@@ -1,0 +1,7 @@
+{
+  "plugin.name": "Novita AI",
+  "plugin.description": "用你自己的 API key，让 agent 使用Novita AI的模型。",
+  "plugin.longDescription": "把Novita AI加入 设置 → 服务商。在这里或设置里填好 API key，它的模型就会出现在模型菜单里；模型列表从Novita AI读取，新模型会自动出现。",
+  "config.apiKey.title": "Novita AI API key",
+  "config.apiKey.description": "在 novita.ai → Settings → Key Management 创建。"
+}

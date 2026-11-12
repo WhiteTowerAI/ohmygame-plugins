@@ -1,0 +1,7 @@
+{
+  "plugin.name": "魔搭 ModelScope",
+  "plugin.description": "用你自己的 API key，让 agent 使用魔搭 ModelScope的模型。",
+  "plugin.longDescription": "把魔搭 ModelScope加入 设置 → 服务商。在这里或设置里填好 API key，它的模型就会出现在模型菜单里；模型列表从魔搭 ModelScope读取，新模型会自动出现。",
+  "config.apiKey.title": "魔搭 ModelScope API key",
+  "config.apiKey.description": "在 modelscope.cn → 账号设置 → 访问令牌 获取。绑定阿里云账号后每天有免费额度。"
+}

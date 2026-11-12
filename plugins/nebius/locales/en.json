@@ -1,0 +1,7 @@
+{
+  "plugin.name": "Nebius Token Factory",
+  "plugin.description": "Nebius Token Factory's models for the agent, with your own API key.",
+  "plugin.longDescription": "Adds Nebius Token Factory to Settings → Providers. Enter your API key here or in Settings and its models appear in the model menu; the list is read from Nebius Token Factory, so new models show up by themselves.",
+  "config.apiKey.title": "Nebius Token Factory API key",
+  "config.apiKey.description": "From tokenfactory.nebius.com → API Keys."
+}

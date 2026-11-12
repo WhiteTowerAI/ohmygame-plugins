@@ -1,0 +1,33 @@
+{
+  "name": "@ohmygame/nebius",
+  "version": "0.1.0",
+  "description": "Nebius Token Factory's models for the agent, with your own API key.",
+  "keywords": [
+    "ohmygame-plugin",
+    "model-provider",
+    "nebius",
+    "llm"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/nebius"
+  },
+  "homepage": "https://github.com/WhiteTowerAI/ohmygame-plugins/tree/main/plugins/nebius#readme",
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales"
+  ],
+  "scripts": {
+    "check": "ohmygame-plugin check",
+    "pack": "ohmygame-plugin pack"
+  },
+  "devDependencies": {
+    "@ohmygame/plugin-cli": "^2.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

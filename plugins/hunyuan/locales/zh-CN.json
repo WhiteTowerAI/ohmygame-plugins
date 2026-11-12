@@ -1,0 +1,7 @@
+{
+  "plugin.name": "腾讯混元",
+  "plugin.description": "用你自己的 API key，让 agent 使用腾讯混元的模型。",
+  "plugin.longDescription": "把腾讯混元加入 设置 → 服务商。在这里或设置里填好 API key，它的模型就会出现在模型菜单里；模型列表从腾讯混元读取，新模型会自动出现。",
+  "config.apiKey.title": "腾讯混元 API key",
+  "config.apiKey.description": "在腾讯云控制台 → 腾讯混元大模型 → API KEY 管理 创建。"
+}

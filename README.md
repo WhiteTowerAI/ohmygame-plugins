@@ -9,7 +9,13 @@ the index to list plugins and checks every download against it.
 Each folder in [`plugins/`](plugins) is published as `@ohmygame/<folder>`, the
 publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
 
-- [`language-models`](plugins/language-models): model providers OhMyGame doesn't include, such as Command Code.
+- Model providers, one plugin each, so a person adds only those they use:
+  [`siliconflow-cn`](plugins/siliconflow-cn), [`siliconflow`](plugins/siliconflow),
+  [`modelscope`](plugins/modelscope), [`stepfun`](plugins/stepfun),
+  [`hunyuan`](plugins/hunyuan), [`qianfan`](plugins/qianfan),
+  [`ppio`](plugins/ppio), [`novita`](plugins/novita),
+  [`deepinfra`](plugins/deepinfra), [`sambanova`](plugins/sambanova),
+  [`nebius`](plugins/nebius) and [`command-code`](plugins/command-code).
 - [`acp-agents`](plugins/acp-agents): Antigravity CLI, CodeBuddy Code, Command Code and Gemini CLI as coding agents.
 
 `npm test` packs each one and judges it as the index will, so CI refuses one the
@@ -19,8 +25,9 @@ and `.ohmygame-plugin/plugin.json`; on `main`, the
 version npm doesn't have yet, with provenance.
 
 A package's first version needs the `NPM_TOKEN` secret, a token of an
-`@ohmygame` owner. After that, add this repository and `publish.yml` as the
-package's trusted publisher on npmjs.com and remove the secret.
+`@ohmygame` owner. After that, add this repository and `publish.yml` as each
+package's trusted publisher on npmjs.com (each package has its own) and
+remove the secret.
 
 To try one in OhMyGame before releasing it, add its folder under Plugins › Add
 plugin › This computer with Develop on.
