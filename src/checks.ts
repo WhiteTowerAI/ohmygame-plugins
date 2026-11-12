@@ -49,6 +49,10 @@ export interface Verdict {
     description: Record<string, string>;
     longDescription?: Record<string, string>;
     categories?: string[];
+    /** Words to find it by, each by locale. */
+    keywords?: Record<string, string>[];
+    /** The titles of the model providers and agents it adds, each by locale, which search reads. */
+    names?: Record<string, string>[];
     /** Project types it suits. */
     appliesTo?: string[];
     beta?: true;
@@ -90,6 +94,7 @@ interface AppEntry {
     description: string;
     longDescription?: string;
     categories?: string[];
+    keywords?: string[];
     appliesTo?: string[];
     beta?: boolean;
     icon?: string;
@@ -405,6 +410,12 @@ export async function judgeTarball(app: AppChecks, name: string, version: string
       if (at) screenshots.push({ path: at, ...(caption ? { caption } : {}) });
     }
     const longDescription = optional(manifest.longDescription);
+    // An app older than plugin API 2.5.0 leaves keywords out of the manifest it reads.
+    const keywords = (manifest.keywords ?? []).map(optional).filter((value) => value !== undefined);
+    const titles = (list: unknown) => (Array.isArray(list) ? list : []).flatMap((item) =>
+      item && typeof item === "object" && typeof (item as { title?: unknown }).title === "string" ? [(item as { title: string }).title] : []);
+    const names = [...titles(manifest.contributes?.providers), ...titles(manifest.contributes?.agents)]
+      .map(optional).filter((value) => value !== undefined).slice(0, 100);
     return {
       plugin: {
         id: manifest.id,
@@ -412,6 +423,8 @@ export async function judgeTarball(app: AppChecks, name: string, version: string
         description,
         ...(longDescription ? { longDescription } : {}),
         ...(manifest.categories?.length ? { categories: manifest.categories } : {}),
+        ...(keywords.length ? { keywords } : {}),
+        ...(names.length ? { names } : {}),
         ...(manifest.appliesTo?.length ? { appliesTo: manifest.appliesTo } : {}),
         ...(manifest.beta ? { beta: true as const } : {}),
         ...(icon ? { icon } : {}),
