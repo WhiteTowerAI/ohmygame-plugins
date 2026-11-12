@@ -17,8 +17,9 @@ accounts use Antigravity CLI.
 An agent is off until it's turned on in Settings → Agents. OhMyGame runs only
 `--version` before that.
 
-The agents' logos are from [LobeHub Icons](https://github.com/lobehub/lobe-icons)
-(MIT), as OhMyGame's built-in agents' are, and belong to their makers. OhMyGame
+The agents' logos belong to their makers. Antigravity's, CodeBuddy's and Gemini
+CLI's are from [LobeHub Icons](https://github.com/lobehub/lobe-icons) (MIT), as
+OhMyGame's built-in agents' are; Command Code's is from commandcode.ai. OhMyGame
 shows them from plugin API 2.5.0; older versions show a terminal mark.
 
 Published as `@ohmygame/acp-agents` from [ohmygame-plugins](https://github.com/WhiteTowerAI/ohmygame-plugins).
