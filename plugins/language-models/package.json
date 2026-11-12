@@ -5,7 +5,17 @@
   "keywords": [
     "ohmygame-plugin",
     "command-code",
-    "llm"
+    "deepinfra",
+    "hunyuan",
+    "llm",
+    "modelscope",
+    "nebius",
+    "novita",
+    "ppio",
+    "qianfan",
+    "sambanova",
+    "siliconflow",
+    "stepfun"
   ],
   "license": "Apache-2.0",
   "repository": {

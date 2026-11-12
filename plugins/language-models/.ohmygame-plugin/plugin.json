@@ -13,6 +13,61 @@
     "provider"
   ],
   "configuration": {
+    "siliconflowCnApiKey": {
+      "type": "secret",
+      "title": "%config.siliconflow-cn.title%",
+      "description": "%config.siliconflow-cn.description%"
+    },
+    "siliconflowApiKey": {
+      "type": "secret",
+      "title": "%config.siliconflow.title%",
+      "description": "%config.siliconflow.description%"
+    },
+    "modelscopeApiKey": {
+      "type": "secret",
+      "title": "%config.modelscope.title%",
+      "description": "%config.modelscope.description%"
+    },
+    "stepfunApiKey": {
+      "type": "secret",
+      "title": "%config.stepfun.title%",
+      "description": "%config.stepfun.description%"
+    },
+    "hunyuanApiKey": {
+      "type": "secret",
+      "title": "%config.hunyuan.title%",
+      "description": "%config.hunyuan.description%"
+    },
+    "qianfanApiKey": {
+      "type": "secret",
+      "title": "%config.qianfan.title%",
+      "description": "%config.qianfan.description%"
+    },
+    "ppioApiKey": {
+      "type": "secret",
+      "title": "%config.ppio.title%",
+      "description": "%config.ppio.description%"
+    },
+    "novitaApiKey": {
+      "type": "secret",
+      "title": "%config.novita.title%",
+      "description": "%config.novita.description%"
+    },
+    "deepinfraApiKey": {
+      "type": "secret",
+      "title": "%config.deepinfra.title%",
+      "description": "%config.deepinfra.description%"
+    },
+    "sambanovaApiKey": {
+      "type": "secret",
+      "title": "%config.sambanova.title%",
+      "description": "%config.sambanova.description%"
+    },
+    "nebiusApiKey": {
+      "type": "secret",
+      "title": "%config.nebius.title%",
+      "description": "%config.nebius.description%"
+    },
     "commandCodeApiKey": {
       "type": "secret",
       "title": "%config.commandCode.title%",
@@ -21,6 +76,105 @@
   },
   "contributes": {
     "providers": [
+      {
+        "id": "siliconflow-cn",
+        "title": "%provider.siliconflow-cn%",
+        "icon": "./assets/siliconflow-cn.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://api.siliconflow.cn/v1",
+        "apiKey": "siliconflowCnApiKey",
+        "discoverModels": true
+      },
+      {
+        "id": "siliconflow",
+        "title": "%provider.siliconflow%",
+        "icon": "./assets/siliconflow.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://api.siliconflow.com/v1",
+        "apiKey": "siliconflowApiKey",
+        "discoverModels": true
+      },
+      {
+        "id": "modelscope",
+        "title": "%provider.modelscope%",
+        "icon": "./assets/modelscope.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://api-inference.modelscope.cn/v1",
+        "apiKey": "modelscopeApiKey",
+        "discoverModels": true
+      },
+      {
+        "id": "stepfun",
+        "title": "%provider.stepfun%",
+        "icon": "./assets/stepfun.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://api.stepfun.com/v1",
+        "apiKey": "stepfunApiKey",
+        "discoverModels": true
+      },
+      {
+        "id": "hunyuan",
+        "title": "%provider.hunyuan%",
+        "icon": "./assets/hunyuan.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://api.hunyuan.cloud.tencent.com/v1",
+        "apiKey": "hunyuanApiKey",
+        "discoverModels": true
+      },
+      {
+        "id": "qianfan",
+        "title": "%provider.qianfan%",
+        "icon": "./assets/qianfan.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://qianfan.baidubce.com/v2",
+        "apiKey": "qianfanApiKey",
+        "discoverModels": true
+      },
+      {
+        "id": "ppio",
+        "title": "%provider.ppio%",
+        "icon": "./assets/ppio.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://api.ppinfra.com/v3/openai",
+        "apiKey": "ppioApiKey",
+        "discoverModels": true
+      },
+      {
+        "id": "novita",
+        "title": "%provider.novita%",
+        "icon": "./assets/novita.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://api.novita.ai/openai/v1",
+        "apiKey": "novitaApiKey",
+        "discoverModels": true
+      },
+      {
+        "id": "deepinfra",
+        "title": "%provider.deepinfra%",
+        "icon": "./assets/deepinfra.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://api.deepinfra.com/v1/openai",
+        "apiKey": "deepinfraApiKey",
+        "discoverModels": true
+      },
+      {
+        "id": "sambanova",
+        "title": "%provider.sambanova%",
+        "icon": "./assets/sambanova.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://api.sambanova.ai/v1",
+        "apiKey": "sambanovaApiKey",
+        "discoverModels": true
+      },
+      {
+        "id": "nebius",
+        "title": "%provider.nebius%",
+        "icon": "./assets/nebius.svg",
+        "api": "openai-completions",
+        "baseUrl": "https://api.tokenfactory.nebius.com/v1",
+        "apiKey": "nebiusApiKey",
+        "discoverModels": true
+      },
       {
         "id": "command-code",
         "title": "Command Code",
