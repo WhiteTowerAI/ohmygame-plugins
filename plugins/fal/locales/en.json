@@ -1,7 +1,7 @@
 {
   "plugin.name": "fal.ai",
   "plugin.description": "fal.ai's image, video, audio and 3D models, with your own API key.",
-  "plugin.longDescription": "Adds fal.ai to Settings → Providers. Enter your API key here or in Settings: FLUX.1 [schnell] makes pictures, Kling O3 makes videos of 3 to 15 seconds from a first frame (and a last one if you give it), MiniMax Speech-02 HD reads text aloud, Stable Audio makes sound effects and music, and TRELLIS makes a 3D model from a picture. fal.ai bills each request to your account.",
+  "plugin.longDescription": "Adds fal.ai to Settings → Providers. Enter your API key here or in Settings: FLUX.1 [schnell] makes pictures, Kling O3 makes videos of 3 to 15 seconds from a first frame (and a last one if you give it), MiniMax Speech-02 HD reads text aloud, Stable Audio makes sound effects and music, and TRELLIS makes a 3D model from a picture. fal.ai bills each request to your account. To use more of fal.ai's models, choose Load models on its page in Settings and turn on the ones you want.",
   "config.apiKey.title": "fal.ai API key",
   "config.apiKey.description": "From fal.ai → Dashboard → Keys."
 }
