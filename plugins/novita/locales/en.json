@@ -1,7 +1,0 @@
-{
-  "plugin.name": "Novita AI",
-  "plugin.description": "Novita AI's models for the agent, with your own API key.",
-  "plugin.longDescription": "Adds Novita AI to Settings → Providers. Enter your API key here or in Settings and its models appear in the model menu; the list is read from Novita AI, so new models show up by themselves.",
-  "config.apiKey.title": "Novita AI API key",
-  "config.apiKey.description": "From novita.ai → Settings → Key Management."
-}

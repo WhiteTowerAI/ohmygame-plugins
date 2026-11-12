@@ -1,7 +1,0 @@
-{
-  "plugin.name": "StepFun",
-  "plugin.description": "StepFun's models for the agent, with your own API key.",
-  "plugin.longDescription": "Adds StepFun to Settings → Providers. Enter your API key here or in Settings and its models appear in the model menu; the list is read from StepFun, so new models show up by themselves.",
-  "config.apiKey.title": "StepFun API key",
-  "config.apiKey.description": "From platform.stepfun.com → API Keys."
-}

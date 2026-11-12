@@ -1,7 +1,0 @@
-{
-  "plugin.name": "Baidu Qianfan",
-  "plugin.description": "Baidu Qianfan's models for the agent, with your own API key.",
-  "plugin.longDescription": "Adds Baidu Qianfan to Settings → Providers. Enter your API key here or in Settings and its models appear in the model menu; the list is read from Baidu Qianfan, so new models show up by themselves.",
-  "config.apiKey.title": "Baidu Qianfan API key",
-  "config.apiKey.description": "An API key from the Baidu AI Cloud console → Qianfan → API Key (starts with bce-v3/)."
-}

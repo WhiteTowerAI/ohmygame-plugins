@@ -1,7 +1,0 @@
-{
-  "plugin.name": "SiliconFlow 国际版",
-  "plugin.description": "用你自己的 API key，让 agent 使用SiliconFlow 国际版的模型。",
-  "plugin.longDescription": "把SiliconFlow 国际版加入 设置 → 服务商。在这里或设置里填好 API key，它的模型就会出现在模型菜单里；模型列表从SiliconFlow 国际版读取，新模型会自动出现。",
-  "config.apiKey.title": "SiliconFlow 国际版 API key",
-  "config.apiKey.description": "在 cloud.siliconflow.com → API Keys 创建，账号和国内版的硅基流动不通用。"
-}

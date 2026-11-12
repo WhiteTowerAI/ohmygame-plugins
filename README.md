@@ -10,12 +10,8 @@ Each folder in [`plugins/`](plugins) is published as `@ohmygame/<folder>`, the
 publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
 
 - Model providers, one plugin each, so a person adds only those they use:
-  [`siliconflow-cn`](plugins/siliconflow-cn), [`siliconflow`](plugins/siliconflow),
-  [`modelscope`](plugins/modelscope), [`stepfun`](plugins/stepfun),
-  [`hunyuan`](plugins/hunyuan), [`qianfan`](plugins/qianfan),
-  [`ppio`](plugins/ppio), [`novita`](plugins/novita),
-  [`deepinfra`](plugins/deepinfra), [`sambanova`](plugins/sambanova),
-  [`nebius`](plugins/nebius) and [`command-code`](plugins/command-code).
+  [`siliconflow-cn`](plugins/siliconflow-cn), [`modelscope`](plugins/modelscope)
+  and [`command-code`](plugins/command-code).
 - [`acp-agents`](plugins/acp-agents): Antigravity CLI, CodeBuddy Code, Command Code and Gemini CLI as coding agents.
 
 `npm test` packs each one and judges it as the index will, so CI refuses one the

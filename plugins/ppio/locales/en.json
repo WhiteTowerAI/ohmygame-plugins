@@ -1,7 +1,0 @@
-{
-  "plugin.name": "PPIO",
-  "plugin.description": "PPIO's models for the agent, with your own API key.",
-  "plugin.longDescription": "Adds PPIO to Settings → Providers. Enter your API key here or in Settings and its models appear in the model menu; the list is read from PPIO, so new models show up by themselves.",
-  "config.apiKey.title": "PPIO API key",
-  "config.apiKey.description": "From ppio.com → Settings → API Keys."
-}

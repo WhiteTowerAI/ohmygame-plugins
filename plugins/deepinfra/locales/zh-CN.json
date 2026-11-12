@@ -1,7 +1,0 @@
-{
-  "plugin.name": "DeepInfra",
-  "plugin.description": "用你自己的 API key，让 agent 使用DeepInfra的模型。",
-  "plugin.longDescription": "把DeepInfra加入 设置 → 服务商。在这里或设置里填好 API key，它的模型就会出现在模型菜单里；模型列表从DeepInfra读取，新模型会自动出现。",
-  "config.apiKey.title": "DeepInfra API key",
-  "config.apiKey.description": "在 deepinfra.com → Dashboard → API Keys 创建。"
-}

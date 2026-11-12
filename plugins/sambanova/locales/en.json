@@ -1,7 +1,0 @@
-{
-  "plugin.name": "SambaNova",
-  "plugin.description": "SambaNova's models for the agent, with your own API key.",
-  "plugin.longDescription": "Adds SambaNova to Settings → Providers. Enter your API key here or in Settings and its models appear in the model menu; the list is read from SambaNova, so new models show up by themselves.",
-  "config.apiKey.title": "SambaNova API key",
-  "config.apiKey.description": "From cloud.sambanova.ai → APIs."
-}
