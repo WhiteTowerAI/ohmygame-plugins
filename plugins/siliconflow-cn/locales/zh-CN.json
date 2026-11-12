@@ -1,7 +1,7 @@
 {
   "plugin.name": "硅基流动",
   "plugin.description": "用你自己的 API key，让 agent 使用硅基流动的模型。",
-  "plugin.longDescription": "把硅基流动加入 设置 → 服务商。在这里或设置里填好 API key，它的模型就会出现在模型菜单里；模型列表从硅基流动读取，新模型会自动出现。",
+  "plugin.longDescription": "把硅基流动加入 设置 → 服务商。在这里或设置里填好 API key：它的对话模型会出现在模型菜单里，列表从硅基流动读取，新模型会自动出现；Kolors 和 Qwen-Image 可以生成图片（需要较新的 OhMyGame）。",
   "config.apiKey.title": "硅基流动 API key",
   "config.apiKey.description": "在 cloud.siliconflow.cn → API 密钥 创建。"
 }

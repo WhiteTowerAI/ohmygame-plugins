@@ -12,6 +12,12 @@
   "categories": [
     "provider"
   ],
+  "capabilities": {
+    "network": [
+      "api.siliconflow.cn",
+      "sc-maas.oss-cn-shanghai.aliyuncs.com"
+    ]
+  },
   "configuration": {
     "apiKey": {
       "type": "secret",
@@ -28,7 +34,43 @@
         "api": "openai-completions",
         "baseUrl": "https://api.siliconflow.cn/v1",
         "apiKey": "apiKey",
-        "discoverModels": true
+        "discoverModels": true,
+        "media": {
+          "adapter": "./media/adapter.js",
+          "image": {
+            "models": [
+              {
+                "id": "Kwai-Kolors/Kolors",
+                "title": "Kolors",
+                "resolutions": [
+                  "1K"
+                ],
+                "aspectRatios": [
+                  "1:1",
+                  "3:4",
+                  "9:16"
+                ],
+                "maxReferenceImages": 1
+              },
+              {
+                "id": "Qwen/Qwen-Image",
+                "title": "Qwen-Image",
+                "resolutions": [
+                  "1K"
+                ],
+                "aspectRatios": [
+                  "1:1",
+                  "16:9",
+                  "9:16",
+                  "4:3",
+                  "3:4",
+                  "3:2",
+                  "2:3"
+                ]
+              }
+            ]
+          }
+        }
       }
     ]
   }

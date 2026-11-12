@@ -18,7 +18,8 @@
   "files": [
     ".ohmygame-plugin",
     "assets",
-    "locales"
+    "locales",
+    "media"
   ],
   "scripts": {
     "check": "ohmygame-plugin check",
