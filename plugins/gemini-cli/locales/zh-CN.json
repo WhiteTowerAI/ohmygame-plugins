@@ -1,0 +1,5 @@
+{
+  "plugin.name": "Gemini CLI",
+  "plugin.description": "把 Google 的 Gemini CLI 作为编程 agent，适用于 Gemini Code Assist 套餐。",
+  "plugin.longDescription": "在 设置 → 智能体 里，和 Claude Code、Codex 并列加入 Gemini CLI。先安装，运行 `gemini` 登录，再到 设置 → 智能体 打开；OhMyGame 会从 agent 读取可用的模型。Gemini CLI 适用于 Gemini Code Assist 套餐，其他 Google 账号请用 Antigravity CLI。"
+}

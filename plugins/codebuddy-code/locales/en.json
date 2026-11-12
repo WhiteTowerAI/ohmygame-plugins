@@ -1,0 +1,5 @@
+{
+  "plugin.name": "CodeBuddy Code",
+  "plugin.description": "Tencent's CodeBuddy Code as a coding agent, with your own account.",
+  "plugin.longDescription": "Adds CodeBuddy Code to Settings → Agents, beside Claude Code and Codex. Install it, sign in by running `codebuddy`, then turn it on in Settings → Agents; OhMyGame reads its models from the agent."
+}

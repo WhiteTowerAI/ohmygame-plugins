@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "package": "@ohmygame/acp-agents",
+    "reason": "replaced by one plugin per agent: Antigravity CLI, CodeBuddy Code, Command Code and Gemini CLI"
+  }
+]

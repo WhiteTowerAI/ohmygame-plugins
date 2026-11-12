@@ -1,0 +1,34 @@
+{
+  "name": "@ohmygame/gemini-cli",
+  "version": "0.1.0",
+  "description": "Google's Gemini CLI as a coding agent, for Gemini Code Assist plans.",
+  "keywords": [
+    "ohmygame-plugin",
+    "acp",
+    "agent",
+    "gemini",
+    "google"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/gemini-cli"
+  },
+  "homepage": "https://github.com/WhiteTowerAI/ohmygame-plugins/tree/main/plugins/gemini-cli#readme",
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales"
+  ],
+  "scripts": {
+    "check": "ohmygame-plugin check",
+    "pack": "ohmygame-plugin pack"
+  },
+  "devDependencies": {
+    "@ohmygame/plugin-cli": "^2.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

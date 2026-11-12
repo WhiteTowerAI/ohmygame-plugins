@@ -12,7 +12,11 @@ publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
 - Model providers, one plugin each, so a person adds only those they use:
   [`siliconflow-cn`](plugins/siliconflow-cn), [`modelscope`](plugins/modelscope)
   and [`command-code`](plugins/command-code).
-- [`acp-agents`](plugins/acp-agents): Antigravity CLI, CodeBuddy Code, Command Code and Gemini CLI as coding agents.
+- Coding agents that speak the Agent Client Protocol, one plugin each:
+  [`antigravity-cli`](plugins/antigravity-cli), [`codebuddy-code`](plugins/codebuddy-code)
+  and [`gemini-cli`](plugins/gemini-cli). Command Code's agent is in
+  [`command-code`](plugins/command-code), with its models: a vendor's agent and
+  models are one plugin.
 
 `npm test` packs each one and judges it as the index will, so CI refuses one the
 market wouldn't list. To release one, raise `version` in both its `package.json`
