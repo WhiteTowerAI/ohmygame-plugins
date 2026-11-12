@@ -39,6 +39,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
+          # One package npm refuses (such as one without its trusted publisher yet) doesn't hold back the others.
+          failed=()
           for dir in plugins/*/; do
             name=$(node -p "require('./${dir}package.json').name")
             version=$(node -p "require('./${dir}package.json').version")
@@ -46,5 +48,12 @@ jobs:
               echo "$name@$version is already published"
               continue
             fi
-            (cd "$dir" && npx -y -p @ohmygame/plugin-cli@^2.3.0 ohmygame-plugin check && npm publish --provenance)
+            if ! (cd "$dir" && npx -y -p @ohmygame/plugin-cli@^2.3.0 ohmygame-plugin check && npm publish --provenance); then
+              echo "::error::$name@$version wasn't published"
+              failed+=("$name@$version")
+            fi
           done
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "Not published: ${failed[*]}"
+            exit 1
+          fi
