@@ -64,6 +64,18 @@ describe("judgeTarball", () => {
     });
   });
 
+  it("lists what its model providers make, read off what they implement", async () => {
+    const provider = { id: "flow", title: "Flow", api: "openai-completions", baseUrl: "https://api.flow.example/v1", discoverModels: true,
+      media: { adapter: "./media.js", image: { models: [{ id: "kolors", resolutions: ["1K"], aspectRatios: ["1:1"] }] } } };
+    const judged = await judgeTarball(app, "@acme/ohmygame-plugin-tiles", "1.2.0", await plugin({
+      capabilities: { network: ["api.flow.example"] }, contributes: { skills: "./skills/", providers: [provider] },
+    }, {}, { "media.js": "export default { image: { start: () => ({ outputs: [] }) } };" }));
+    assert.equal(judged.rejected, undefined);
+    assert.deepEqual(judged.plugin?.providerKinds, ["language", "image"]);
+    // An agent plugin makes nothing of the kind.
+    assert.equal((await judgeTarball(app, "@acme/ohmygame-plugin-tiles", "1.2.0", await plugin())).plugin?.providerKinds, undefined);
+  });
+
   it("lists where a plugin belongs, and keeps its icon and screenshots by their contents", async () => {
     // A 1×1 PNG, which the app decodes to check an icon.
     const chunk = (type: string, data: Buffer) => {

@@ -33,6 +33,8 @@ export function pluginIdsFor(name: string): string[] {
   return [...new Set([`${scope}/${rest}`, `${scope}/${rest.replace(/^ohmygame-plugin-(?=.)/, "")}`])];
 }
 const LOCALES = ["en", "zh-CN"] as const;
+/** What model providers make, in the app's order (`PROVIDER_KINDS` in OhMyGame's `src/shared/plugins.ts`). */
+const PROVIDER_KINDS = ["language", "image", "video", "audio", "3d"] as const;
 
 /** The npm registry's signature over one version, as its packument gives it. */
 export interface RegistrySignature {
@@ -53,6 +55,8 @@ export interface Verdict {
     keywords?: Record<string, string>[];
     /** The titles of the model providers and agents it adds, each by locale, which search reads. */
     names?: Record<string, string>[];
+    /** What its model providers make: `language` for chat, and each kind of media. */
+    providerKinds?: string[];
     /** Project types it suits. */
     appliesTo?: string[];
     beta?: true;
@@ -416,6 +420,11 @@ export async function judgeTarball(app: AppChecks, name: string, version: string
       item && typeof item === "object" && typeof (item as { title?: unknown }).title === "string" ? [(item as { title: string }).title] : []);
     const names = [...titles(manifest.contributes?.providers), ...titles(manifest.contributes?.agents)]
       .map(optional).filter((value) => value !== undefined).slice(0, 100);
+    // Read off what each provider implements, so a listing can't claim what it doesn't make.
+    // An app older than plugin API 2.5.0 leaves `media` out of the manifest it reads.
+    const providers = (Array.isArray(manifest.contributes?.providers) ? manifest.contributes.providers : []) as { api?: unknown; media?: Record<string, unknown> }[];
+    const providerKinds = PROVIDER_KINDS.filter((kind) => providers.some((provider) =>
+      kind === "language" ? typeof provider?.api === "string" : Boolean(provider?.media?.[kind])));
     return {
       plugin: {
         id: manifest.id,
@@ -425,6 +434,7 @@ export async function judgeTarball(app: AppChecks, name: string, version: string
         ...(manifest.categories?.length ? { categories: manifest.categories } : {}),
         ...(keywords.length ? { keywords } : {}),
         ...(names.length ? { names } : {}),
+        ...(providerKinds.length ? { providerKinds } : {}),
         ...(manifest.appliesTo?.length ? { appliesTo: manifest.appliesTo } : {}),
         ...(manifest.beta ? { beta: true as const } : {}),
         ...(icon ? { icon } : {}),
