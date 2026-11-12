@@ -1,6 +1,6 @@
 {
   "name": "@ohmygame/fal",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "fal.ai's image, video, audio and 3D models, with your own API key.",
   "keywords": [
     "ohmygame-plugin",

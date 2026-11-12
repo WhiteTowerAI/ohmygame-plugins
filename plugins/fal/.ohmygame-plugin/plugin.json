@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/fal",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
     "ohmygame-api": "^2.5.0"
   },
@@ -15,7 +15,9 @@
   "capabilities": {
     "network": [
       "queue.fal.run",
+      "api.fal.ai",
       "fal.media",
+      "v2.fal.media",
       "v3.fal.media",
       "v3b.fal.media"
     ]
@@ -41,6 +43,7 @@
             "scheme": "Key"
           },
           "image": {
+            "discoverModels": true,
             "models": [
               {
                 "id": "fal-ai/flux/schnell",
@@ -60,6 +63,7 @@
             ]
           },
           "video": {
+            "discoverModels": true,
             "maxMinutes": 30,
             "models": [
               {
@@ -85,6 +89,7 @@
             ]
           },
           "audio": {
+            "discoverModels": true,
             "models": [
               {
                 "id": "fal-ai/minimax/speech-02-hd",
@@ -184,6 +189,7 @@
             ]
           },
           "3d": {
+            "discoverModels": true,
             "models": [
               {
                 "id": "fal-ai/trellis",

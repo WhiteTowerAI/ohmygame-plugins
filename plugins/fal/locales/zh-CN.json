@@ -1,7 +1,7 @@
 {
   "plugin.name": "fal.ai",
   "plugin.description": "用你自己的 API key，使用 fal.ai 的图片、视频、音频和 3D 模型。",
-  "plugin.longDescription": "把 fal.ai 加入 设置 → 服务商。在这里或设置里填好 API key：FLUX.1 [schnell] 生成图片，Kling O3 根据首帧（可加尾帧）生成 3 到 15 秒的视频，MiniMax Speech-02 HD 朗读文本，Stable Audio 生成音效和音乐，TRELLIS 根据图片生成 3D 模型。每次请求由 fal.ai 向你的账户计费。",
+  "plugin.longDescription": "把 fal.ai 加入 设置 → 服务商。在这里或设置里填好 API key：FLUX.1 [schnell] 生成图片，Kling O3 根据首帧（可加尾帧）生成 3 到 15 秒的视频，MiniMax Speech-02 HD 朗读文本，Stable Audio 生成音效和音乐，TRELLIS 根据图片生成 3D 模型。每次请求由 fal.ai 向你的账户计费。想用 fal.ai 的更多模型，在设置里它的页面点「读取模型」，再勾选要用的。",
   "config.apiKey.title": "fal.ai API key",
   "config.apiKey.description": "在 fal.ai → Dashboard → Keys 创建。"
 }
