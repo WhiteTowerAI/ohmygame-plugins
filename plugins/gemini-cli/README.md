@@ -1,6 +1,6 @@
 # Gemini CLI
 
-Adds Gemini CLI to Settings → Agents, beside Claude Code and Codex. Install it, sign in by running `gemini`, then turn it on in Settings → Agents; OhMyGame reads its models from the agent. Gemini CLI is for Gemini Code Assist plans; other Google accounts use Antigravity CLI.
+Adds Gemini CLI to Settings → Agents, beside Claude Code and Codex. Install it, sign in by running `gemini`, then turn it on in Settings → Agents; OhMyGame reads its models from the agent. Gemini CLI is for Gemini Code Assist Standard and Enterprise plans and paid Gemini API keys; personal Google accounts use Antigravity CLI.
 
 | Command | Sign in | Install |
 | --- | --- | --- |
