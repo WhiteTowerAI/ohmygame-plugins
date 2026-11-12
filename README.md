@@ -9,7 +9,7 @@ the index to list plugins and checks every download against it.
 Each folder in [`plugins/`](plugins) is published as `@ohmygame/<folder>`, the
 publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
 
-- [`language-models`](plugins/language-models): NVIDIA and Command Code as model providers.
+- [`language-models`](plugins/language-models): model providers OhMyGame doesn't include, such as Command Code.
 - [`acp-agents`](plugins/acp-agents): Antigravity CLI, CodeBuddy Code, Command Code and Gemini CLI as coding agents.
 
 `npm test` packs each one and judges it as the index will, so CI refuses one the

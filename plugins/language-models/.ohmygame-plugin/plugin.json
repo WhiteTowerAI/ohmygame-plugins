@@ -13,11 +13,6 @@
     "provider"
   ],
   "configuration": {
-    "nvidiaApiKey": {
-      "type": "secret",
-      "title": "%config.nvidia.title%",
-      "description": "%config.nvidia.description%"
-    },
     "commandCodeApiKey": {
       "type": "secret",
       "title": "%config.commandCode.title%",
@@ -27,16 +22,9 @@
   "contributes": {
     "providers": [
       {
-        "id": "nvidia",
-        "title": "NVIDIA",
-        "api": "openai-completions",
-        "baseUrl": "https://integrate.api.nvidia.com/v1",
-        "apiKey": "nvidiaApiKey",
-        "discoverModels": true
-      },
-      {
         "id": "command-code",
         "title": "Command Code",
+        "icon": "./assets/command-code.svg",
         "api": "openai-completions",
         "baseUrl": "https://api.commandcode.ai/provider/v1",
         "apiKey": "commandCodeApiKey",
