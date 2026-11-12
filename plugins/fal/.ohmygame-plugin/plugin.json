@@ -1,0 +1,207 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/fal",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.5.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "categories": [
+    "provider"
+  ],
+  "capabilities": {
+    "network": [
+      "queue.fal.run",
+      "fal.media",
+      "v3.fal.media",
+      "v3b.fal.media"
+    ]
+  },
+  "configuration": {
+    "apiKey": {
+      "type": "secret",
+      "title": "%config.apiKey.title%",
+      "description": "%config.apiKey.description%"
+    }
+  },
+  "contributes": {
+    "providers": [
+      {
+        "id": "fal",
+        "title": "%plugin.name%",
+        "icon": "./assets/icon.svg",
+        "apiKey": "apiKey",
+        "media": {
+          "adapter": "./media/adapter.js",
+          "auth": {
+            "header": "authorization",
+            "scheme": "Key"
+          },
+          "image": {
+            "models": [
+              {
+                "id": "fal-ai/flux/schnell",
+                "title": "FLUX.1 [schnell]",
+                "resolutions": [
+                  "1K"
+                ],
+                "aspectRatios": [
+                  "1:1",
+                  "4:3",
+                  "3:4",
+                  "16:9",
+                  "9:16"
+                ],
+                "maxReferenceImages": 0
+              }
+            ]
+          },
+          "video": {
+            "maxMinutes": 30,
+            "models": [
+              {
+                "id": "fal-ai/kling-video/o3/standard/image-to-video",
+                "title": "Kling O3",
+                "durations": [
+                  3,
+                  5,
+                  10,
+                  15
+                ],
+                "resolutions": [
+                  "720p"
+                ],
+                "aspectRatios": [
+                  "adaptive"
+                ],
+                "maxReferenceImages": 2,
+                "referenceModes": [
+                  "frame"
+                ]
+              }
+            ]
+          },
+          "audio": {
+            "models": [
+              {
+                "id": "fal-ai/minimax/speech-02-hd",
+                "title": "MiniMax Speech-02 HD",
+                "kinds": [
+                  "speech"
+                ],
+                "readsText": true,
+                "voices": [
+                  {
+                    "id": "Wise_Woman",
+                    "name": "Wise Woman"
+                  },
+                  {
+                    "id": "Friendly_Person",
+                    "name": "Friendly Person"
+                  },
+                  {
+                    "id": "Inspirational_girl",
+                    "name": "Inspirational girl"
+                  },
+                  {
+                    "id": "Deep_Voice_Man",
+                    "name": "Deep Voice Man"
+                  },
+                  {
+                    "id": "Calm_Woman",
+                    "name": "Calm Woman"
+                  },
+                  {
+                    "id": "Casual_Guy",
+                    "name": "Casual Guy"
+                  },
+                  {
+                    "id": "Lively_Girl",
+                    "name": "Lively Girl"
+                  },
+                  {
+                    "id": "Patient_Man",
+                    "name": "Patient Man"
+                  },
+                  {
+                    "id": "Young_Knight",
+                    "name": "Young Knight"
+                  },
+                  {
+                    "id": "Determined_Man",
+                    "name": "Determined Man"
+                  },
+                  {
+                    "id": "Lovely_Girl",
+                    "name": "Lovely Girl"
+                  },
+                  {
+                    "id": "Decent_Boy",
+                    "name": "Decent Boy"
+                  },
+                  {
+                    "id": "Imposing_Manner",
+                    "name": "Imposing Manner"
+                  },
+                  {
+                    "id": "Elegant_Man",
+                    "name": "Elegant Man"
+                  },
+                  {
+                    "id": "Abbess",
+                    "name": "Abbess"
+                  },
+                  {
+                    "id": "Sweet_Girl_2",
+                    "name": "Sweet Girl 2"
+                  },
+                  {
+                    "id": "Exuberant_Girl",
+                    "name": "Exuberant Girl"
+                  }
+                ],
+                "formats": [
+                  "mp3"
+                ],
+                "maxTextCharacters": 5000
+              },
+              {
+                "id": "fal-ai/stable-audio",
+                "title": "Stable Audio",
+                "kinds": [
+                  "sound-effect",
+                  "music"
+                ],
+                "formats": [
+                  "wav"
+                ],
+                "minDurationSeconds": 1,
+                "maxDurationSeconds": 47
+              }
+            ]
+          },
+          "3d": {
+            "models": [
+              {
+                "id": "fal-ai/trellis",
+                "title": "TRELLIS",
+                "operations": [
+                  "image"
+                ],
+                "maxReferenceImages": 1,
+                "polycount": {
+                  "min": 20000,
+                  "max": 20000,
+                  "default": 20000
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

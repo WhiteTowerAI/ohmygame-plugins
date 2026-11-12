@@ -10,8 +10,9 @@ Each folder in [`plugins/`](plugins) is published as `@ohmygame/<folder>`, the
 publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
 
 - Model providers, one plugin each, so a person adds only those they use:
-  [`siliconflow-cn`](plugins/siliconflow-cn), [`modelscope`](plugins/modelscope)
-  and [`command-code`](plugins/command-code).
+  [`siliconflow-cn`](plugins/siliconflow-cn), [`modelscope`](plugins/modelscope),
+  [`command-code`](plugins/command-code) and [`fal`](plugins/fal) (images, video,
+  audio and 3D only).
 - Coding agents that speak the Agent Client Protocol, one plugin each:
   [`antigravity-cli`](plugins/antigravity-cli), [`codebuddy-code`](plugins/codebuddy-code)
   and [`gemini-cli`](plugins/gemini-cli). Command Code's agent is in
