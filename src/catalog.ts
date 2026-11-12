@@ -1,6 +1,6 @@
 // What the index says beyond one version's contents: which package holds a
-// plugin, what the maintainers blocked or featured, and each package's source,
-// stars and downloads. Parsing and decisions are here; build-index.ts reads the
+// plugin, what the maintainers blocked, featured or categorized, and each
+// package's source, stars, avatar and downloads. Parsing and decisions are here; build-index.ts reads the
 // network through FactSources.
 
 import { pluginIdsFor, type IndexedVersion } from "./checks.ts";
@@ -49,6 +49,29 @@ const reject = (version: IndexedVersion, reason: string): IndexedVersion => {
   const { plugin: _, ...rest } = version;
   return { ...rest, rejected: [...(version.rejected ?? []), reason] };
 };
+
+/**
+ * categories.json: plugin ids to the categories the market lists them under,
+ * in place of what their manifests say. Only categories the app knows.
+ */
+export function parseCategories(text: string, known: readonly string[]): Record<string, string[]> {
+  const map: unknown = JSON.parse(text);
+  if (!map || typeof map !== "object" || Array.isArray(map)) throw new Error("categories.json must be an object of plugin ids");
+  for (const [id, list] of Object.entries(map)) {
+    if (!PLUGIN_ID.test(id)) throw new Error(`categories.json: ${JSON.stringify(id)} isn't a plugin id`);
+    if (!Array.isArray(list) || !list.length || list.length > 3 || new Set(list).size !== list.length || list.some((item) => !known.includes(item)))
+      throw new Error(`categories.json: ${id} must have one to three categories the app knows (${known.join(", ")})`);
+  }
+  return map as Record<string, string[]>;
+}
+
+/** Every version of a plugin in categories.json is listed under its categories there. */
+export function applyCategories(versions: IndexedVersion[], categories: Record<string, string[]>): IndexedVersion[] {
+  return versions.map((version) => {
+    const override = version.plugin && categories[version.plugin.id];
+    return override ? { ...version, plugin: { ...version.plugin!, categories: override } } : version;
+  });
+}
 
 /** A blocked version stays in the index, so the app can say why it's gone. */
 export function applyBlocks(versions: IndexedVersion[], blocks: Block[]): IndexedVersion[] {
@@ -161,6 +184,8 @@ export interface PackageFacts {
   sourceVerified?: true;
   /** Only when the source is verified, so a package can't borrow another project's stars. */
   stars?: number;
+  /** The repository owner's GitHub avatar, `https://avatars.githubusercontent.com/u/<id>?v=<n>`; only when the source is verified. */
+  avatar?: string;
   weeklyDownloads?: number;
 }
 
@@ -178,7 +203,8 @@ export interface FactSources {
   attestations(name: string, version: string): Promise<unknown>;
   /** The repository's package.json, undefined when it has none. */
   packageJson(repository: GitHubRepository): Promise<string | undefined>;
-  stars(repository: GitHubRepository): Promise<number>;
+  /** Its stars, and its owner's avatar when GitHub gives one at its usual address. */
+  github(repository: GitHubRepository): Promise<{ stars: number; avatar?: string }>;
   weeklyDownloads(name: string): Promise<number>;
 }
 
@@ -225,7 +251,8 @@ export async function packageFacts(
     }
     verified ??= Boolean(held?.sourceVerified);
   }
-  const stars = verified && repository ? await read(() => sources.stars(repository), held?.stars) : undefined;
+  const heldGitHub = held?.stars !== undefined ? { stars: held.stars, ...(held.avatar ? { avatar: held.avatar } : {}) } : undefined;
+  const github = verified && repository ? await read(() => sources.github(repository), heldGitHub) : undefined;
   const weeklyDownloads = await read(() => sources.weeklyDownloads(name), before?.weeklyDownloads);
   return {
     entry: {
@@ -236,7 +263,8 @@ export async function packageFacts(
       facts: {
         ...(url ? { repository: url } : {}),
         ...(verified ? { sourceVerified: true as const } : {}),
-        ...(stars !== undefined ? { stars } : {}),
+        ...(github ? { stars: github.stars } : {}),
+        ...(github?.avatar ? { avatar: github.avatar } : {}),
         ...(weeklyDownloads !== undefined ? { weeklyDownloads } : {}),
       },
     },

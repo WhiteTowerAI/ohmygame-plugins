@@ -1,14 +1,19 @@
 // Builds the plugin index the app reads.
 //
-//   tsx src/build-index.ts [--app DIR] [--out DIR] [--cache FILE] [--keyword K]
-//                          [--package NAME@VERSION ...] [--tarball FILE ...]
+//   tsx src/build-index.ts [--app DIR] [--out DIR] [--cache FILE] [--images DIR]
+//                          [--keyword K] [--package NAME@VERSION ...] [--tarball FILE ...]
 //
 // Finds packages by keyword on registry.npmjs.org and, for each version,
 // checks the registry's signature, downloads the tarball, checks its
 // integrity, and checks the package with the app's own code (src/checks.ts).
-// Applies blocked.json, keeps each plugin with the package published first, and
-// adds each package's source, stars and downloads (src/catalog.ts) and the plugins
-// in featured.json. Writes `index.<sha256>.json` and `index.json`, which names it.
+// Applies blocked.json and categories.json, keeps each plugin with the package
+// published first, and adds each package's source, stars, avatar and downloads
+// (src/catalog.ts) and the plugins in featured.json. Writes `index.<sha256>.json`,
+// `index.json`, which names it, and `assets/`, the icons and screenshots it lists.
+//
+// --images keeps the icons and screenshots between runs, with the cache: a
+// verdict is reused only while its images are there, so they're never lost
+// for a version that isn't downloaded again.
 //
 // --cache keeps each version's verdict on its contents, by integrity and by
 // the checks that gave it (the app commit, this indexer's source and its tar
@@ -21,17 +26,19 @@
 // run gets it.
 
 import { createHash, createPublicKey } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   applyBlocks,
+  applyCategories,
   applyClaims,
   featuredPlugins,
   newestInstallable,
   packageFacts,
   parseBlocked,
+  parseCategories,
   parseFeatured,
   type CachedFacts,
   type PackageFacts,
@@ -42,6 +49,7 @@ import {
   loadAppChecks,
   readTarball,
   signatureIssue,
+  type SaveImage,
   TarballError,
   type AppChecks,
   type IndexedVersion,
@@ -55,6 +63,7 @@ interface Options {
   app: string;
   out: string;
   cache?: string;
+  images: string;
   keyword: string;
   packages: string[];
   tarballs: string[];
@@ -69,7 +78,7 @@ interface CachedVerdict {
 }
 
 function options(argv: string[]): Options {
-  const result: Options = { app: "app", out: "out", keyword: "ohmygame-plugin", packages: [], tarballs: [] };
+  const result: Options = { app: "app", out: "out", images: "images", keyword: "ohmygame-plugin", packages: [], tarballs: [] };
   for (let i = 0; i < argv.length; i += 2) {
     const flag = argv[i];
     const value = argv[i + 1];
@@ -77,6 +86,7 @@ function options(argv: string[]): Options {
     if (flag === "--app") result.app = value;
     else if (flag === "--out") result.out = value;
     else if (flag === "--cache") result.cache = value;
+    else if (flag === "--images") result.images = value;
     else if (flag === "--keyword") result.keyword = value;
     else if (flag === "--package") result.packages.push(value);
     else if (flag === "--tarball") result.tarballs.push(value);
@@ -156,18 +166,39 @@ async function download(url: string, integrity: string, limit: number): Promise<
   return Buffer.concat(chunks);
 }
 
-/** The verdict on a version's contents: from the cache when nothing it rests on changed. */
-async function contentVerdict(app: AppChecks, checks: string, cache: Record<string, CachedVerdict>, name: string, version: string, tarball: string, integrity: string): Promise<Verdict> {
+/** The images a verdict lists, by their paths beside the index. */
+const imagesOf = (verdict: Verdict) => [verdict.plugin?.icon, ...(verdict.plugin?.screenshots ?? []).map((shot) => shot.path)].filter((file): file is string => Boolean(file));
+
+/** The icons and screenshots kept between runs, by their paths beside the index. */
+interface ImageStore {
+  at(file: string): string;
+  has(file: string): Promise<boolean>;
+  save: SaveImage;
+}
+
+function imageStore(folder: string): ImageStore {
+  const at = (file: string) => path.join(folder, path.basename(file));
+  return {
+    at,
+    has: (file) => access(at(file)).then(() => true, () => false),
+    save: (file, bytes) => writeFile(at(file), bytes),
+  };
+}
+
+/** The verdict on a version's contents: from the cache when nothing it rests on changed and its images are kept. */
+async function contentVerdict(app: AppChecks, checks: string, cache: Record<string, CachedVerdict>, images: ImageStore, name: string, version: string, tarball: string, integrity: string): Promise<Verdict> {
   const key = `${name}@${version}`;
   const cached = cache[key];
-  if (cached && cached.integrity === integrity && cached.checks === checks) return cached.verdict;
+  if (cached && cached.integrity === integrity && cached.checks === checks
+    && (await Promise.all(imagesOf(cached.verdict).map(images.has))).every(Boolean))
+    return cached.verdict;
   // Without a sha512 there is nothing to verify the bytes against, so they aren't fetched.
   const missing = integrityIssue(Buffer.alloc(0), integrity) === "no sha512 integrity";
   let verdict: Verdict;
   if (missing) verdict = { rejected: ["no sha512 integrity"] };
   else {
     try {
-      verdict = await judgeTarball(app, name, version, await download(tarball, integrity, app.archiveMaxBytes));
+      verdict = await judgeTarball(app, name, version, await download(tarball, integrity, app.archiveMaxBytes), images.save);
     } catch (error) {
       if (error instanceof TarballError) verdict = { rejected: [`the tarball ${error.message}`] };
       else throw error;
@@ -177,7 +208,7 @@ async function contentVerdict(app: AppChecks, checks: string, cache: Record<stri
   return verdict;
 }
 
-async function indexVersion(app: AppChecks, checks: string, cache: Record<string, CachedVerdict>, name: string, version: string, meta: any, publishedAt: string | undefined, keys: RegistryKeys): Promise<IndexedVersion> {
+async function indexVersion(app: AppChecks, checks: string, cache: Record<string, CachedVerdict>, images: ImageStore, name: string, version: string, meta: any, publishedAt: string | undefined, keys: RegistryKeys): Promise<IndexedVersion> {
   const dist = meta.dist ?? {};
   const base: IndexedVersion = {
     package: name,
@@ -188,12 +219,13 @@ async function indexVersion(app: AppChecks, checks: string, cache: Record<string
     ...(meta._npmUser?.name ? { publisher: String(meta._npmUser.name) } : {}),
     ...(dist.attestations?.provenance ? { provenance: String(dist.attestations.url) } : {}),
     ...(publishedAt ? { publishedAt } : {}),
+    ...(Number.isSafeInteger(dist.unpackedSize) && dist.unpackedSize >= 0 ? { unpackedSize: dist.unpackedSize } : {}),
   };
   const rejected: string[] = [];
   // Checked every run: the keys npm trusts can change.
   const signature = signatureIssue(name, version, base.integrity, base.signatures, keys, publishedAt);
   if (signature) rejected.push(signature);
-  const verdict = await contentVerdict(app, checks, cache, name, version, base.tarball, base.integrity);
+  const verdict = await contentVerdict(app, checks, cache, images, name, version, base.tarball, base.integrity);
   if (verdict.rejected) rejected.push(...verdict.rejected);
   return rejected.length ? { ...base, rejected } : { ...base, plugin: verdict.plugin! };
 }
@@ -206,10 +238,12 @@ async function main(): Promise<void> {
   const cache: Record<string, CachedVerdict> = saved.versions ?? {};
   const factsCache: Record<string, CachedFacts> = saved.packages ?? {};
   let versions: IndexedVersion[] = [];
-  const packages: Record<string, PackageFacts> = {};
+  const packages: Record<string, PackageFacts & { createdAt?: string }> = {};
   const metas = new Map<string, any>();
   const unread = new Set<string>();
   let featured: string[] = [];
+  await mkdir(opts.images, { recursive: true });
+  const images = imageStore(opts.images);
 
   // A local tarball checks only the package itself: it has no registry record.
   for (const file of opts.tarballs) {
@@ -223,7 +257,7 @@ async function main(): Promise<void> {
       tarball: file,
       integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
       signatures: [],
-      ...(await judgeTarball(app, pkg.name, pkg.version, bytes)),
+      ...(await judgeTarball(app, pkg.name, pkg.version, bytes, images.save)),
     });
   }
 
@@ -240,7 +274,7 @@ async function main(): Promise<void> {
       for (const [version, meta] of Object.entries<any>(packument.versions ?? {})) {
         if (only.length && !only.includes(version)) continue;
         try {
-          versions.push(await indexVersion(app, checks, cache, name, version, meta, packument.time?.[version], keys));
+          versions.push(await indexVersion(app, checks, cache, images, name, version, meta, packument.time?.[version], keys));
         } catch (error) {
           if (!(error instanceof DownloadError)) throw error;
           unread.add(name);
@@ -260,6 +294,7 @@ async function main(): Promise<void> {
       return dates.length ? [[name, dates.sort()[0]!] as const] : [];
     }));
     versions = applyBlocks(applyClaims(versions, firstPublished, unread), parseBlocked(await readFile(path.join(here, "..", "blocked.json"), "utf8")));
+    versions = applyCategories(versions, parseCategories(await readFile(path.join(here, "..", "categories.json"), "utf8"), app.categories));
     featured = featuredPlugins(parseFeatured(await readFile(path.join(here, "..", "featured.json"), "utf8")), versions);
     const now = Date.now();
     for (const [name, version] of newestInstallable(versions)) {
@@ -267,7 +302,8 @@ async function main(): Promise<void> {
       const { entry, complete } = await packageFacts(name, version.version, { repository: meta.repository, hasProvenance: Boolean(version.provenance) }, factsCache[name], now, factSources);
       if (!complete) console.warn(`couldn't read all of ${name}'s facts; trying again next run`);
       factsCache[name] = entry;
-      packages[name] = entry.facts;
+      const createdAt = metas.get(name)?.time?.created;
+      packages[name] = { ...entry.facts, ...(typeof createdAt === "string" ? { createdAt } : {}) };
     }
   }
 
@@ -278,6 +314,13 @@ async function main(): Promise<void> {
   await mkdir(opts.out, { recursive: true });
   await writeFile(path.join(opts.out, `index.${digest}.json`), text);
   await writeFile(path.join(opts.out, "index.json"), `${JSON.stringify({ schemaVersion: 1, latest: `index.${digest}.json`, sha256: digest, generatedAt: new Date().toISOString() })}\n`);
+  // The images the index lists go beside it. Those a cached verdict holds are kept, a blocked
+  // version's too, so it isn't downloaded again for them; the rest are let go.
+  const listed = new Set(versions.flatMap(imagesOf).map((file) => path.basename(file)));
+  const held = new Set([...listed, ...Object.values(cache).flatMap(({ verdict }) => imagesOf(verdict)).map((file) => path.basename(file))]);
+  await mkdir(path.join(opts.out, "assets"), { recursive: true });
+  for (const file of listed) await copyFile(images.at(file), path.join(opts.out, "assets", file));
+  for (const file of await readdir(opts.images)) if (!held.has(file)) await rm(path.join(opts.images, file), { force: true });
   if (opts.cache) await writeFile(opts.cache, `${JSON.stringify({ versions: cache, packages: factsCache }, null, 2)}\n`);
   for (const item of versions)
     console.log(`${item.rejected ? "rejected" : "ok      "} ${item.package}@${item.version}${item.rejected ? `: ${item.rejected.join("; ")}` : ` -> ${item.plugin?.id}`}`);

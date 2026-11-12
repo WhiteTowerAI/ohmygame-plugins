@@ -3,7 +3,9 @@
 // files with safe paths are kept, written to a private temporary folder and
 // checked there by the app's own package check (`app/`, a checkout of
 // WhiteTowerAI/ohmygame), so the index accepts what the app would install.
-// Nothing from a package is run.
+// Its icon and screenshots are checked as the app checks them and handed back
+// by their contents' hash, for the index to keep beside it. Nothing from a
+// package is run.
 
 import { createHash, verify, type KeyObject } from "node:crypto";
 import { execFile } from "node:child_process";
@@ -45,7 +47,14 @@ export interface Verdict {
     /** By locale. */
     displayName: Record<string, string>;
     description: Record<string, string>;
+    longDescription?: Record<string, string>;
+    categories?: string[];
+    /** Project types it suits. */
+    appliesTo?: string[];
+    beta?: true;
+    /** Its icon and screenshots, by their path beside the index: `assets/<sha256>.<ext>`. */
     icon?: string;
+    screenshots?: { path: string; caption?: Record<string, string> }[];
     /** What it asks to be allowed, as the app's consent lists it. */
     grants: string[];
     /** How many of each contribution it adds, Skills included. */
@@ -69,6 +78,8 @@ export interface IndexedVersion extends Verdict {
   /** Where its provenance attestation is, when it has one. */
   provenance?: string;
   publishedAt?: string;
+  /** npm's `dist.unpackedSize`. */
+  unpackedSize?: number;
 }
 
 interface AppEntry {
@@ -77,7 +88,12 @@ interface AppEntry {
     version: string;
     displayName: string;
     description: string;
+    longDescription?: string;
+    categories?: string[];
+    appliesTo?: string[];
+    beta?: boolean;
     icon?: string;
+    screenshots?: { path: string; caption?: string }[];
     contributes?: Record<string, unknown>;
   };
   strings: unknown;
@@ -90,6 +106,13 @@ export interface AppChecks {
   localizePluginString(entry: AppEntry, value: string, locale: string): string;
   pluginApiIssue(manifest: AppEntry["manifest"]): string | undefined;
   capabilityGrants(manifest: AppEntry["manifest"]): string[];
+  /** Throws for an icon the app wouldn't show: not a PNG, WebP or static SVG of the type its name says. */
+  validateIcon(bytes: Buffer, mediaType: string): Promise<unknown>;
+  /** A PNG, JPEG or WebP's type, which a screenshot must be. */
+  sniffImage(bytes: Buffer): string | undefined;
+  iconMediaTypes: Record<string, string>;
+  /** The categories the app knows. */
+  categories: readonly string[];
   archiveMaxBytes: number;
   archiveMaxEntries: number;
   /** Which app code judged: its commit, so a verdict is redone when the checks change. */
@@ -99,11 +122,14 @@ export interface AppChecks {
 /** Loads the checks from an OhMyGame checkout. */
 export async function loadAppChecks(appRoot: string): Promise<AppChecks> {
   const load = (file: string) => import(pathToFileURL(path.resolve(appRoot, file)).href);
-  const [manifest, plugins, index, projectPlugins] = await Promise.all([
+  const [manifest, plugins, index, projectPlugins, icons, iconTypes, images] = await Promise.all([
     load("src/shared/plugin-manifest.ts"),
     load("src/shared/plugins.ts"),
     load("src/daemon/plugin-index.ts"),
     load("src/daemon/project-plugins.ts"),
+    load("src/daemon/plugin-icons.ts"),
+    load("src/shared/plugin-icons.ts"),
+    load("src/daemon/image-format.ts"),
   ]);
   const commit = await promisify(execFile)("git", ["-C", appRoot, "rev-parse", "HEAD"])
     .then(({ stdout }) => stdout.trim())
@@ -113,6 +139,10 @@ export async function loadAppChecks(appRoot: string): Promise<AppChecks> {
     localizePluginString: index.localizePluginString,
     pluginApiIssue: manifest.pluginApiIssue,
     capabilityGrants: projectPlugins.capabilityGrants,
+    validateIcon: icons.validatePluginIconImage,
+    sniffImage: images.sniffImageType,
+    iconMediaTypes: iconTypes.PLUGIN_ICON_MEDIA_TYPES,
+    categories: manifest.PLUGIN_CATEGORIES,
     archiveMaxBytes: plugins.PLUGIN_ARCHIVE_MAX_BYTES,
     archiveMaxEntries: plugins.PLUGIN_ARCHIVE_MAX_ENTRIES,
     // Without a commit no verdict is reused.
@@ -281,8 +311,21 @@ function claim(taken: Map<string, "file" | "folder">, relative: string, kind: "f
   taken.set(key, kind);
 }
 
-/** Checks one version's tarball with the app's package check, and that the package agrees with it. */
-export async function judgeTarball(app: AppChecks, name: string, version: string, bytes: Buffer): Promise<Verdict> {
+/** Where the index keeps an image: named by its contents, so it never changes. */
+export function imagePath(bytes: Buffer, extension: string): string {
+  return `assets/${createHash("sha256").update(bytes).digest("hex")}.${extension}`;
+}
+
+/** Keeps an image the index lists, by its path from `imagePath`. */
+export type SaveImage = (path: string, bytes: Buffer) => Promise<void>;
+
+const SCREENSHOT_EXTENSIONS: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+
+/**
+ * Checks one version's tarball with the app's package check, and that the
+ * package agrees with it. Its icon and screenshots go to `save`.
+ */
+export async function judgeTarball(app: AppChecks, name: string, version: string, bytes: Buffer, save: SaveImage = async () => {}): Promise<Verdict> {
   let files: Map<string, Buffer>;
   try {
     files = await readTarball(bytes, { maxEntries: app.archiveMaxEntries, maxBytes: app.archiveMaxBytes });
@@ -336,12 +379,43 @@ export async function judgeTarball(app: AppChecks, name: string, version: string
       for (const [locale, value] of Object.entries(values))
         if (typeof value !== "string" || !value.trim()) rejected.push(`${field} isn't text in ${locale}`);
     if (rejected.length) return { rejected };
+    // Optional text is left out in a locale it isn't text in.
+    const optional = (value: string | undefined) => {
+      const values = value === undefined ? {} : Object.fromEntries(Object.entries(text(value)).filter(([, item]) => typeof item === "string" && item.trim()));
+      return Object.keys(values).length ? values : undefined;
+    };
+    // The package check found both in the package; one the app wouldn't show is left out.
+    const kept = async (file: string, valid: (bytes: Buffer) => Promise<string | undefined>) => {
+      const bytes = files.get(file.slice(2));
+      const extension = bytes && await valid(bytes);
+      if (!bytes || !extension) return undefined;
+      const at = imagePath(bytes, extension);
+      await save(at, bytes);
+      return at;
+    };
+    const icon = manifest.icon && await kept(manifest.icon, async (bytes) => {
+      const extension = manifest.icon!.slice(manifest.icon!.lastIndexOf(".") + 1).toLowerCase();
+      const mediaType = app.iconMediaTypes[extension];
+      return mediaType && await app.validateIcon(bytes, mediaType).then(() => extension, () => undefined);
+    });
+    const screenshots = [];
+    for (const shot of manifest.screenshots ?? []) {
+      const at = await kept(shot.path, async (bytes) => SCREENSHOT_EXTENSIONS[app.sniffImage(bytes) ?? ""]);
+      const caption = optional(shot.caption);
+      if (at) screenshots.push({ path: at, ...(caption ? { caption } : {}) });
+    }
+    const longDescription = optional(manifest.longDescription);
     return {
       plugin: {
         id: manifest.id,
         displayName,
         description,
-        ...(manifest.icon ? { icon: manifest.icon } : {}),
+        ...(longDescription ? { longDescription } : {}),
+        ...(manifest.categories?.length ? { categories: manifest.categories } : {}),
+        ...(manifest.appliesTo?.length ? { appliesTo: manifest.appliesTo } : {}),
+        ...(manifest.beta ? { beta: true as const } : {}),
+        ...(icon ? { icon } : {}),
+        ...(screenshots.length ? { screenshots } : {}),
         grants: app.capabilityGrants(manifest),
         adds: Object.fromEntries(
           Object.entries(manifest.contributes ?? {})

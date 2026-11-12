@@ -4,8 +4,9 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
+import { deflateSync, crc32 } from "node:zlib";
 import { create } from "tar";
-import { integrityIssue, judgeTarball, loadAppChecks, signatureIssue, type AppChecks, type RegistryKeys } from "../src/checks.ts";
+import { imagePath, integrityIssue, judgeTarball, loadAppChecks, signatureIssue, type AppChecks, type RegistryKeys } from "../src/checks.ts";
 
 const APP = process.env.OHMYGAME_APP ?? "app";
 let app: AppChecks;
@@ -28,7 +29,7 @@ const manifest = (fields: Record<string, unknown> = {}) => ({
 });
 
 /** A gzipped npm tarball (`package/…`) of the given files. */
-async function tarball(files: Record<string, string>): Promise<Buffer> {
+async function tarball(files: Record<string, string | Buffer>): Promise<Buffer> {
   const root = await mkdtemp(path.join(scratch, "pkg-"));
   for (const [file, text] of Object.entries(files)) {
     await mkdir(path.dirname(path.join(root, "package", file)), { recursive: true });
@@ -39,12 +40,12 @@ async function tarball(files: Record<string, string>): Promise<Buffer> {
   return readFile(out);
 }
 
-const plugin = (fields: Record<string, unknown> = {}, pkg: Record<string, unknown> = {}, extra: Record<string, string> = {}) =>
+const plugin = (fields: Record<string, unknown> = {}, pkg: Record<string, unknown> = {}, extra: Record<string, string | Buffer> = {}) =>
   tarball({
     "package.json": JSON.stringify({ name: "@acme/ohmygame-plugin-tiles", version: "1.2.0", ...pkg }),
     ".ohmygame-plugin/plugin.json": JSON.stringify(manifest(fields)),
-    "locales/en.json": JSON.stringify({ displayName: "Tiles", description: "Tile maps." }),
-    "locales/zh-CN.json": JSON.stringify({ displayName: "瓦片" }),
+    "locales/en.json": JSON.stringify({ displayName: "Tiles", description: "Tile maps.", long: "Paint tile maps.", shot: "A map" }),
+    "locales/zh-CN.json": JSON.stringify({ displayName: "瓦片", shot: "地图" }),
     "skills/tiles/SKILL.md": "---\nname: tiles\ndescription: Tile maps.\n---\n",
     ...extra,
   });
@@ -61,6 +62,51 @@ describe("judgeTarball", () => {
       grants: [],
       adds: { skills: 1 },
     });
+  });
+
+  it("lists where a plugin belongs, and keeps its icon and screenshots by their contents", async () => {
+    // A 1×1 PNG, which the app decodes to check an icon.
+    const chunk = (type: string, data: Buffer) => {
+      const body = Buffer.concat([Buffer.from(type), data]);
+      const length = Buffer.alloc(4), crc = Buffer.alloc(4);
+      length.writeUInt32BE(data.length);
+      crc.writeUInt32BE(crc32(body));
+      return Buffer.concat([length, body, crc]);
+    };
+    const png = Buffer.concat([Buffer.from("89504e470d0a1a0a", "hex"),
+      chunk("IHDR", Buffer.from([0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0])), chunk("IDAT", deflateSync(Buffer.alloc(5))), chunk("IEND", Buffer.alloc(0))]);
+    const jpeg = Buffer.from("ffd8ffe000104a464946", "hex");
+    const saved = new Map<string, Buffer>();
+    const judge = async (icon: string | Buffer) => judgeTarball(app, "@acme/ohmygame-plugin-tiles", "1.2.0", await plugin({
+      longDescription: "%long%", categories: ["art", "hologram"], appliesTo: ["web-game"], beta: true,
+      icon: typeof icon === "string" ? "./assets/icon.svg" : "./assets/icon.png",
+      screenshots: [{ path: "./shots/one.png", caption: "%shot%" }, { path: "./shots/page.png" }, { path: "./shots/two.jpg" }],
+    }, {}, {
+      [typeof icon === "string" ? "assets/icon.svg" : "assets/icon.png"]: icon,
+      "shots/one.png": png, "shots/page.png": "<html></html>", "shots/two.jpg": jpeg,
+    }), async (file, bytes) => { saved.set(file, bytes); });
+
+    const judged = await judge(png);
+    assert.equal(judged.rejected, undefined);
+    assert.deepEqual({ ...judged.plugin, displayName: undefined, description: undefined, grants: undefined, adds: undefined }, {
+      id: "acme/tiles", displayName: undefined, description: undefined, grants: undefined, adds: undefined,
+      longDescription: { en: "Paint tile maps.", "zh-CN": "Paint tile maps." },
+      // The app passes over a category it doesn't know.
+      categories: ["art"], appliesTo: ["web-game"], beta: true,
+      icon: imagePath(png, "png"),
+      // One that isn't a picture is left out.
+      screenshots: [{ path: imagePath(png, "png"), caption: { en: "A map", "zh-CN": "地图" } }, { path: imagePath(jpeg, "jpg") }],
+    });
+    assert.match(judged.plugin!.icon!, /^assets\/[0-9a-f]{64}\.png$/);
+    assert.deepEqual([...saved.keys()].sort(), [imagePath(jpeg, "jpg"), imagePath(png, "png")].sort());
+    assert.deepEqual(saved.get(imagePath(jpeg, "jpg")), jpeg);
+
+    // An icon the app wouldn't show is left out, not the plugin.
+    const scripted = await judge('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+    assert.equal(scripted.rejected, undefined);
+    assert.equal(scripted.plugin?.icon, undefined);
+    const plain = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M0 0h32v32H0z"/></svg>';
+    assert.equal((await judge(plain)).plugin?.icon, imagePath(Buffer.from(plain), "svg"));
   });
 
   it("lists what a plugin asks for and adds", async () => {

@@ -3,18 +3,20 @@ import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import {
   applyBlocks,
+  applyCategories,
   applyClaims,
   attestedRepository,
   featuredPlugins,
   newestInstallable,
   packageFacts,
   parseBlocked,
+  parseCategories,
   parseFeatured,
   parseRepository,
   type CachedFacts,
   type FactSources,
 } from "../src/catalog.ts";
-import type { IndexedVersion } from "../src/checks.ts";
+import { loadAppChecks, type IndexedVersion } from "../src/checks.ts";
 
 const version = (name: string, ver: string, publishedAt: string, id: string | null = "acme/tiles"): IndexedVersion => ({
   package: name,
@@ -26,10 +28,15 @@ const version = (name: string, ver: string, publishedAt: string, id: string | nu
   ...(id ? { plugin: { id, displayName: {}, description: {}, grants: [], adds: {} } } : { rejected: ["no"] }),
 });
 
-describe("blocked.json and featured.json", () => {
+const KNOWN = ["engine", "art", "3d"];
+
+describe("blocked.json, featured.json and categories.json", () => {
+  // Checked on every pull request, so a typo never reaches the scheduled run, which stops on one.
   it("are valid as committed", async () => {
     parseBlocked(await readFile(new URL("../blocked.json", import.meta.url), "utf8"));
     parseFeatured(await readFile(new URL("../featured.json", import.meta.url), "utf8"));
+    const { categories } = await loadAppChecks(process.env.OHMYGAME_APP ?? "app");
+    parseCategories(await readFile(new URL("../categories.json", import.meta.url), "utf8"), categories);
   });
 
   it("refuse what would quietly do nothing", () => {
@@ -39,6 +46,17 @@ describe("blocked.json and featured.json", () => {
       assert.throws(() => parseBlocked(text), /blocked\.json/);
     for (const text of ["{}", '["Acme/Tiles"]', '["acme"]', "[1]", '["a/b","a/b"]'])
       assert.throws(() => parseFeatured(text), /featured\.json/);
+    assert.deepEqual(parseCategories('{"a/b":["art","3d"]}', KNOWN), { "a/b": ["art", "3d"] });
+    // Only categories the app knows, one to three, once each.
+    for (const text of ["[]", "null", '{"A/b":["art"]}', '{"a/b":[]}', '{"a/b":"art"}', '{"a/b":["hologram"]}', '{"a/b":["art","art"]}', '{"a/b":["art","3d","engine","art"]}'])
+      assert.throws(() => parseCategories(text, KNOWN), /categories\.json/);
+  });
+
+  it("list every version of a plugin under the categories categories.json gives it", () => {
+    const versions = [version("@a/b", "1.0.0", "1", "a/b"), version("@a/b", "2.0.0", "2", "a/b"), version("@a/c", "1.0.0", "1", "a/c"), version("@a/d", "1.0.0", "1", null)];
+    const listed = applyCategories(versions, { "a/b": ["art"], "a/d": ["3d"] });
+    assert.deepEqual(listed.map((item) => item.plugin?.categories), [["art"], ["art"], undefined, undefined]);
+    assert.equal(versions[0]!.plugin!.categories, undefined);
   });
 
   it("block a whole package or one version, keeping it in the index without its plugin", () => {
@@ -150,21 +168,21 @@ describe("packageFacts", () => {
   const sources = (over: Partial<FactSources> = {}): FactSources => ({
     attestations: async () => undefined,
     packageJson: async () => undefined,
-    stars: async () => 7,
+    github: async () => ({ stars: 7, avatar: "https://avatars.githubusercontent.com/u/42?v=4" }),
     weeklyDownloads: async () => 100,
     ...over,
   });
   const read = (meta: { repository?: unknown; hasProvenance?: boolean }, source: FactSources, cached?: CachedFacts, now = 1e12) =>
     packageFacts(NAME, "1.0.0", { hasProvenance: false, ...meta }, cached, now, source);
 
-  it("gives no stars until the source is verified", async () => {
+  it("gives no stars or avatar until the source is verified", async () => {
     const { entry } = await read({ repository: "o/r" }, sources({ packageJson: async () => '{"name":"@a/other"}' }));
     assert.deepEqual(entry.facts, { repository: "https://github.com/o/r", weeklyDownloads: 100 });
   });
 
   it("verifies by the repository's package.json", async () => {
     const { entry } = await read({ repository: "o/r" }, sources({ packageJson: async () => `{"name":"${NAME}"}` }));
-    assert.deepEqual(entry.facts, { repository: "https://github.com/o/r", sourceVerified: true, stars: 7, weeklyDownloads: 100 });
+    assert.deepEqual(entry.facts, { repository: "https://github.com/o/r", sourceVerified: true, stars: 7, avatar: "https://avatars.githubusercontent.com/u/42?v=4", weeklyDownloads: 100 });
   });
 
   it("verifies by provenance only for the repository the package claims", async () => {
@@ -194,8 +212,8 @@ describe("packageFacts", () => {
   });
 
   it("keeps the last values for this version when they can't be read, and tries again next run", async () => {
-    const cached: CachedFacts = { version: "1.0.0", source: "o/r/", checkedAt: 1, facts: { repository: "https://github.com/o/r", sourceVerified: true, stars: 5, weeklyDownloads: 50 } };
-    const down = sources({ packageJson: async () => { throw new Error("down"); }, stars: async () => { throw new Error("down"); }, weeklyDownloads: async () => { throw new Error("down"); } });
+    const cached: CachedFacts = { version: "1.0.0", source: "o/r/", checkedAt: 1, facts: { repository: "https://github.com/o/r", sourceVerified: true, stars: 5, avatar: "https://avatars.githubusercontent.com/u/1", weeklyDownloads: 50 } };
+    const down = sources({ packageJson: async () => { throw new Error("down"); }, github: async () => { throw new Error("down"); }, weeklyDownloads: async () => { throw new Error("down"); } });
     const { entry, complete } = await read({ repository: "o/r" }, down, cached);
     assert.equal(complete, false);
     assert.deepEqual(entry.facts, cached.facts);
