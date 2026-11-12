@@ -1,4 +1,5 @@
-// SiliconFlow's image API for OhMyGame (docs.siliconflow.cn, images-generations).
+// SiliconFlow's image and video APIs for OhMyGame (docs.siliconflow.cn:
+// images-generations, video-submit, video-status).
 // Runs in OhMyGame's sandbox: host.fetch reaches only the hosts in
 // capabilities.network, and `auth: true` adds the key, which this script never sees.
 
@@ -11,6 +12,15 @@ const SIZES = {
   },
 };
 
+/** The answer's JSON, and its message when SiliconFlow refused the request. */
+async function read(response) {
+  const text = await response.text();
+  let answer;
+  try { answer = JSON.parse(text); } catch { answer = undefined; }
+  const message = (answer && typeof answer.message === "string" && answer.message) || text.slice(0, 300) || `SiliconFlow answered ${response.status}`;
+  return { answer, message };
+}
+
 export default {
   image: {
     async start(input, host) {
@@ -21,13 +31,51 @@ export default {
       const reference = input.references[0];
       if (reference) body.image = `data:${reference.mediaType};base64,${reference.base64}`;
       const response = await host.fetch("https://api.siliconflow.cn/v1/images/generations", { method: "POST", auth: true, json: body });
-      const text = await response.text();
-      let answer;
-      try { answer = JSON.parse(text); } catch { answer = undefined; }
-      if (!response.ok) return { error: (answer && typeof answer.message === "string" && answer.message) || text.slice(0, 300) || `SiliconFlow answered ${response.status}` };
+      const { answer, message } = await read(response);
+      if (!response.ok) return { error: message };
       // The address lasts an hour; OhMyGame downloads it at once.
       const url = answer && answer.images && answer.images[0] && answer.images[0].url;
       return url ? { outputs: [{ url }] } : { error: "SiliconFlow returned no picture" };
+    },
+  },
+
+  video: {
+    async start(input, host) {
+      const body = { model: input.model, prompt: input.prompt, duration: input.duration, resolution: input.resolution, ratio: input.aspectRatio };
+      // As frames: the first picture opens the video, a second one ends it.
+      if (input.references.length) {
+        body.images = input.references.map((picture, index) => ({
+          url: `data:${picture.mediaType};base64,${picture.base64}`,
+          role: index === 0 ? "first_frame" : "last_frame",
+        }));
+      }
+      const response = await host.fetch("https://api.siliconflow.cn/v1/video/submit", { method: "POST", auth: true, json: body });
+      const { answer, message } = await read(response);
+      // A server error may come after SiliconFlow took the request: throwing has OhMyGame
+      // treat it as possibly sent, so a retry doesn't pay again. A refusal can be tried again.
+      if (response.status >= 500) throw new Error(message);
+      if (!response.ok) return { error: message };
+      const requestId = answer && answer.requestId;
+      // Taken but unreadable: thrown for the same reason as a server error.
+      if (typeof requestId !== "string" || !requestId) throw new Error("SiliconFlow returned no request id");
+      return { task: { requestId } };
+    },
+
+    async check(task, host) {
+      const response = await host.fetch("https://api.siliconflow.cn/v1/video/status", { method: "POST", auth: true, json: { requestId: task.requestId } });
+      const { answer, message } = await read(response);
+      // A busy service is checked again (OhMyGame retries a failed check); a refusal ends the task.
+      if (response.status === 429 || response.status >= 500) throw new Error(message);
+      if (!response.ok) return { error: message };
+      const status = answer && answer.status;
+      if (status === "Succeed") {
+        // The address lasts an hour; OhMyGame downloads it at once.
+        const url = answer.results && answer.results.videos && answer.results.videos[0] && answer.results.videos[0].url;
+        return url ? { outputs: [{ url }] } : { error: "SiliconFlow returned no video" };
+      }
+      if (status === "Failed") return { error: (typeof answer.reason === "string" && answer.reason) || "SiliconFlow couldn't make this video" };
+      // InQueue or InProgress. SiliconFlow has no way to cancel a request, so there's no `cancel`.
+      return { retryAfter: 5 };
     },
   },
 };

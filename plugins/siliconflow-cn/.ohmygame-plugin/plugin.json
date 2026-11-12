@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/siliconflow-cn",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
     "ohmygame-api": "^2.3.0"
   },
@@ -66,6 +66,38 @@
                   "3:4",
                   "3:2",
                   "2:3"
+                ]
+              }
+            ]
+          },
+          "video": {
+            "maxMinutes": 30,
+            "models": [
+              {
+                "id": "MiniMaxAI/MiniMax-H3",
+                "title": "MiniMax-H3",
+                "durations": [
+                  5,
+                  6,
+                  8,
+                  10,
+                  15
+                ],
+                "resolutions": [
+                  "768p",
+                  "480p"
+                ],
+                "aspectRatios": [
+                  "16:9",
+                  "9:16",
+                  "1:1",
+                  "4:3",
+                  "3:4",
+                  "21:9"
+                ],
+                "maxReferenceImages": 2,
+                "referenceModes": [
+                  "frame"
                 ]
               }
             ]
