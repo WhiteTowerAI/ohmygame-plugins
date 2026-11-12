@@ -1,7 +1,7 @@
 {
   "plugin.name": "Command Code",
-  "plugin.description": "Command Code's models for the agent, with your own API key.",
-  "plugin.longDescription": "Adds Command Code to Settings → Providers. Enter your API key here or in Settings and its models appear in the model menu; the list is read from Command Code, so new models show up by themselves.",
+  "plugin.description": "Command Code's coding agent, and its models for the agent with your own API key.",
+  "plugin.longDescription": "Adds Command Code to Settings → Agents, beside Claude Code and Codex: install it, sign in with `command-code login`, then turn it on there. It also adds Command Code to Settings → Providers: enter your API key here or in Settings and its models appear in the model menu; the list is read from Command Code, so new models show up by themselves.",
   "config.apiKey.title": "Command Code API key",
   "config.apiKey.description": "From Command Code Studio → Settings → API Keys, on the Provider plan. Claude models are only served through Command Code's own protocol and aren't listed."
 }

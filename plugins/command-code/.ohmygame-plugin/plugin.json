@@ -1,17 +1,23 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/command-code",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
-    "ohmygame-api": "^2.3.0"
+    "ohmygame-api": "^2.4.0"
   },
   "displayName": "%plugin.name%",
   "description": "%plugin.description%",
   "longDescription": "%plugin.longDescription%",
   "icon": "./assets/icon.svg",
   "categories": [
-    "provider"
+    "provider",
+    "agent"
   ],
+  "capabilities": {
+    "processes": [
+      "command-code"
+    ]
+  },
   "configuration": {
     "apiKey": {
       "type": "secret",
@@ -29,6 +35,19 @@
         "baseUrl": "https://api.commandcode.ai/provider/v1",
         "apiKey": "apiKey",
         "discoverModels": true
+      }
+    ],
+    "agents": [
+      {
+        "id": "command-code",
+        "title": "Command Code",
+        "icon": "./assets/icon.svg",
+        "command": "command-code",
+        "args": [
+          "acp"
+        ],
+        "installUrl": "https://commandcode.ai/docs/quickstart",
+        "loginCommand": "command-code login"
       }
     ]
   }

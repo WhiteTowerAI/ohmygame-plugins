@@ -1,0 +1,5 @@
+{
+  "plugin.name": "Antigravity CLI",
+  "plugin.description": "Google's Antigravity CLI as a coding agent, with your own Google account.",
+  "plugin.longDescription": "Adds Antigravity CLI to Settings → Agents, beside Claude Code and Codex. Install it, sign in with `agy acp --login`, then turn it on in Settings → Agents; OhMyGame reads its models from the agent. Use it with a Google account; Gemini Code Assist plans can also use Gemini CLI."
+}

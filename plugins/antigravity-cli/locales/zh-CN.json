@@ -1,0 +1,5 @@
+{
+  "plugin.name": "Antigravity CLI",
+  "plugin.description": "把 Google 的 Antigravity CLI 作为编程 agent，使用你自己的 Google 账号。",
+  "plugin.longDescription": "在 设置 → 智能体 里，和 Claude Code、Codex 并列加入 Antigravity CLI。先安装，用 `agy acp --login` 登录，再到 设置 → 智能体 打开；OhMyGame 会从 agent 读取可用的模型。适用于 Google 账号；Gemini Code Assist 套餐也可以用 Gemini CLI。"
+}

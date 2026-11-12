@@ -1,0 +1,35 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/antigravity-cli",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.4.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "categories": [
+    "agent"
+  ],
+  "capabilities": {
+    "processes": [
+      "agy"
+    ]
+  },
+  "contributes": {
+    "agents": [
+      {
+        "id": "antigravity",
+        "title": "Antigravity CLI",
+        "icon": "./assets/icon.svg",
+        "command": "agy",
+        "args": [
+          "acp"
+        ],
+        "installUrl": "https://antigravity.google/docs/cli/install",
+        "loginCommand": "agy acp --login"
+      }
+    ]
+  }
+}

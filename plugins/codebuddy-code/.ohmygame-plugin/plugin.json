@@ -1,0 +1,35 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/codebuddy-code",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.4.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "categories": [
+    "agent"
+  ],
+  "capabilities": {
+    "processes": [
+      "codebuddy"
+    ]
+  },
+  "contributes": {
+    "agents": [
+      {
+        "id": "codebuddy",
+        "title": "CodeBuddy Code",
+        "icon": "./assets/icon.svg",
+        "command": "codebuddy",
+        "args": [
+          "--acp"
+        ],
+        "installUrl": "https://www.codebuddy.ai/docs/cli/installation",
+        "loginCommand": "codebuddy"
+      }
+    ]
+  }
+}

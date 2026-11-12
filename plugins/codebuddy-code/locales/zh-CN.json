@@ -1,0 +1,5 @@
+{
+  "plugin.name": "CodeBuddy Code",
+  "plugin.description": "把腾讯的 CodeBuddy Code 作为编程 agent，使用你自己的账号。",
+  "plugin.longDescription": "在 设置 → 智能体 里，和 Claude Code、Codex 并列加入 CodeBuddy Code。先安装，运行 `codebuddy` 登录，再到 设置 → 智能体 打开；OhMyGame 会从 agent 读取可用的模型。"
+}

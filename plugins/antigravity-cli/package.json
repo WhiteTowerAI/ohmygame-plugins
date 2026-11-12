@@ -1,0 +1,35 @@
+{
+  "name": "@ohmygame/antigravity-cli",
+  "version": "0.1.0",
+  "description": "Google's Antigravity CLI as a coding agent, with your own Google account.",
+  "keywords": [
+    "ohmygame-plugin",
+    "acp",
+    "agent",
+    "antigravity",
+    "google",
+    "gemini"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/antigravity-cli"
+  },
+  "homepage": "https://github.com/WhiteTowerAI/ohmygame-plugins/tree/main/plugins/antigravity-cli#readme",
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales"
+  ],
+  "scripts": {
+    "check": "ohmygame-plugin check",
+    "pack": "ohmygame-plugin pack"
+  },
+  "devDependencies": {
+    "@ohmygame/plugin-cli": "^2.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
