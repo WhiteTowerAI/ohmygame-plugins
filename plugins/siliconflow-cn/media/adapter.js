@@ -56,7 +56,9 @@ export default {
       if (response.status >= 500) throw new Error(message);
       if (!response.ok) return { error: message };
       const requestId = answer && answer.requestId;
-      return typeof requestId === "string" && requestId ? { task: { requestId } } : { error: "SiliconFlow returned no request id" };
+      // Taken but unreadable: thrown for the same reason as a server error.
+      if (typeof requestId !== "string" || !requestId) throw new Error("SiliconFlow returned no request id");
+      return { task: { requestId } };
     },
 
     async check(task, host) {
