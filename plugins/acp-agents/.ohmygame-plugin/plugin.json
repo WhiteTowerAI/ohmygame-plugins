@@ -25,6 +25,7 @@
       {
         "id": "antigravity",
         "title": "Antigravity CLI",
+        "icon": "./assets/antigravity.svg",
         "command": "agy",
         "args": [
           "acp"
@@ -35,6 +36,7 @@
       {
         "id": "codebuddy",
         "title": "CodeBuddy Code",
+        "icon": "./assets/codebuddy.svg",
         "command": "codebuddy",
         "args": [
           "--acp"
@@ -45,6 +47,7 @@
       {
         "id": "command-code",
         "title": "Command Code",
+        "icon": "./assets/command-code.svg",
         "command": "command-code",
         "args": [
           "acp"
@@ -55,6 +58,7 @@
       {
         "id": "gemini",
         "title": "Gemini CLI",
+        "icon": "./assets/gemini.svg",
         "command": "gemini",
         "args": [
           "--acp"
