@@ -34,6 +34,9 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      - name: Build the checked app's plugin CLI
+        working-directory: app
+        run: bun run plugin-packages:build
       - name: Publish what's new
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -54,7 +57,7 @@ jobs:
               echo "$name@$version is already published"
               continue
             fi
-            if ! (cd "$dir" && bun "$GITHUB_WORKSPACE/app/packages/plugin-cli/src/cli.ts" check && npm publish --provenance); then
+            if ! (cd "$dir" && node "$GITHUB_WORKSPACE/app/packages/plugin-cli/dist/cli.mjs" check && npm publish --provenance); then
               echo "::error::$name@$version wasn't published"
               failed+=("$name@$version")
             fi
