@@ -143,12 +143,14 @@ it(
       let approved = false;
       let approvals = 0;
       let abortOnApproval: AbortController | undefined;
+      let duringApproval: (() => Promise<void>) | undefined;
       const gates = hooks.tools(
         folder,
         async (_plugin: string, input: ToolHookInput) => {
           approvals++;
           assert.equal(input.server, serverName);
           abortOnApproval?.abort();
+          await duringApproval?.();
           return approved;
         },
       );
@@ -250,8 +252,61 @@ it(
           ["click", "click", "list_apps"],
         );
         assert.deepEqual(calls[0].arguments, { app: "fixture" });
+        // Revocation while the person is reviewing invalidates that approval.
+        duringApproval = () => services.setEveryProject(manifest.id, false);
+        assert.match(JSON.stringify(await execute("click")), /hooks changed/);
+        assert.equal(
+          (await readFile(log, "utf8")).trim().split("\n").length,
+          3,
+        );
+        assert.deepEqual(await services.mcpServers(folder), {});
+        duringApproval = undefined;
+        await services.setEveryProject(manifest.id, true);
+        approved = false;
+        assert.match(JSON.stringify(await execute("click")), /did not approve/);
+        assert.equal(
+          (await readFile(log, "utf8")).trim().split("\n").length,
+          3,
+        );
       } finally {
         await native.close();
+      }
+      // A fresh MCP session also starts without a retained approval.
+      const reconnected = await host.tool(
+        {
+          mcpServers: {
+            [serverName]: {
+              ...definition,
+              command: process.execPath,
+              args: [fixture, log],
+            },
+          },
+        },
+        folder,
+        undefined,
+        gates,
+      );
+      try {
+        const count = approvals;
+        const result = await reconnected.tool.execute(
+          "reconnected",
+          {
+            server: serverName,
+            tool: `${serverName}_click`,
+            args: { app: "fixture" },
+          },
+          undefined,
+          undefined,
+          undefined,
+        );
+        assert.match(JSON.stringify(result), /did not approve/);
+        assert.equal(approvals, count + 1);
+        assert.equal(
+          (await readFile(log, "utf8")).trim().split("\n").length,
+          3,
+        );
+      } finally {
+        await reconnected.close();
       }
       await services.setEveryProject(manifest.id, false);
       assert.deepEqual(await services.mcpServers(folder), {});
