@@ -8,6 +8,7 @@
   "displayName": "%plugin.name%",
   "description": "%plugin.description%",
   "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.png",
   "categories": ["integration"],
   "entrypoints": {
     "native": "./dist/index.mjs"

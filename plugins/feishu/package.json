@@ -16,6 +16,7 @@
   "files": [
     ".ohmygame-plugin",
     "dist",
+    "assets",
     "locales"
   ],
   "publishConfig": {

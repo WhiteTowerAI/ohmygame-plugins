@@ -109,3 +109,6 @@ Feishu test app; local fixtures cannot establish those outcomes.
 Protocol references: [official Node SDK](https://github.com/larksuite/node-sdk),
 [receive-message event](https://open.feishu.cn/document/server-docs/im-v1/message/events/receive),
 [reply API](https://open.feishu.cn/document/server-docs/im-v1/message/reply).
+
+The plugin bundles the Feishu logo from the official website; source and
+artwork attribution are in [assets/NOTICE.md](assets/NOTICE.md).
