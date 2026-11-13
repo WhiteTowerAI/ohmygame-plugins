@@ -2,7 +2,7 @@
 
 An optional OhMyGame plugin for inspecting and operating desktop applications.
 Each observation and action requires approval in the conversation. It is not
-preinstalled and has no persistent connection or cross-project session access.
+preinstalled and has no app-wide background connection or cross-project session access.
 
 ## Try locally
 
