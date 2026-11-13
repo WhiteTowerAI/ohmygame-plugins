@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { readFile, writeFile, rm } from "node:fs/promises";
+import { readFile, writeFile, readdir, rm } from "node:fs/promises";
 
 const output = "plugins/feishu/dist/index.mjs";
 await rm("plugins/feishu/dist", { recursive: true, force: true });
@@ -29,19 +29,14 @@ const notices = [];
 for (const folder of [...packages].sort()) {
   const pkg = JSON.parse(await readFile(`${folder}/package.json`, "utf8"));
   let license;
-  for (const name of [
-    "LICENSE",
-    "LICENSE.md",
-    "LICENSE-MIT",
-    "LICENSE.txt",
-    "license",
-    "LICENCE",
-  ]) {
-    try {
-      license = await readFile(`${folder}/${name}`, "utf8");
-      break;
-    } catch {}
-  }
+  // Preserve the actual filename: macOS accepts LICENSE for License, Linux does not.
+  const licenseFile = (await readdir(folder, { withFileTypes: true }))
+    .filter(
+      (entry) => entry.isFile() && /^licen[cs]e(?:[-.].*)?$/i.test(entry.name),
+    )
+    .map((entry) => entry.name)
+    .sort()[0];
+  if (licenseFile) license = await readFile(`${folder}/${licenseFile}`, "utf8");
   if (!license && ["agent-base", "https-proxy-agent"].includes(pkg.name)) {
     const readme = await readFile(`${folder}/README.md`, "utf8");
     license = readme.slice(readme.indexOf("(The MIT License)"));
