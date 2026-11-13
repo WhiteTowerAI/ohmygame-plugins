@@ -1,0 +1,24 @@
+{
+  "name": "@ohmygame/wechat-minigame",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Adapt, preview, and check WeChat mini-game builds.",
+  "keywords": [
+    "ohmygame-plugin"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/wechat-minigame"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "skills"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

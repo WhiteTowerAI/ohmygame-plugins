@@ -36,7 +36,21 @@ describe("official plugins", async () => {
       // npm's own script, run by this Node, so no shell splits the paths (npm sets npm_execpath for `npm test`).
       const npm = process.env.npm_execpath ? [process.execPath, process.env.npm_execpath] : ["npm"];
       const { stdout } = await promisify(execFile)(npm[0]!, [...npm.slice(1), "pack", "--json", "--pack-destination", scratch], { cwd: dir });
-      const [{ filename }] = JSON.parse(stdout);
+      const [{ filename, files }] = JSON.parse(stdout);
+      // Every runtime file in the preinstalled migration must survive npm's
+      // filtering, including dot-directories and the Godot ignore template.
+      // The host validator alone cannot detect a missing unreferenced helper.
+      if (PREINSTALLED.has(folder)) {
+        const packed = new Set(files.map((file: { path: string }) => file.path));
+        for (const file of await runtimeFiles(dir)) {
+          assert.ok(packed.has(file), `${folder}: npm omitted ${file}`);
+        }
+        assert.ok(packed.has("LICENSE"));
+        if (folder === "godot") {
+          assert.ok(packed.has("templates/godot-game/gitignore"));
+          assert.equal(packed.has("templates/godot-game/.gitignore"), false);
+        }
+      }
       const verdict = await judgeTarball(app, pkg.name, pkg.version, await readFile(path.join(scratch, filename)));
       assert.deepEqual(verdict.rejected, undefined);
       assert.equal(verdict.plugin?.id, manifest.id);
@@ -45,3 +59,20 @@ describe("official plugins", async () => {
     });
   }
 });
+
+const PREINSTALLED = new Set([
+  "aseprite", "blender", "cocos-creator", "douyin-minigame", "game-studio",
+  "godot", "taptap-maker", "tiled", "unity", "unreal-engine", "web-game-studio",
+  "wechat-minigame",
+]);
+
+async function runtimeFiles(directory: string, prefix = ""): Promise<string[]> {
+  const files: string[] = [];
+  for (const entry of await readdir(path.join(directory, prefix), { withFileTypes: true })) {
+    const file = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) files.push(...await runtimeFiles(directory, file));
+    else if (entry.isFile()) files.push(file);
+    else assert.fail(`Unexpected non-file in preinstalled plugin: ${file}`);
+  }
+  return files;
+}

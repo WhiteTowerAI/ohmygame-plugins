@@ -1,0 +1,24 @@
+{
+  "name": "@ohmygame/aseprite",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Create pixel art and export animation sheets with metadata.",
+  "keywords": [
+    "ohmygame-plugin"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/aseprite"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "skills"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
