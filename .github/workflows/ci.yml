@@ -9,7 +9,8 @@ permissions:
   contents: read
 
 env:
-  OHMYGAME_REF: ${{ vars.OHMYGAME_REF || 'dev' }}
+  # App #825 video-ratio contract; restore dev after it merges, before merging this PR.
+  OHMYGAME_REF: 516be306090f8ecaeedf74e70b4074c3ecf24fa9
 
 jobs:
   check:
