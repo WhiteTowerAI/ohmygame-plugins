@@ -1119,3 +1119,25 @@ test("a lost card-create acknowledgement reuses its UUID and updates the recover
   assert.match(JSON.stringify(f.latest().card.payload), /恢复后的结果/);
   assert.equal(f.calls.filter((r) => r.operation === "send").length, 1);
 });
+
+test("long Chinese results use bounded card chunks and a readable truncation notice", async () => {
+  const f = cardFixture();
+  f.bot.receive(f.event("Build"));
+  await f.bot.tick();
+  f.finish("好".repeat(33_000));
+  await f.bot.tick();
+  const outgoing = f.store.state.deliveries[0]!.outgoing;
+  assert.ok(outgoing.length > 1);
+  assert.ok(
+    outgoing.every(
+      (o) => Buffer.byteLength(JSON.stringify(o.card!.payload)) < 20_000,
+    ),
+  );
+  const text = outgoing.map((o) => o.text).join("");
+  assert.match(text, /\n\n结果已缩短/);
+  assert.ok(!text.includes("\\n"));
+  assert.equal(
+    new Store(f.folder, "app:owner").state.deliveries[0]!.outgoing.length,
+    outgoing.length,
+  );
+});

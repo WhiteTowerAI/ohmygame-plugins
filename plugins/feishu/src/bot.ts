@@ -742,7 +742,7 @@ export class Bot {
           (read.truncated || content.length > 32_000
             ? this.t(
                 "\n\nResponse shortened. Read the full conversation in OhMyGame.",
-                "\\n\\n结果已缩短，请在 OhMyGame 查看完整会话。",
+                "\n\n结果已缩短，请在 OhMyGame 查看完整会话。",
               )
             : ""),
       );
