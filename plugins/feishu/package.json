@@ -1,0 +1,26 @@
+{
+  "name": "@ohmygame/feishu",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Control OhMyGame from a private Feishu bot chat.",
+  "keywords": [
+    "ohmygame-plugin",
+    "feishu"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/feishu"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "dist",
+    "assets",
+    "locales"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "private": true
+}

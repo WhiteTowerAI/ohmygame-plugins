@@ -1,0 +1,19 @@
+{
+  "plugin.name": "飞书",
+  "plugin.description": "在飞书机器人私聊中向 OhMyGame 智能体发送消息。",
+  "plugin.longDescription": "按需连接你的飞书企业自建应用。只有绑定的用户可以查看项目、选择对话、发送文本和停止任务。待审批操作请在 OhMyGame 中确认。请保持应用打开或启用后台运行。暂不支持群聊、附件和 Lark 账号。配置步骤见插件 README。",
+  "config.appId.title": "App ID",
+  "config.appId.description": "飞书自建应用的 cli_ App ID。请开启机器人和长连接消息事件。",
+  "config.appSecret.title": "App Secret",
+  "config.appSecret.description": "飞书开发者后台中的 App Secret。",
+  "config.ownerOpenId.title": "允许访问的用户 open_id",
+  "config.ownerOpenId.description": "你在当前应用中的 ou_ ID，不是 user_id 或 union_id。其他用户和群聊消息会被忽略。\n\n1. 登录 API 调试台，选择与上方 App ID 相同的应用。\n2. 找到「发送消息」，将 ID 类型选为 open_id，点击「复制 open_id」。\n3. 选中自己，复制成员 ID，粘贴到此处。无需实际发送消息。\n\n官方获取说明：https://open.feishu.cn/document/home/user-identity-introduction/open-id",
+  "action.settings-status": "连接状态",
+  "action.pair": "绑定账号",
+  "action.rebind": "重新绑定",
+  "action.cancel-pair": "取消绑定",
+  "action.unbind": "解除绑定",
+  "action.begin-setup": "快捷创建机器人",
+  "action.cancel-setup": "取消创建",
+  "action.finish-setup": "连接机器人"
+}

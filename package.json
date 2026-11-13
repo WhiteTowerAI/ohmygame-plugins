@@ -10,14 +10,21 @@
   "scripts": {
     "build": "tsx src/build-index.ts",
     "test": "tsx --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:feishu": "node scripts/build-feishu.mjs",
+    "pretest": "npm run build:feishu"
   },
   "dependencies": {
     "tar": "7.5.22",
     "tsx": "4.20.5"
   },
   "devDependencies": {
+    "@larksuiteoapi/node-sdk": "1.76.0",
     "@types/node": "^24.3.0",
-    "typescript": "^5.9.2"
+    "@types/ws": "8.18.1",
+    "esbuild": "0.28.2",
+    "protobufjs": "7.6.6",
+    "typescript": "^5.9.2",
+    "ws": "8.23.0"
   }
 }

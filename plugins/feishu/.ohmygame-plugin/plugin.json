@@ -1,0 +1,172 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/feishu",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.6.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.png",
+  "categories": ["integration"],
+  "entrypoints": {
+    "native": "./dist/index.mjs"
+  },
+  "capabilities": {
+    "native": true,
+    "sessions": true,
+    "secrets": true,
+    "network": [
+      "open.feishu.cn",
+      "msg-frontier.feishu.cn",
+      "accounts.feishu.cn"
+    ]
+  },
+  "configuration": {
+    "appId": {
+      "type": "text",
+      "title": "%config.appId.title%",
+      "description": "%config.appId.description%",
+      "required": true
+    },
+    "appSecret": {
+      "type": "secret",
+      "title": "%config.appSecret.title%",
+      "description": "%config.appSecret.description%",
+      "required": true
+    },
+    "ownerOpenId": {
+      "type": "text",
+      "title": "%config.ownerOpenId.title%",
+      "description": "%config.ownerOpenId.description%"
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "id": "settings-status",
+        "title": "%action.settings-status%",
+        "run": {
+          "native": "settingsStatus",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "pair",
+        "title": "%action.pair%",
+        "run": {
+          "native": "beginPairing",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "rebind",
+        "title": "%action.rebind%",
+        "run": {
+          "native": "beginPairing",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "cancel-pair",
+        "title": "%action.cancel-pair%",
+        "run": {
+          "native": "cancelPairing",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "unbind",
+        "title": "%action.unbind%",
+        "run": {
+          "native": "unbind",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "begin-setup",
+        "title": "%action.begin-setup%",
+        "run": {
+          "native": "beginSetup",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "cancel-setup",
+        "title": "%action.cancel-setup%",
+        "run": {
+          "native": "cancelSetup",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "finish-setup",
+        "title": "%action.finish-setup%",
+        "run": {
+          "native": "finishSetup",
+          "changesFiles": false
+        }
+      }
+    ],
+    "settings": {
+      "groups": [
+        {
+          "rows": [
+            {
+              "field": "appId"
+            },
+            {
+              "field": "appSecret"
+            },
+            {
+              "widget": "status"
+            },
+            {
+              "title": "%action.pair%",
+              "action": {
+                "command": "pair"
+              }
+            },
+            {
+              "title": "%action.rebind%",
+              "action": {
+                "command": "rebind"
+              }
+            },
+            {
+              "title": "%action.cancel-pair%",
+              "action": {
+                "command": "cancel-pair"
+              }
+            },
+            {
+              "title": "%action.unbind%",
+              "action": {
+                "command": "unbind"
+              }
+            },
+            {
+              "title": "%action.begin-setup%",
+              "action": {
+                "command": "begin-setup"
+              }
+            },
+            {
+              "title": "%action.finish-setup%",
+              "action": {
+                "command": "finish-setup"
+              }
+            },
+            {
+              "title": "%action.cancel-setup%",
+              "action": {
+                "command": "cancel-setup"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
