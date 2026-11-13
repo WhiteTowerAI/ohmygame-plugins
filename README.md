@@ -16,6 +16,10 @@ publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
 - Messaging connections: [`feishu`](plugins/feishu), an optional private-chat
   bot with an explicit allowed user, durable delivery tracking and approvals
   kept in OhMyGame. Build it with `npm run build:feishu` before local use.
+- Desktop interaction: [`computer-use`](plugins/computer-use), an optional
+  local MCP connection with revocable per-app consent on macOS and per-call
+  approval on Windows/Linux. Requires app API 2.7. Build it
+  with `npm run build:computer-use` before local use.
 - Coding agents that speak the Agent Client Protocol, one plugin each:
   [`antigravity-cli`](plugins/antigravity-cli), [`codebuddy-code`](plugins/codebuddy-code)
   and [`gemini-cli`](plugins/gemini-cli). Command Code's agent is in

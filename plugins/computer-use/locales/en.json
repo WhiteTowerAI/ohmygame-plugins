@@ -1,0 +1,6 @@
+{
+  "plugin.name": "Computer Use",
+  "plugin.description": "Inspect and operate desktop apps with access you can remember and revoke on macOS.",
+  "plugin.longDescription": "An optional desktop connection using Open Computer Use. On macOS, allow an app once or remember access across conversations; revoke it in Settings. Windows/Linux ask per call. Requires Node.js/npm and OS accessibility permissions; macOS screenshots also need Screen Recording. The first connection downloads a pinned native runtime with your account permissions. Screenshots and UI text go to your selected model. Setup and limitations are in the README.",
+  "server.title": "Desktop"
+}
