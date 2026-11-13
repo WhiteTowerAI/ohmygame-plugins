@@ -27,6 +27,11 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 
+import { Registration, register } from "../plugins/feishu/src/registration.ts";
+import { AccountStore } from "../plugins/feishu/src/store.ts";
+import { defaultHttpInstance, registerApp } from "@larksuiteoapi/node-sdk";
+import { gunzipSync } from "node:zlib";
+
 const folders: string[] = [];
 afterEach(() => {
   for (const folder of folders.splice(0))
@@ -1140,4 +1145,266 @@ test("long Chinese results use bounded card chunks and a readable truncation not
     new Store(f.folder, "app:owner").state.deliveries[0]!.outgoing.length,
     outgoing.length,
   );
+});
+
+// Registration uses the real SDK contract with an injected authorization server.
+
+type RegistrationOptions = Parameters<typeof registerApp>[0];
+function registrationFixture() {
+  const folder = mkdtempSync(path.join(tmpdir(), "omg-feishu-registration-"));
+  folders.push(folder);
+  let options!: RegistrationOptions;
+  let resolve!: (value: Awaited<ReturnType<typeof registerApp>>) => void;
+  let reject!: (reason: unknown) => void;
+  let calls = 0,
+    now = 1_800_000_000_000,
+    monotonic = 0;
+  const registration = new Registration(
+    folder,
+    async (input) => {
+      options = input;
+      calls++;
+      const promise = new Promise<Awaited<ReturnType<typeof registerApp>>>(
+        (yes, no) => {
+          resolve = yes;
+          reject = no;
+        },
+      );
+      await input.onQRCodeReady?.({
+        url: "https://open.feishu.cn/registration?code=fixture",
+        expireIn: 60,
+      });
+      return promise;
+    },
+    () => now,
+    () => monotonic,
+  );
+  return {
+    folder,
+    registration,
+    get options() {
+      return options;
+    },
+    get calls() {
+      return calls;
+    },
+    resolve: () =>
+      resolve({
+        client_id: "cli_1234567890abcdef",
+        client_secret: "fixture-secret",
+        user_info: { open_id: "ou_authorizer", tenant_brand: "feishu" },
+      }),
+    reject: (reason: unknown) => reject(reason),
+    time: (wall: number, mono: number) => {
+      now += wall;
+      monotonic += mono;
+    },
+  };
+}
+const settleRegistration = () =>
+  new Promise<void>((resolve) => setImmediate(resolve));
+
+test("quick creation presets only required bot permissions and saves identity only on explicit connection", async () => {
+  const f = registrationFixture();
+  try {
+    await f.registration.begin();
+    await f.registration.begin();
+    assert.equal(f.calls, 1);
+    assert.equal(f.options.createOnly, true);
+    assert.deepEqual(f.options.addons, {
+      preset: false,
+      scopes: {
+        tenant: ["im:message.p2p_msg:readonly", "im:message:send_as_bot"],
+      },
+      events: { items: { tenant: ["im.message.receive_v1"] } },
+      callbacks: { items: ["card.action.trigger"] },
+    });
+    assert.equal(f.registration.status("zh-CN").link?.title, "继续在飞书创建");
+    assert.throws(() => f.registration.finish());
+    f.resolve();
+    await settleRegistration();
+    assert.deepEqual(f.registration.status().actions, [
+      "finish-setup",
+      "cancel-setup",
+    ]);
+    assert.ok(
+      !JSON.stringify(f.registration.status()).includes("fixture-secret"),
+    );
+    assert.equal(
+      new AccountStore(f.folder, "cli_1234567890abcdef").owner,
+      null,
+    );
+    assert.deepEqual(f.registration.finish().configuration, {
+      appId: "cli_1234567890abcdef",
+      appSecret: "fixture-secret",
+    });
+    assert.equal(
+      new AccountStore(f.folder, "cli_1234567890abcdef").owner,
+      "ou_authorizer",
+    );
+  } finally {
+    f.registration.close();
+  }
+});
+
+test("cancel, disposal and expired clocks cannot resurrect late registration credentials", async () => {
+  for (const stop of [
+    "cancel",
+    "close",
+    "expired",
+    "rollback",
+    "resume",
+  ] as const) {
+    const f = registrationFixture();
+    try {
+      await f.registration.begin();
+      if (stop === "cancel" || stop === "close") f.registration[stop]();
+      else if (stop === "rollback") f.time(-1, 0);
+      else if (stop === "resume") f.time(61_000, 0);
+      else f.time(0, 61_000);
+      f.resolve();
+      await settleRegistration();
+      assert.equal(f.options.signal?.aborted, true);
+      assert.equal(f.registration.status().link, undefined);
+      assert.throws(() => f.registration.finish());
+      if (stop === "close")
+        await assert.rejects(f.registration.begin(), /stopped/);
+    } finally {
+      f.registration.close();
+    }
+  }
+});
+
+test("registration denies Lark and authorization errors without exposing provider response details", async () => {
+  for (const code of ["access_denied", "expired_token", "unknown", "lark"]) {
+    const f = registrationFixture();
+    try {
+      await f.registration.begin();
+      if (code === "lark")
+        f.options.onStatusChange?.({ status: "domain_switched" });
+      else f.reject({ code, message: "fixture-secret" });
+      await settleRegistration();
+      assert.equal(f.options.signal?.aborted, true);
+      assert.deepEqual(f.registration.status().actions, ["begin-setup"]);
+      assert.ok(
+        !JSON.stringify(f.registration.status()).includes("fixture-secret"),
+      );
+      assert.throws(() => f.registration.finish());
+    } finally {
+      f.registration.close();
+    }
+  }
+});
+
+test("registration rejects unsafe links and malformed credentials; missing identity retains code pairing", async () => {
+  const folder = mkdtempSync(
+    path.join(tmpdir(), "omg-feishu-registration-input-"),
+  );
+  folders.push(folder);
+  for (const url of [
+    "http://open.feishu.cn/path",
+    "https://open.feishu.cn.evil.example/path",
+    "https://name:password@open.feishu.cn/path",
+  ]) {
+    const registration = new Registration(folder, async (options) => {
+      await options.onQRCodeReady?.({ url, expireIn: 60 });
+      throw Error("Must reject link");
+    });
+    try {
+      await registration.begin();
+      assert.equal(registration.status().link, undefined);
+      assert.throws(() => registration.finish());
+    } finally {
+      registration.close();
+    }
+  }
+  for (const client_secret of [
+    "",
+    "bad\nsecret",
+    "x".repeat(4097),
+    "valid-secret",
+  ]) {
+    const registration = new Registration(folder, async () => ({
+      client_id: "cli_1234567890abcdef",
+      client_secret,
+    }));
+    try {
+      await registration.begin();
+      if (client_secret === "valid-secret") {
+        assert.equal(
+          registration.finish().configuration.appSecret,
+          client_secret,
+        );
+        assert.equal(
+          new AccountStore(folder, "cli_1234567890abcdef").owner,
+          null,
+        );
+      } else assert.throws(() => registration.finish());
+    } finally {
+      registration.close();
+    }
+  }
+});
+
+test("real SDK registration serializes the minimal preset and bounds requests and cancellation", async () => {
+  const original = defaultHttpInstance.defaults.adapter;
+  const controller = new AbortController();
+  let capturedUrl = "",
+    requests = 0;
+  defaultHttpInstance.defaults.adapter = async (config) => {
+    requests++;
+    assert.equal(config.timeout, 8000);
+    assert.equal(config.maxRedirects, 0);
+    assert.equal(config.maxContentLength, 128000);
+    assert.equal(config.signal, controller.signal);
+    assert.equal(
+      config.url,
+      "https://accounts.feishu.cn/oauth/v1/app/registration",
+    );
+    const form = new URLSearchParams(String(config.data));
+    assert.equal(form.get("action"), "begin");
+    return {
+      data: {
+        device_code: "fixture-device",
+        verification_uri_complete:
+          "https://open.feishu.cn/registration?code=fixture",
+        expires_in: 60,
+        interval: 1,
+      },
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config,
+    };
+  };
+  try {
+    await assert.rejects(
+      register({
+        source: "ohmygame",
+        createOnly: true,
+        signal: controller.signal,
+        addons: {
+          preset: false,
+          scopes: { tenant: ["im:message:send_as_bot"] },
+        },
+        onQRCodeReady: ({ url }) => {
+          capturedUrl = url;
+          controller.abort();
+        },
+      }),
+    );
+    const url = new URL(capturedUrl);
+    assert.equal(url.searchParams.get("createOnly"), "true");
+    assert.deepEqual(
+      JSON.parse(
+        gunzipSync(
+          Buffer.from(url.searchParams.get("addons")!, "base64url"),
+        ).toString(),
+      ),
+      { preset: false, scopes: { tenant: ["im:message:send_as_bot"] } },
+    );
+    assert.equal(requests, 1);
+  } finally {
+    defaultHttpInstance.defaults.adapter = original;
+  }
 });

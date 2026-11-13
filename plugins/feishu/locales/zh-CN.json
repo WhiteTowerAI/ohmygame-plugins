@@ -12,5 +12,8 @@
   "action.pair": "绑定账号",
   "action.rebind": "重新绑定",
   "action.cancel-pair": "取消绑定",
-  "action.unbind": "解除绑定"
+  "action.unbind": "解除绑定",
+  "action.begin-setup": "快捷创建机器人",
+  "action.cancel-setup": "取消创建",
+  "action.finish-setup": "连接机器人"
 }

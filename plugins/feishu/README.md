@@ -8,6 +8,44 @@ The plugin manifest prevents API 2.5 hosts from activating this version.
 
 ## Set up
 
+### Quick creation / 快捷创建
+
+Enable the plugin for all projects, open **Settings → Connection**, and click
+**Create a robot**. The official Feishu SDK opens a creation page: confirm with
+your Feishu account, return to OhMyGame and click **Connect robot**. The app saves
+the App ID and Secret without showing the secret on the page. When Feishu returns
+the confirming account's `open_id`, it is bound automatically; otherwise use
+**Bind account** below. Send `/panel` privately to verify both directions.
+
+在插件设置点击 **快捷创建机器人** → 在飞书扫码确认 → 回来点 **连接机器人**。
+通常无需复制 App ID、Secret 或查询用户 ID。确认创建的飞书账号会在返回身份时自动绑定，
+之后仍可重新绑定或解绑。已有完整应用配置时不显示创建按钮，避免替换正在使用的机器人；
+手动配置入口始终保留。
+
+The preset requests only bot private-message receive/send permissions,
+`im.message.receive_v1` and `card.action.trigger`; it requests no directory,
+group-history or CardKit access. Feishu's preset/addons support is rollout-gated:
+where unavailable, the platform may ignore the preset and use its default
+creation flow. **Review the actual permissions in Feishu before confirming**.
+After connecting, check that both events and callbacks use persistent connection,
+that the subscriptions below are present, and that bot availability/publication
+meet your tenant's requirements. Creation alone does not prove messages or card
+clicks can reach this computer.
+
+新增网络域名 `accounts.feishu.cn` 用于官方扫码创建；更新插件时需审阅这项权限。
+预设能力受飞书灰度限制，最终权限以飞书确认页为准；若没有自动带入，请按下方手动步骤
+补齐 **机器人能力、消息事件、卡片回调、长连接、可用范围及发布**。无需公网回调地址。
+
+Creation stays active when Settings is hidden. It expires within ten minutes;
+cancelling, disabling the plugin or quitting OhMyGame clears temporary local
+credentials and stops polling. It does **not** delete an app already created in
+Feishu. If interrupted after creation but before connecting, recover its App ID
+and Secret from the Feishu Developer Console and enter them below. No device
+codes, creation URLs or temporary secrets are persisted; connected credentials
+use the app's existing private plugin-settings storage. Lark is not supported.
+
+### Manual setup
+
 1. Create an enterprise self-built app in the [Feishu Developer Console](https://open.feishu.cn/app).
    Enable its bot, add yourself to its availability scope, and enable the
    permissions to receive private messages (`im:message.p2p_msg:readonly`) and
@@ -69,6 +107,10 @@ language and Markdown formatting. Plugin settings support English and Chinese.
 如果可以收到卡片但点击失败，先检查**回调配置**，再确认应用在线、版本已发布且账号仍已绑定。
 
 本地验收：
+
+- 未配置应用时点击快捷创建，在飞书确认后回来连接；检查 App ID 自动填入、Secret 仅显示已配置。
+- 核对实际授权范围、长连接消息/卡片回调和应用发布状态；发送 `/panel` 验证自动绑定与消息往返。
+- 创建途中切换设置页应保持进度；取消、过期、重启后应可重试，原有手动配置仍可用。
 
 - 发送 `/panel`，选择项目、会话或新建会话；有多页时检查翻页和当前选择。
 - 切换模型及思考强度，对照桌面当前会话；无思考选项的模型不显示该选择器。
@@ -164,6 +206,8 @@ Rollout: merge app #820 first. CI temporarily pins its API 2.6 commit; restore
 Publishing continues to use the app development branch. Do not publish the
 plugin until API 2.6 app builds are available.
 
+Tests also exercise the official registration protocol with a local adapter, minimal preset encoding, cancellation/expiry, identity binding and secret-free status. No test creates a real tenant app.
+
 Tests cover durable deduplication, ambiguous sends, restart reconciliation,
 owner isolation, approvals, bounded/partial retries, corrupted state and real
 SDK WebSocket framing/reconnect/close and card callback ACKs against a local
@@ -173,7 +217,7 @@ the shared desktop/plugin model transitions and renderer settings events. Live t
 subscription, permission approval and end-user delivery still need a real
 Feishu test app; local fixtures cannot establish those outcomes.
 
-Protocol references: [official Node SDK](https://github.com/larksuite/node-sdk),
+Protocol references: [official Node SDK and app registration](https://github.com/larksuite/node-sdk#app-registration),
 [receive-message event](https://open.feishu.cn/document/server-docs/im-v1/message/events/receive),
 [reply API](https://open.feishu.cn/document/server-docs/im-v1/message/reply),
 [callback setup and three-second ACK](https://open.feishu.cn/document/event-subscription-guide/callback-subscription/receive-and-handle-callbacks),

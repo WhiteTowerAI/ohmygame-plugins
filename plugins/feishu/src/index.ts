@@ -1,3 +1,4 @@
+import { Registration } from "./registration.ts";
 import type { PluginContext } from "../../../app/src/shared/extension-host-protocol.js";
 import type { Transport } from "./bot.ts";
 import { Pairing, type ConnectionState } from "./pairing.ts";
@@ -17,25 +18,39 @@ export async function activate(
     new FeishuTransport(id, secret),
 ) {
   if (!context.sessions) return;
+  const registration = new Registration(context.dataFolder);
+  context.onDispose(() => registration.close());
   let pairing: Pairing | undefined;
   let failed = false;
   const status = (input: unknown) => {
     const locale = (input as { locale?: string } | null)?.locale;
     return (
-      pairing?.status(locale) ?? {
-        message:
-          locale === "zh-CN"
-            ? failed
-              ? "无法读取账号数据，请查看插件日志。原文件已保留。"
-              : "保存 App ID 和 App Secret 后连接飞书。"
-            : failed
-              ? "Cannot load account data. Check the plugin log; original files were preserved."
-              : "Save your App ID and App Secret to connect to Feishu.",
-        actions: [],
-      }
+      pairing?.status(locale) ??
+      (failed
+        ? {
+            message:
+              locale === "zh-CN"
+                ? "无法读取账号数据，请查看插件日志。原文件已保留。"
+                : "Cannot load account data. Check the plugin log; original files were preserved.",
+            actions: [],
+          }
+        : registration.status(locale))
     );
   };
   context.registerCommand("settingsStatus", status);
+  context.registerCommand("beginSetup", async (input) => {
+    if (pairing || failed) throw new Error("An app is already configured");
+    await registration.begin();
+    return status(input);
+  });
+  context.registerCommand("cancelSetup", (input) => {
+    registration.cancel();
+    return status(input);
+  });
+  context.registerCommand("finishSetup", (input) => {
+    if (pairing || failed) throw new Error("An app is already configured");
+    return registration.finish((input as { locale?: string } | null)?.locale);
+  });
   for (const [handler, action] of [
     ["beginPairing", "begin"],
     ["cancelPairing", "cancel"],

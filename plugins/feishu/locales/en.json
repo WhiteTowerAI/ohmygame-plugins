@@ -12,5 +12,8 @@
   "action.pair": "Bind account",
   "action.rebind": "Rebind account",
   "action.cancel-pair": "Cancel binding",
-  "action.unbind": "Unbind account"
+  "action.unbind": "Unbind account",
+  "action.begin-setup": "Create a robot",
+  "action.cancel-setup": "Cancel setup",
+  "action.finish-setup": "Connect robot"
 }

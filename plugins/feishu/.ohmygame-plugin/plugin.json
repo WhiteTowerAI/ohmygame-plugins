@@ -9,9 +9,7 @@
   "description": "%plugin.description%",
   "longDescription": "%plugin.longDescription%",
   "icon": "./assets/icon.png",
-  "categories": [
-    "integration"
-  ],
+  "categories": ["integration"],
   "entrypoints": {
     "native": "./dist/index.mjs"
   },
@@ -21,7 +19,8 @@
     "secrets": true,
     "network": [
       "open.feishu.cn",
-      "msg-frontier.feishu.cn"
+      "msg-frontier.feishu.cn",
+      "accounts.feishu.cn"
     ]
   },
   "configuration": {
@@ -84,6 +83,30 @@
           "native": "unbind",
           "changesFiles": false
         }
+      },
+      {
+        "id": "begin-setup",
+        "title": "%action.begin-setup%",
+        "run": {
+          "native": "beginSetup",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "cancel-setup",
+        "title": "%action.cancel-setup%",
+        "run": {
+          "native": "cancelSetup",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "finish-setup",
+        "title": "%action.finish-setup%",
+        "run": {
+          "native": "finishSetup",
+          "changesFiles": false
+        }
       }
     ],
     "settings": {
@@ -121,6 +144,24 @@
               "title": "%action.unbind%",
               "action": {
                 "command": "unbind"
+              }
+            },
+            {
+              "title": "%action.begin-setup%",
+              "action": {
+                "command": "begin-setup"
+              }
+            },
+            {
+              "title": "%action.finish-setup%",
+              "action": {
+                "command": "finish-setup"
+              }
+            },
+            {
+              "title": "%action.cancel-setup%",
+              "action": {
+                "command": "cancel-setup"
               }
             }
           ]
