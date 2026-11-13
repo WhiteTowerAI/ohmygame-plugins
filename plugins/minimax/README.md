@@ -13,7 +13,7 @@ During testing the provider names include “(plugin)” to distinguish them.
 
 ## Local testing / 本地测试
 
-1. Run the companion app branch. In Plugins, install this `plugins/minimax`
+1. Run app `dev` including merged #825. In Plugins, install this `plugins/minimax`
    folder, review its three network hosts, then enable it for every project.
    在配套应用分支中，打开插件页，安装本目录并启用；检查图标和中英文说明。
 2. Set either **China API key** from [platform.minimax.cn](https://platform.minimax.cn/)
