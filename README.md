@@ -30,6 +30,10 @@ publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
   [`command-code`](plugins/command-code), with its models: a vendor's agent and
   models are one plugin.
 
+- H5 publishing: [`taptap`](plugins/taptap) manages existing web builds, store
+  drafts and package bindings with the official CLI. TapTap Maker remains a
+  separate plugin for Maker projects.
+
 `npm test` packs each one and judges it as the index will, so CI refuses one the
 market wouldn't list. To release one, raise `version` in both its `package.json`
 and `.ohmygame-plugin/plugin.json`; on `main`, the

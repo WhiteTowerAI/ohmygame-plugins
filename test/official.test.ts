@@ -62,7 +62,7 @@ describe("official plugins", async () => {
 
 const PREINSTALLED = new Set([
   "aseprite", "blender", "cocos-creator", "douyin-minigame", "game-studio",
-  "godot", "taptap-maker", "tiled", "unity", "unreal-engine", "web-game-studio",
+  "godot", "taptap", "taptap-maker", "tiled", "unity", "unreal-engine", "web-game-studio",
   "wechat-minigame",
 ]);
 
