@@ -1,0 +1,11 @@
+{
+  "plugin.name": "MiniMax Video",
+  "plugin.description": "Make videos with MiniMax H3 and H3 Max using your own API key.",
+  "plugin.longDescription": "Adds separate China and Global video providers. Supports text, first/last frames and up to nine reference images. Stop ends local waiting; the remote task may continue and incur charges. Existing built-in MiniMax settings are not migrated yet.",
+  "provider.cn": "MiniMax China (plugin)",
+  "provider.global": "MiniMax Global (plugin)",
+  "config.cn.title": "China API key",
+  "config.cn.description": "From platform.minimax.cn → API Keys. Only needed for the China provider.",
+  "config.global.title": "Global API key",
+  "config.global.description": "From platform.minimax.io → API Keys. Only needed for the Global provider."
+}
