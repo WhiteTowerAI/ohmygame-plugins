@@ -9,8 +9,7 @@ permissions:
   contents: read
 
 env:
-  # API 2.6 companion: WhiteTowerAI/ohmygame#820. Restore dev after that PR merges, before merging this PR.
-  OHMYGAME_REF: ${{ vars.OHMYGAME_REF || '9632a52605df121449e24366d2c5dbd2da37fecf' }}
+  OHMYGAME_REF: ${{ vars.OHMYGAME_REF || 'dev' }}
 
 jobs:
   check:

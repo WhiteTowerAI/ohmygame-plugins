@@ -26,7 +26,9 @@ publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
 market wouldn't list. To release one, raise `version` in both its `package.json`
 and `.ohmygame-plugin/plugin.json`; on `main`, the
 [Publish plugins](.github/workflows/publish.yml) workflow publishes every
-version npm doesn't have yet, with provenance.
+version npm doesn't have yet, with provenance. Packages marked `private: true`
+are tested and packed but skipped by publishing until their rollout dependencies
+are available.
 
 A package's first version needs the `NPM_TOKEN` secret, a token of an
 `@ohmygame` owner. After that, add this repository and `publish.yml` as each

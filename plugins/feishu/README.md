@@ -201,10 +201,12 @@ with Develop on. The build bundles the pinned official Node SDK and includes
 its dependency licenses; the installed app runs no package installation.
 The test/publish workflows build the same artifact before packing it.
 
-Rollout: merge app #820 first. CI temporarily pins its API 2.6 commit; restore
-`OHMYGAME_REF` to `dev` after that merge and before merging this plugin PR.
-Publishing continues to use the app development branch. Do not publish the
-plugin until API 2.6 app builds are available.
+Rollout: requires the API 2.6 host from app #820. CI follows app `dev` after
+that merge. This package is temporarily `private: true`, so merging it does not
+publish an unusable version for current API 2.4 app releases. Once API 2.6
+app builds have shipped, remove `private` in a release PR and run the plugin
+checks before publishing. The publish workflow skips private packages; local
+folder installation and packing for tests still work.
 
 Tests also exercise the official registration protocol with a local adapter, minimal preset encoding, cancellation/expiry, identity binding and secret-free status. No test creates a real tenant app.
 

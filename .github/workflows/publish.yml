@@ -44,6 +44,10 @@ jobs:
           # One package npm refuses (such as one without its trusted publisher yet) doesn't hold back the others.
           failed=()
           for dir in plugins/*/; do
+            if [ "$(node -p "require('./${dir}package.json').private === true")" = "true" ]; then
+              echo "$dir is held from publication (private package)"
+              continue
+            fi
             name=$(node -p "require('./${dir}package.json').name")
             version=$(node -p "require('./${dir}package.json').version")
             if [ "$(npm view "$name@$version" version 2>/dev/null)" = "$version" ]; then
