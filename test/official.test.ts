@@ -40,6 +40,7 @@ describe("official plugins", async () => {
       const verdict = await judgeTarball(app, pkg.name, pkg.version, await readFile(path.join(scratch, filename)));
       assert.deepEqual(verdict.rejected, undefined);
       assert.equal(verdict.plugin?.id, manifest.id);
+      if (manifest.icon) assert.ok(verdict.plugin?.icon, `${folder} icon must survive the app validator and package indexing`);
       for (const locale of ["en", "zh-CN"]) assert.ok(verdict.plugin?.displayName[locale] && verdict.plugin.description[locale]);
     });
   }

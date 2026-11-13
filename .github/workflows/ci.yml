@@ -9,7 +9,8 @@ permissions:
   contents: read
 
 env:
-  OHMYGAME_REF: ${{ vars.OHMYGAME_REF || 'dev' }}
+  # Companion app API 2.7: restore the default dev ref after app PR #822 merges.
+  OHMYGAME_REF: 0cb107a6fc60b952030127ebae151efc03b7e0c1
 
 jobs:
   check:

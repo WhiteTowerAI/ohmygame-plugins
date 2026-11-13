@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Optional desktop observation and control with approval for each call.",
+  "description": "Optional desktop control with revocable per-app consent on macOS.",
   "keywords": [
     "ohmygame-plugin",
     "computer-use"

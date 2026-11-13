@@ -1,6 +1,6 @@
 {
   "plugin.name": "电脑操作",
-  "plugin.description": "经逐次确认后查看和操作桌面应用。",
-  "plugin.longDescription": "通过 Open Computer Use 连接桌面应用。每次查看或操作都需要在 OhMyGame 中确认。需要 Node.js/npm 和系统辅助功能权限；macOS 截图还需要屏幕录制权限。首次连接会下载固定版本的本地运行时，以当前账号权限运行，项目范围不代表桌面沙箱。截图和界面文字会发送给所选模型。安装步骤和限制见插件 README。",
+  "plugin.description": "查看和操作桌面应用，macOS 可按应用记住授权并随时撤销。",
+  "plugin.longDescription": "通过 Open Computer Use 连接桌面应用。macOS 可按应用选择仅允许这次或记住授权，在插件设置中随时撤销；Windows/Linux 仍逐次确认。需要 Node.js/npm 和系统辅助功能权限；macOS 截图还需要屏幕录制权限。首次连接会下载固定版本的本地运行时，以当前账号权限运行。截图和界面文字发送给所选模型。安装步骤和限制见 README。",
   "server.title": "桌面"
 }

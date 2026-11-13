@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { appId, hostApp } from "./desktop.js";
 import manifest from "../.ohmygame-plugin/plugin.json" with { type: "json" };
 import type { PluginContext } from "../../../app/src/shared/extension-host-protocol.js";
 import type {
@@ -14,7 +15,10 @@ const serverName = `plugin-${createHash("sha256").update(manifest.id).digest("he
 const nonempty = (value: unknown): value is string =>
   typeof value === "string" && !!value.trim();
 
-export function beforeCall(call: ToolHookInput): ToolHookDecision {
+export function beforeCall(
+  call: ToolHookInput,
+  platform = process.platform,
+): ToolHookDecision {
   if (call.server !== serverName) return { decision: "allow" };
   if (!tools.has(call.tool))
     return {
@@ -30,6 +34,22 @@ export function beforeCall(call: ToolHookInput): ToolHookDecision {
       reason:
         "Global mouse and keyboard input is disabled. Use a supported app-targeted action.",
     };
+  if (platform === "darwin") {
+    if (call.tool === "list_apps") return { decision: "allow" };
+    if (!appId(call.args.app) || hostApp(call.args.app))
+      return {
+        decision: "deny",
+        reason:
+          "Select an explicit app id from list_apps. OhMyGame cannot automate its own approvals.",
+      };
+    const id = call.args.app.toLowerCase();
+    return {
+      decision: "ask",
+      reason:
+        "Read screenshots and UI text with the selected model, and operate this app on your behalf.",
+      remember: { key: `app:macos:${id}`, label: id },
+    };
+  }
   if (call.tool !== "list_apps" && call.tool !== "list_windows") {
     const window = call.args.window as
       Record<string, unknown> | null | undefined;

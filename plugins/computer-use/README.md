@@ -1,12 +1,14 @@
 # Computer Use
 
 An optional OhMyGame plugin for inspecting and operating desktop applications.
-Each observation and action requires approval in the conversation. It is not
+On macOS, approve an app once with **Allow and remember**, or choose **Allow once**.
+Revoke saved access in **Plugins → Computer Use → Settings**. Windows/Linux retain
+per-call approval until the runtime offers unambiguous app identities. It is not
 preinstalled and has no app-wide background connection or cross-project session access.
 
 ## Try locally
 
-1. Use an OhMyGame build with plugin API **2.5 or newer** (current `dev`).
+1. Use an OhMyGame build with plugin API **2.7 or newer** ([app #822](https://github.com/WhiteTowerAI/ohmygame/pull/822), branch `feat/plugin-app-approvals`; app #820 alone is insufficient).
 2. Install Node.js **22.19+** with npm. `npx` must be on the PATH available to
    OhMyGame; restart the desktop app after installing Node.js.
 3. In this repository, run `npm ci` and `npm run build:computer-use`.
@@ -15,8 +17,8 @@ preinstalled and has no app-wide background connection or cross-project session 
    access. Turn **Every project** off for a project-only test, then enable it
    in the test project’s **Project plugins** panel.
 5. Open a disposable document in a desktop app, then ask the agent to inspect
-   that app. Review the tool and arguments in OhMyGame before approving. Reject
-   one action first; it must not reach the app. Then try typing a short sentence
+   that app. Review the app and arguments before approving. Reject the first
+   request; it must not reach the app. Then allow and remember access, and try typing a short sentence
    into the disposable document and verifying the result.
 
 The first MCP connection downloads **`@opensymph/open-computer-use@1.3.0`** from
@@ -69,19 +71,34 @@ perform that step yourself; do not enable a global-input workaround.
 The MCP allowlist contains `list_apps`, `list_windows`, `get_app_state`,
 `get_window`, `get_window_state`, `click`, `perform_secondary_action`, `scroll`,
 `drag`, `type_text`, `press_key`, and `set_value`. Only tools actually offered by
-the platform appear. App/window observations are approved too: they can expose
-private content and `get_app_state` can begin an app session. Use an explicit
-app/window target and a fresh observation; prefer accessibility elements over
-coordinates. No `launch_app`, `activate_window`, full-display capture or raw
-shell tool is exposed. Native app-targeted actions can still affect focus or app
-state; disabling global fallbacks is not a guarantee that an app never reacts.
+the platform appear. App/window observations can expose private content and
+`get_app_state` can begin an app session. On macOS, `list_apps` returns only running
+app names and bundle IDs without a prompt; usage history and window titles are
+removed. Every other call needs the exact `app` bundle ID, even when targeting a
+window. The proxy checks the window's actual owner, rejects ambiguous/mismatched
+owners and the legacy `window_id` alias, and filters `list_windows` to that app.
+OhMyGame and the development Electron host cannot be targets. Use fresh
+observations; prefer accessibility elements over coordinates. No `launch_app`,
+`activate_window`, full-display capture or raw shell tool is exposed. Native
+actions may still affect focus or app state.
 
-The native hook returns `ask` for every allowed desktop call, rejects unknown
-calls to this server and explicit global-input requests, and leaves other tools
-alone. OhMyGame owns approval, argument display, cancellation and server lifetime.
-A pending approval is not an execution grant; declining or stopping prevents that
-call. There is no "allow for this session" decision. External MCP clients without
-an active OhMyGame conversation cannot grant these approvals.
+The native hook always checks the current call. On macOS it requests a target
+scope; the host owns **Allow and remember**, **Allow once** and **Deny**. Only
+explicit remembered consent persists across conversations/restarts; different
+apps require separate consent. Revoking a target invalidates pending approvals
+and the next call asks again. Plugin content changes also require fresh consent.
+The host stores access in its own versioned data file; the plugin cannot grant
+itself access. Uninstalling the last version clears it unless **Keep data** is
+selected. External MCP clients without an active OhMyGame conversation cannot
+consume remembered grants. The native runtime remains trusted: bundle IDs and
+window-owner checks are consent routing, not code-signature verification or an
+OS sandbox. A window check and a native action are separate operations, so they
+do not provide an atomic OS identity guarantee.
+
+Windows/Linux still require per-call approval. Their pinned runtime resolves
+app names/PIDs using window-title matches too; persisting an app-name grant
+would not reliably identify the target. Their existing supported tools remain
+available without claiming macOS-equivalent remembered access.
 
 Once dispatched, an OS action might complete even if the request times out or
 the agent stops. This runtime does not guarantee cancellation of in-flight
@@ -103,7 +120,8 @@ boundaries, not containment of a compromised executable or other shell tools.
 ## Development and release
 
 `npm test` includes the package checks plus tests of this hook with the app's
-actual manifest resolution, approval gate and a fixture MCP server. The fixture
+actual manifest resolution, approval gate and a fixture MCP server, plus forged
+window ownership, catalog filtering and target validation. The fixture
 records calls and never controls a real desktop. Platform permissions, screen
 capture and input must still be tested locally on each target OS before release.
 
@@ -116,34 +134,31 @@ and is checked against `PluginServices`; revisit it if that host contract change
 
 ## 本地验收（macOS）
 
-使用包含应用 #820 的开发版本；插件目前不在市场上发布。仓库已有依赖时，
-只需要在仓库根目录执行 `npm run build:computer-use`。全新工作区先执行 `npm ci`。
+需要应用 [#822](https://github.com/WhiteTowerAI/ohmygame/pull/822) 分支 **`feat/plugin-app-approvals`（插件 API 2.7）** 和插件分支
+**`feat/computer-use`**；仅 #820 不够。插件仍未发布、未合并。仓库已有依赖时，
+执行 `npm run build:computer-use`；全新工作区先执行 `npm ci`。
 
 1. 在 **插件 → 添加插件 → 本机** 选择 `plugins/computer-use` 文件夹，开启
-   **开发模式**，按界面完成添加并确认权限。若只想在测试项目中使用，关闭插件页
-   **所有项目**，再到测试项目的 **项目插件** 开启 **电脑操作**。
-2. 在插件开发页的 **检查结果** 找到 **桌面**，点击 **测试**。首次需要联网下载。
-   macOS 正常显示已连接、12 个工具。此处成功不代表已具备截图或辅助功能权限。
-3. 如果后面的观察报告权限不足，在终端运行上面的 `doctor` 命令，按助手提示为
-   对应运行时授予辅助功能和屏幕录制权限。完成后退出并重新打开 OhMyGame。
-   无需重置系统权限，也不要运行给其他客户端安装 MCP 的命令。
-4. 手动打开“文本编辑”，新建一个无重要内容的文档，输入 `CU-TEST`。在测试项目
-   新建对话，选择支持工具调用和图片输入的模型，并发送：
-   **“使用电脑操作插件查看文本编辑中的 CU-TEST 文档，告诉我当前文字，先不要修改。”**
-   每次观察都应出现审批；允许后应能正确读取界面，而不是只宣称已连接。
-5. 发送：**“在该测试文档末尾输入一行 hello computer use，然后检查结果。”**
-   可以允许前面的观察；遇到输入操作审批时先点 **拒绝**。文档应保持原样。
-   另发一条明确重试的消息，允许观察和输入；应只新增一行，随后能确认结果。
-6. 再要求输入 `SHOULD-NOT-APPEAR`，在输入审批等待时点击对话的 **停止**。
-   文档不应出现该文字，任务应结束。这个用例检查待审批取消；已经执行的输入
-   不会因停止而撤销。
-7. 等任务结束后，在 **项目插件** 关闭电脑操作，再要求使用它：该项目不应再能
-   调用桌面工具。重新开启、新建对话后，观察和输入仍需逐次确认。插件如果在
-   **所有项目** 开启，项目中的明确关闭应覆盖默认值。
-8. 退出并重启 OhMyGame，重复一次观察。应能重新连接，且仍会审批。若有问题，
-   记录卡住的步骤、错误原文、使用的模型/agent 和系统版本；连接错误查看开发页
-   **检查结果** 的错误详情，原生插件错误查看插件页 **查看日志**。
+   **开发模式**。确认插件页和列表显示蓝色显示器与光标图标。仅测试一个项目时，
+   关闭 **所有项目**，在测试项目的 **项目插件** 中开启它。
+2. 开发页 **检查结果 → 桌面 → 测试** 应连接并列出 12 个工具。这个检查不代表
+   macOS 已授权。原有辅助功能、屏幕录制授权有效时，无需重配；缺权限再使用上面的
+   `doctor` 命令，手动完成系统授权并重启应用。
+3. 手动打开文本编辑，新建无重要内容的文档，输入 `CU-TEST`。新建对话，发送：
+   **“使用电脑操作查看文本编辑的 CU-TEST 文档，告诉我文字，先不要修改。”**
+   列出应用无需确认；首次访问文本编辑应显示应用标识（`com.apple.textedit`）和
+   **允许并记住 / 仅允许这次 / 拒绝**。先拒绝，应无法读取或操作该应用。
+4. 重试并选择 **仅允许这次**，下一次访问仍应询问。再次重试选择 **允许并记住**，
+   再发送 **“在文档末尾新增一行 hello computer use，然后检查结果。”**，同一应用
+   连续观察和操作应不再弹窗，文字只新增一行。
+5. 新建对话、再退出并重启 OhMyGame，访问文本编辑仍应保留授权。尝试另一应用，
+   应单独询问，不能沿用文本编辑的授权。
+6. 在 **插件 → 电脑操作 → 设置 → 已记住的访问授权** 撤销文本编辑。再次访问应询问。
+   等待询问时点对话的 **停止**，不应执行待确认操作或保存授权。已派发的操作不会
+   因撤销或停止而自动回滚。
+7. 等任务结束，在 **项目插件** 关闭电脑操作，该项目应不再能调用它；重新开启后
+   仍遵守已保存或已撤销的应用授权。修改插件代码后需要重新授权属于预期行为。
 
-先测内置 OhMyGame agent；若平时使用 Codex/Claude Code 等 agent，再用常用 agent
-重复拒绝和停止用例。无效的目标、权限不足和不支持的输入方式应明确报错，不应改用
-全局输入或终端命令绕过。Windows/Linux 的权限和输入行为需在对应系统另行验证。
+先测内置 OhMyGame agent，再用常用的 Codex/Claude Code 重复授权、撤销和停止用例。
+若有问题，记录步骤、错误原文、模型/agent 和系统版本；连接错误看开发页检查结果，
+原生插件错误看插件页日志。Windows/Linux 仍逐次确认，需要在对应系统另行验收。

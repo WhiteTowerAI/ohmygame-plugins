@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  rm,
+  writeFile,
+  chmod,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -26,11 +33,13 @@ it(
       { PluginServices },
       { PluginHooks },
       { PluginMcpHost },
+      { PluginToolApprovals },
       { writeProjectFile },
     ] = await Promise.all([
       loadApp("plugin-services"),
       loadApp("plugin-hooks"),
       loadApp("plugin-mcp-host"),
+      loadApp("plugin-tool-approvals"),
       loadApp("project-plugins"),
     ]);
     const dir = await mkdtemp(path.join(tmpdir(), "ohmygame-computer-use-"));
@@ -52,14 +61,8 @@ it(
       assert.ok(serverName);
       assert.equal(Object.keys(servers).length, 1);
       const definition = servers[serverName];
-      assert.equal(definition.command, "npx");
-      assert.deepEqual(definition.args, [
-        "--yes",
-        "--package",
-        "@opensymph/open-computer-use@1.3.0",
-        "open-computer-use",
-        "mcp",
-      ]);
+      assert.equal(definition.command, "node");
+      assert.deepEqual(definition.args, ["./dist/server.mjs"]);
       assert.deepEqual(
         definition.includeTools,
         manifest.contributes.mcpServers[0]!.tools,
@@ -91,15 +94,18 @@ it(
       });
       for (const tool of definition.includeTools) {
         assert.equal(
-          beforeCall(call(tool, { app: "fixture" })).decision,
+          beforeCall(call(tool, { app: "fixture" }), "linux").decision,
           "ask",
           tool,
         );
         assert.equal(
-          beforeCall({
-            ...call(tool, { window: { id: 7 } }),
-            source: "external",
-          }).decision,
+          beforeCall(
+            {
+              ...call(tool, { window: { id: 7 } }),
+              source: "external",
+            },
+            "linux",
+          ).decision,
           "ask",
         );
       }
@@ -111,7 +117,7 @@ it(
         "future_tool",
       ])
         assert.equal(
-          beforeCall(call(tool, { app: "fixture" })).decision,
+          beforeCall(call(tool, { app: "fixture" }), "linux").decision,
           "deny",
           tool,
         );
@@ -136,7 +142,9 @@ it(
       ])
         assert.equal(beforeCall(other).decision, "allow");
 
+      const approvalsStore = new PluginToolApprovals(dir);
       const hooks = new PluginHooks({
+        approvals: approvalsStore,
         resolve: (target: string) => services.resolve(target),
         native: services.native,
       });
@@ -155,7 +163,9 @@ it(
         },
       );
       await assert.rejects(
-        hooks.tools(folder).before(call("list_apps")),
+        hooks
+          .tools(folder)
+          .before(call("get_app_state", { app: "com.example.fixture" })),
         /active conversation/,
       );
       const log = path.join(dir, "calls.jsonl");
@@ -202,7 +212,7 @@ it(
           {
             server: serverName,
             tool: `${serverName}_${tool}`,
-            args: { app: "fixture" },
+            args: { app: "com.example.fixture" },
           },
           signal,
           undefined,
@@ -241,7 +251,11 @@ it(
           JSON.stringify(await execute("list_apps")),
           /fixture action completed/,
         );
-        assert.equal(approvals, 5, "observations ask too");
+        assert.equal(
+          approvals,
+          process.platform === "darwin" ? 4 : 5,
+          "macOS app discovery exposes only app identities without another prompt",
+        );
         await execute("capture_display");
         const calls = (await readFile(log, "utf8"))
           .trim()
@@ -251,7 +265,7 @@ it(
           calls.map((value) => value.name),
           ["click", "click", "list_apps"],
         );
-        assert.deepEqual(calls[0].arguments, { app: "fixture" });
+        assert.deepEqual(calls[0].arguments, { app: "com.example.fixture" });
         // Revocation while the person is reviewing invalidates that approval.
         duringApproval = () => services.setEveryProject(manifest.id, false);
         assert.match(JSON.stringify(await execute("click")), /hooks changed/);
@@ -271,7 +285,7 @@ it(
       } finally {
         await native.close();
       }
-      // A fresh MCP session also starts without a retained approval.
+      // Allow once never retains consent, including in a fresh MCP session.
       const reconnected = await host.tool(
         {
           mcpServers: {
@@ -293,7 +307,7 @@ it(
           {
             server: serverName,
             tool: `${serverName}_click`,
-            args: { app: "fixture" },
+            args: { app: "com.example.fixture" },
           },
           undefined,
           undefined,
@@ -314,6 +328,251 @@ it(
       await host.close();
       await services.close();
       await rm(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+it("binds remembered macOS consent to explicit bundle IDs and keeps other platforms per-call", () => {
+  const server = "plugin-ecf269c30f24-v2-desktop";
+  const call = (
+    tool: string,
+    args: Record<string, unknown> = {},
+  ): ToolHookInput => ({ callId: "one", source: "mcp", server, tool, args });
+  assert.equal(beforeCall(call("list_apps"), "darwin").decision, "allow");
+  for (const tool of manifest.contributes.mcpServers[0]!.tools.filter(
+    (tool) => tool !== "list_apps",
+  )) {
+    assert.deepEqual(
+      beforeCall(call(tool, { app: "com.apple.TextEdit" }), "darwin"),
+      {
+        decision: "ask",
+        reason:
+          "Read screenshots and UI text with the selected model, and operate this app on your behalf.",
+        remember: {
+          key: "app:macos:com.apple.textedit",
+          label: "com.apple.textedit",
+        },
+      },
+    );
+    for (const args of [
+      {},
+      { window: { id: 123 } },
+      { app: "TextEdit" },
+      { app: "ai.ohmygame.desktop" },
+      { app: "com.github.Electron" },
+    ])
+      assert.equal(beforeCall(call(tool, args), "darwin").decision, "deny");
+    for (const platform of ["win32", "linux"] as const)
+      assert.ok(
+        !("remember" in beforeCall(call(tool, { app: "TextEdit" }), platform)),
+      );
+  }
+});
+
+it("filters discovery and verifies actual window owners before any capture or input", async () => {
+  const { desktopCall, desktopTools } =
+    await import("../plugins/computer-use/src/desktop.ts");
+  const text = (value: string) => ({
+    content: [{ type: "text" as const, text: value }],
+  });
+  const calls: Array<{ tool: string; args: Record<string, unknown> }> = [];
+  let duplicateName = false;
+  let actualOwner = "TextEdit";
+  const invoke = async (tool: string, args: Record<string, unknown>) => {
+    calls.push({ tool, args });
+    if (tool === "list_apps")
+      return text(
+        [
+          "TextEdit — com.apple.TextEdit [running, uses=99]",
+          "Safari — com.apple.Safari [running, last-used=private]",
+          "Closed — com.example.closed [uses=3]",
+          "OhMyGame — ai.ohmygame.desktop [running]",
+          ...(duplicateName
+            ? ["TextEdit — com.example.duplicate [running]"]
+            : []),
+        ].join("\n"),
+      );
+    if (tool === "list_windows")
+      return text(
+        JSON.stringify([
+          { app: "TextEdit", id: 1, title: "Allowed document" },
+          { app: "Safari", id: 2, title: "Private tab" },
+        ]),
+      );
+    if (tool === "get_window")
+      return text(
+        JSON.stringify({
+          app: actualOwner,
+          id: (args.window as { id: number }).id,
+          title: "Document",
+        }),
+      );
+    return text("target result");
+  };
+  const run = (tool: string, args: Record<string, unknown> = {}) =>
+    desktopCall(invoke, tool, args, undefined, "darwin");
+  const found = JSON.stringify(await run("list_apps"));
+  assert.match(found, /com.apple.textedit/);
+  assert.doesNotMatch(found, /uses|last-used|private|closed|ohmygame/);
+  const listed = JSON.stringify(
+    await run("list_windows", { app: "com.apple.textedit" }),
+  );
+  assert.match(listed, /Allowed document/);
+  assert.doesNotMatch(listed, /Private tab|Safari/);
+  await run("click", {
+    app: "com.apple.TextEdit",
+    window: { id: 1, app: "forged" },
+    screenshotId: "fresh-token",
+    element_index: "0",
+  });
+  assert.deepEqual(calls.at(-1), {
+    tool: "click",
+    args: {
+      app: "com.apple.textedit",
+      window: { id: 1, app: "TextEdit", title: "Document" },
+      screenshotId: "fresh-token",
+      element_index: "0",
+    },
+  });
+  actualOwner = "Safari";
+  const actions = () => calls.filter((call) => call.tool === "click").length;
+  for (const args of [
+    { app: "com.apple.textedit", window: { id: 2, app: "TextEdit" } },
+    { app: "com.apple.textedit", window_id: 2 },
+    { app: "com.apple.closed" },
+    { app: "TextEdit" },
+    { app: "ai.ohmygame.desktop" },
+    { app: "com.apple.textedit", click_method: "global" },
+  ])
+    await assert.rejects(run("click", args));
+  actualOwner = "TextEdit";
+  duplicateName = true;
+  await assert.rejects(
+    run("click", { app: "com.apple.textedit", window: { id: 1 } }),
+    /does not belong/,
+  );
+  assert.equal(actions(), 1, "no invalid target reaches native input");
+  await assert.rejects(run("capture_display", {}), /unavailable/);
+  await assert.rejects(
+    desktopCall(
+      async () => ({ ...text("denied"), isError: true }),
+      "click",
+      { app: "com.apple.textedit" },
+      undefined,
+      "darwin",
+    ),
+    /Cannot resolve/,
+  );
+  const tools = desktopTools(
+    ["list_apps", "click", "capture_display"].map((name) => ({
+      name,
+      inputSchema: {
+        type: "object",
+        properties: { screenshotId: { type: "string" } },
+        required: ["screenshotId"],
+      },
+    })),
+    "darwin",
+  );
+  assert.deepEqual(
+    tools.map((tool) => tool.name),
+    ["list_apps", "click"],
+  );
+  assert.deepEqual(tools[1]!.inputSchema.required, ["screenshotId", "app"]);
+});
+
+it(
+  "runs the bundled proxy protocol, cancels queued input and closes its native process",
+  { skip: process.platform === "win32", timeout: 15_000 },
+  async () => {
+    const { McpClient, StdioTransport } =
+      await import("@earendil-works/pi-mcp");
+    const directory = await mkdtemp(path.join(tmpdir(), "desktop-proxy-"));
+    const log = path.join(directory, "calls.jsonl");
+    const pidFile = path.join(directory, "pid");
+    const fixture = path.join(directory, "native.mjs");
+    const client = new McpClient({ name: "test", version: "1" });
+    try {
+      await writeFile(log, "");
+      await writeFile(
+        fixture,
+        `
+      import { createInterface } from "node:readline";
+      import { appendFileSync, writeFileSync } from "node:fs";
+      writeFileSync(${JSON.stringify(pidFile)}, String(process.pid));
+      createInterface({input:process.stdin}).on("line", line => {
+        const request=JSON.parse(line);
+        if(request.id===undefined)return;
+        const send=result=>process.stdout.write(JSON.stringify({jsonrpc:"2.0",id:request.id,result})+"\\n");
+        const text=text=>({content:[{type:"text",text}]});
+        if(request.method==="initialize")return send({protocolVersion:request.params.protocolVersion,capabilities:{tools:{}},serverInfo:{name:"fixture",version:"1"}});
+        if(request.method==="tools/list")return send({tools:["list_apps","get_app_state","click","capture_display"].map(name=>({name,inputSchema:{type:"object",properties:{app:{type:"string"}}}}))});
+        if(request.method==="tools/call"){
+          appendFileSync(${JSON.stringify(log)},JSON.stringify(request.params)+"\\n");
+          if(request.params.name==="get_app_state")return setTimeout(()=>send(text("Observed")),300);
+          return send(text("TextEdit — com.apple.TextEdit [running]"));
+        }
+        send({});
+      });
+    `,
+      );
+      const quote = (value: string) =>
+        "'" + value.replaceAll("'", "'\\''") + "'";
+      const launcher = path.join(directory, "npx");
+      await writeFile(
+        launcher,
+        `#!/bin/sh\nexec ${quote(process.execPath)} ${quote(fixture)} "$@"\n`,
+      );
+      await chmod(launcher, 0o755);
+      await client.connect(
+        new StdioTransport({
+          command: process.execPath,
+          args: [path.join(pluginRoot, "dist/server.mjs")],
+          env: { PATH: `${directory}:${process.env.PATH}` },
+        }),
+      );
+      const tools = await client.listTools();
+      assert.deepEqual(
+        tools.map((tool) => tool.name),
+        ["list_apps", "get_app_state", "click"],
+      );
+      const first = client.callTool("get_app_state", {
+        app: "com.apple.textedit",
+      });
+      for (
+        let count = 0;
+        !(await readFile(log, "utf8")).includes("get_app_state");
+        count++
+      ) {
+        assert.ok(count < 100, "native observation started");
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      const abort = new AbortController();
+      const second = client.callTool(
+        "click",
+        { app: "com.apple.textedit" },
+        { signal: abort.signal },
+      );
+      const rejected = assert.rejects(second, /abort/i);
+      abort.abort();
+      await rejected;
+      await first;
+      await client.ping();
+      assert.doesNotMatch(await readFile(log, "utf8"), /"name":"click"/);
+      const pid = Number(await readFile(pidFile, "utf8"));
+      await client.close();
+      for (let count = 0; ; count++) {
+        try {
+          process.kill(pid, 0);
+        } catch {
+          break;
+        }
+        assert.ok(count < 100, "native process exits after proxy shutdown");
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+    } finally {
+      await client.close();
+      await rm(directory, { recursive: true, force: true });
     }
   },
 );
