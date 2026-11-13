@@ -68,8 +68,10 @@ stores are never overwritten. Keep one OhMyGame instance per data directory.
 
 Incoming messages are persisted before acknowledgement. IDs are retained for
 at least 24 hours; older events and events more than a minute in the future
-are ignored. The ledger allows 2,000 records and 16 MiB, and refuses new work
-if full. Finished records expire on subsequent receipt; unfinished tasks are
+are ignored. Persisted requests older than 24 hours at dispatch are reported
+as expired without executing them, including after a restart. The ledger allows
+2,000 records and 16 MiB, and refuses new work if full. Finished records expire
+on subsequent receipt; unfinished tasks are
 reported after a day and left running in OhMyGame. Disk write failures stop
 further mutations until the plugin restarts; check the plugin log.
 
@@ -84,8 +86,9 @@ executing a task twice.
 Outbound chunks use a deterministic UUID with Feishu's reply deduplication.
 They get at most five attempts, within 50 minutes of the first attempt; a
 clock rollback also stops retries. An expired or exhausted reply is marked
-failed, and later chunks of that reply stop. `/status` reports failed replies;
-the full conversation remains in OhMyGame. This is bounded retry, not a claim
+failed, and later chunks of that reply are also marked failed. A failed approval
+notice does not prevent delivery of the task's final result. `/status` reports
+failed replies; the full conversation remains in OhMyGame. This is bounded retry, not a claim
 of permanent exactly-once delivery. Clearing the data folder discards this
 protection and the chat selection.
 

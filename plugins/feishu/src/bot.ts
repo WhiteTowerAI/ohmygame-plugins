@@ -126,24 +126,48 @@ export class Bot {
         if (d.target && d.prompt) d.phase = "watching";
         else this.done(d, UNCERTAIN);
       }
-      if (d.phase === "new") await this.dispatch(d);
+      if (d.phase === "new") {
+        if (this.now() - d.at > DAY)
+          this.done(
+            d,
+            "This request expired before dispatch and was not executed. Send a new message to try again.",
+          );
+        else await this.dispatch(d);
+      }
       if (d.phase === "watching") await this.observe(d);
     }
-    // One chunk per tick, in order. A failed partial reply never releases later chunks out of context.
+    // One chunk per tick, in order within each reply. A failed approval notice must not block the result.
     for (const d of this.store.state.deliveries) {
-      const next = d.outgoing.find((o) => o.state !== "sent");
-      if (!next || next.state === "failed" || next.nextAt > this.now())
-        continue;
-      if (
-        next.attempts >= 5 ||
-        (next.firstAt !== undefined &&
-          (this.now() < next.firstAt ||
-            this.now() - next.firstAt > 50 * 60_000))
-      ) {
-        next.state = "failed";
-        this.save();
-        continue;
+      const now = this.now();
+      const group = (key: string) => key.replace(/:\d+$/, "");
+      const failed = new Set(
+        d.outgoing
+          .filter(
+            (o) =>
+              o.state === "failed" ||
+              (o.state !== "sent" &&
+                (o.attempts >= 5 ||
+                  (o.firstAt !== undefined &&
+                    (now < o.firstAt || now - o.firstAt > 50 * 60_000)))),
+          )
+          .map((o) => group(o.key)),
+      );
+      let changed = false;
+      // Also settle pending siblings from older stores, so finished records can expire.
+      for (const o of d.outgoing) {
+        if (
+          (o.state === "pending" || o.state === "sending") &&
+          failed.has(group(o.key))
+        ) {
+          o.state = "failed";
+          changed = true;
+        }
       }
+      if (changed) this.save();
+      const next = d.outgoing.find(
+        (o) => o.state === "pending" || o.state === "sending",
+      );
+      if (!next || next.nextAt > now) continue;
       next.state = "sending";
       next.firstAt ??= this.now();
       next.attempts++;

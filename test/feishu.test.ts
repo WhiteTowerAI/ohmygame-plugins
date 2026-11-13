@@ -350,6 +350,92 @@ test("reply retries use the same UUID after a lost acknowledgement/restart, then
   );
 });
 
+test("clock rollback terminates retries even before the next scheduled attempt", async () => {
+  const f = fixture();
+  f.failReply(true);
+  f.bot.receive(f.event("/help"));
+  await f.bot.tick();
+  f.advance(-1_000);
+  await f.bot.tick();
+  assert.equal(f.store.state.deliveries[0]!.outgoing[0]!.state, "failed");
+  f.advance(20_000);
+  await f.bot.tick();
+  assert.equal(f.replies.length, 1);
+});
+
+test("an exhausted approval notice does not suppress the final result after restart", async () => {
+  const f = fixture();
+  f.bot.receive(f.event("Build"));
+  await f.bot.tick();
+  f.approval();
+  f.failReply(true);
+  for (let i = 0; i < 5; i++) {
+    await f.bot.tick();
+    f.advance(60_000);
+  }
+  assert.equal(f.replies.length, 5);
+  await f.bot.close();
+  f.failReply(false);
+  f.finish("Finished after approval");
+  const restarted = f.restart();
+  await restarted.tick();
+  await restarted.tick();
+  assert.equal(f.replies.length, 6);
+  assert.equal(f.replies.at(-1)!.text, "Finished after approval");
+});
+
+test("failed partial replies abandon only their remaining chunks and become prunable, including old stored failures", async () => {
+  for (const legacyFailure of [false, true]) {
+    const f = fixture();
+    f.bot.receive(f.event("Build"));
+    await f.bot.tick();
+    f.finish("界".repeat(9_000));
+    await f.bot.tick();
+    f.failReply(true);
+    await f.bot.tick();
+    const d = f.store.state.deliveries[0]!;
+    assert.equal(d.outgoing.length, 3);
+    if (legacyFailure) {
+      d.outgoing[1]!.state = "failed";
+      f.store.save();
+    }
+    await f.bot.close();
+    f.advance(51 * 60_000);
+    f.failReply(false);
+    const restarted = f.restart();
+    await restarted.tick();
+    assert.deepEqual(
+      new Store(f.folder, "app:owner").state.deliveries[0]!.outgoing.map(
+        (o) => o.state,
+      ),
+      ["sent", "failed", "failed"],
+    );
+    assert.equal(f.replies.length, 2);
+    f.advance(DAY);
+    restarted.receive(f.event("/help", "om_2"));
+    assert.deepEqual(
+      new Store(f.folder, "app:owner").state.deliveries.map((d) => d.id),
+      ["om_2"],
+    );
+  }
+});
+
+test("restart never executes persisted requests that expired before dispatch", async () => {
+  for (const text of ["Build", "/new", "/stop", "/project p"]) {
+    const f = fixture();
+    f.bot.receive(f.event(text));
+    await f.bot.close();
+    f.advance(DAY + 1);
+    await f.restart().tick();
+    assert.equal(f.calls.length, 0);
+    assert.match(f.replies[0]!.text, /expired.*not executed/i);
+    assert.deepEqual(new Store(f.folder, "app:owner").state.bindings.oc_chat, {
+      projectId: "p",
+      conversationId: "c",
+    });
+  }
+});
+
 test("completed, failed and empty cancelled turns preserve outcomes; chunking is Unicode safe and partial reply order survives restart", async () => {
   const f = fixture();
   f.bot.receive(f.event("Build"));
