@@ -8,7 +8,8 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": ["node"],
+    "resolveJsonModule": true
   },
-  "include": ["src", "test", "plugins/feishu/src"]
+  "include": ["src", "test", "plugins/feishu/src", "plugins/computer-use/src"]
 }

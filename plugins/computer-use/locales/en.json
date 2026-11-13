@@ -1,0 +1,6 @@
+{
+  "plugin.name": "Computer Use",
+  "plugin.description": "Inspect and operate desktop apps with approval for each call.",
+  "plugin.longDescription": "An optional desktop connection using Open Computer Use. Each observation and action asks for approval in OhMyGame. Requires Node.js/npm and OS accessibility permissions; screenshots also need screen recording permission on macOS. The first connection downloads a pinned native runtime. It runs with your account permissions; project scope is not a desktop sandbox. Screenshots and UI text are sent to your selected model. Setup and limitations are in the plugin README.",
+  "server.title": "Desktop"
+}

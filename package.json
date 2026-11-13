@@ -9,10 +9,11 @@
   },
   "scripts": {
     "build": "tsx src/build-index.ts",
-    "test": "tsx --test test/*.test.ts",
+    "test": "tsx --conditions=ohmygame-source --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build:feishu": "node scripts/build-feishu.mjs",
-    "pretest": "npm run build:feishu"
+    "pretest": "npm run build:feishu && npm run build:computer-use",
+    "build:computer-use": "node scripts/build-computer-use.mjs"
   },
   "dependencies": {
     "tar": "7.5.22",

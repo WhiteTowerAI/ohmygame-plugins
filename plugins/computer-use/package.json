@@ -1,0 +1,26 @@
+{
+  "name": "@ohmygame/computer-use",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Optional desktop observation and control with approval for each call.",
+  "keywords": [
+    "ohmygame-plugin",
+    "computer-use"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/computer-use"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "dist",
+    "assets",
+    "locales"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
