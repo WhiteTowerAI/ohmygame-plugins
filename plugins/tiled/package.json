@@ -1,7 +1,6 @@
 {
   "name": "@ohmygame/tiled",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Build tile maps, collisions, and gameplay object layers.",
   "keywords": [

@@ -5,9 +5,9 @@ Create and improve games across engines.
 Official OhMyGame plugin `ohmygame/game-studio`. It preserves the bundled plugin's
 ID, version and configuration during the move to npm.
 
-This package is held from publication until the app's preinstalled-plugin
-migration is ready. See the [migration checklist](../../docs/preinstalled-plugins.md).
-Do not add it alongside the bundled copy with the same ID.
+This package is prepared for the app's preinstalled-plugin migration. See the
+[migration checklist](../../docs/preinstalled-plugins.md). App builds before
+the npm cutover already bundle this ID; do not add a second copy there.
 
 The package includes its Skills, icons, localizations and any declared native
 modules, panels or project templates. OhMyGame checks and loads the manifest;

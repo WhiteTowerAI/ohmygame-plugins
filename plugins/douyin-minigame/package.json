@@ -1,7 +1,6 @@
 {
   "name": "@ohmygame/douyin-minigame",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Adapt, preview, and check Douyin mini-game builds.",
   "keywords": [

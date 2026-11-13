@@ -1,7 +1,6 @@
 {
   "name": "@ohmygame/game-studio",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Create and improve games across engines.",
   "keywords": [

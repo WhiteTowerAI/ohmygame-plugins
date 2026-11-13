@@ -1,7 +1,6 @@
 {
   "name": "@ohmygame/unity",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Edit, test, and build Unity projects with official tools.",
   "keywords": [

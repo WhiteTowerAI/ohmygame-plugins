@@ -2,7 +2,9 @@
 
 This is stage 9 of [OhMyGame #809](https://github.com/WhiteTowerAI/ohmygame/issues/809).
 The first increment packages all 12 existing bundled plugins in this repository.
-It does not yet remove the app's bundled copies or enable npm publication.
+The app loader is implemented in [app #823](https://github.com/WhiteTowerAI/ohmygame/pull/823).
+These 12 packages are enabled for first publication; the app cutover follows only
+after their actual registry versions and checksums have been verified.
 
 ## Package contents
 
@@ -27,9 +29,9 @@ script is needed for these packaging checks.
 
 ## Cutover sequence
 
-1. Keep these packages `private: true` while the app still bundles the same IDs.
-   The publish workflow skips them. Do not add the folders over the bundled
-   copies in an everyday app profile.
+1. The 12 packages are released for the reviewed app cutover. Feishu and Computer
+   Use retain their independent publication holds. Do not add these packages
+   over bundled copies in an everyday app profile.
 2. Add npm support to the app's prepared-plugin lock and loader. Pin exact
    versions and SHA-512 tarball integrity; validate the package and manifest ID
    before installation. Prepare archives at build time so startup works offline
@@ -63,6 +65,6 @@ npm test
 ```
 
 The repository setup expects an OhMyGame checkout at `app/` (or set
-`OHMYGAME_APP`); CI prepares it automatically. These checks validate packaging,
-not a migrated desktop installation. Desktop migration steps will be added
-with the app cutover implementation; the current application remains unchanged.
+`OHMYGAME_APP`); CI prepares it automatically. The app #823 isolated probe also checks all 12 real local npm packs through
+clean installation, existing settings/switch migration, icon reads, removal
+and restart. The cutover must repeat this against the published tarballs.
