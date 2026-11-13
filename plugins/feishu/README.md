@@ -13,8 +13,11 @@ bot. It is not preinstalled. Requires the app's API 2.5 session support
    those permissions according to your tenant's approval process.
 2. Add this plugin in OhMyGame and review its native code, secrets and
    cross-project session access. In its Settings, enter the App ID, App Secret
-   and **your user open_id for this app** (`ou_…`). Find it with the console's
-   user-ID lookup / API Explorer. `user_id` and `union_id` are not substitutes.
+   and **your user open_id for this app** (`ou_…`). Use [API Explorer](https://open.feishu.cn/api-explorer), select the same app
+   as the App ID above, open **Send message**, choose the `open_id` ID type,
+   then **Copy open_id**. Select yourself and copy the member ID; no test
+   message needs to be sent. `user_id` and `union_id` are not substitutes.
+   See the [official ID guide](https://open.feishu.cn/document/home/user-identity-introduction/open-id).
    Other users and every group chat are ignored, without an information reply.
 3. Enable the plugin for all projects. In Feishu's Events and Callbacks, select
    **Receive events through persistent connection**, then subscribe to
