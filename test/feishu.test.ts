@@ -16,7 +16,12 @@ import type {
   PluginSessionRequest,
 } from "../app/src/shared/plugin-sessions.js";
 import { Bot, type Transport } from "../plugins/feishu/src/bot.ts";
-import { DAY, Store, parts } from "../plugins/feishu/src/store.ts";
+import {
+  DAY,
+  Store,
+  parts,
+  type Delivery,
+} from "../plugins/feishu/src/store.ts";
 import { FeishuTransport } from "../plugins/feishu/src/transport.ts";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -786,4 +791,331 @@ test("rebinding aborts the old delivery waiter without stopping accepted daemon 
     false,
   );
   await pair.close();
+});
+
+// Card mode uses the same durable worker as legacy text delivery.
+function cardFixture() {
+  const f = fixture();
+  const sent: {
+    id: string;
+    card: import("../plugins/feishu/src/cards.ts").Card;
+    update: boolean;
+  }[] = [];
+  const original = f.sessions.request;
+  let selected = { provider: "test", id: "one" },
+    level = "low";
+  f.sessions.request = (async (r: PluginSessionRequest) => {
+    if (["settings", "model", "reasoning"].includes(r.operation))
+      f.calls.push(r);
+    if (r.operation === "settings")
+      return {
+        models: ["one", "two"].map((id) => ({
+          provider: "test",
+          id,
+          name: id,
+          providerName: "Test",
+          levels: ["low", "high"],
+        })),
+        model: selected,
+        level,
+        busy: false,
+        loading: false,
+        truncated: false,
+      };
+    if (r.operation === "model") {
+      selected = r.model;
+      return { changed: true };
+    }
+    if (r.operation === "reasoning") {
+      assert.deepEqual(r.model, selected);
+      level = r.level;
+      return { changed: true };
+    }
+    return original(r);
+  }) as PluginSessions["request"];
+  let next = 0;
+  f.transport.card = async (id, card, _uuid, _signal, update = false) => {
+    const messageId = update ? id : `om_card${++next}`;
+    sent.push({ id: messageId, card: structuredClone(card), update });
+    return messageId;
+  };
+  const latest = () => sent.at(-1)!;
+  const click = (kind: string, option?: string, entry = latest()) => {
+    const [token, action] = Object.entries(entry.card.actions).find(
+      ([, a]) =>
+        a.kind === kind &&
+        (!option ||
+          (a.kind === "model"
+            ? a.model.id
+            : a.kind === "reasoning"
+              ? a.level
+              : "") === option),
+    )!;
+    const select = ["project", "conversation", "model", "reasoning"].includes(
+      action.kind,
+    );
+    return {
+      operator: { open_id: "ou_owner" },
+      host: "im_message",
+      context: { open_chat_id: "oc_chat", open_message_id: entry.id },
+      action: {
+        tag: select ? "select_static" : "button",
+        value: { card: entry.card.id, ...(select ? {} : { action: token }) },
+        ...(select ? { option: token } : {}),
+      },
+    };
+  };
+  return { ...f, sent, latest, click };
+}
+
+test("cards persist and acknowledge before model/reasoning work, update the original panel, and reject repeats and strangers", async () => {
+  const f = cardFixture();
+  f.bot.receive(f.event("/panel"));
+  await f.bot.tick();
+  assert.equal(f.latest().card.panel, true);
+  const initial = f.latest();
+  const click = f.click("model", "two");
+  const foreign = structuredClone(click);
+  foreign.operator.open_id = "ou_other";
+  assert.equal(f.bot.action(foreign).toast.type, "error");
+  assert.equal(f.bot.action(click).toast.type, "info");
+  assert.equal(f.calls.filter((r) => r.operation === "model").length, 0);
+  assert.equal(f.bot.action(click).toast.type, "error");
+  assert.ok(
+    new Store(f.folder, "app:owner").state.deliveries.some(
+      (d) => d.action?.kind === "model",
+    ),
+  );
+  await f.bot.tick();
+  assert.equal(f.calls.filter((r) => r.operation === "model").length, 1);
+  assert.equal(f.latest().id, initial.id);
+  assert.equal(f.latest().update, true);
+  assert.notEqual(f.latest().card.id, initial.card.id);
+  assert.equal(f.bot.action(f.click("reasoning", "high")).toast.type, "info");
+  await f.bot.tick();
+  assert.deepEqual(
+    f.calls.find((r) => r.operation === "reasoning"),
+    {
+      operation: "reasoning",
+      projectId: "p",
+      conversationId: "c",
+      model: { provider: "test", id: "two" },
+      level: "high",
+    },
+  );
+  assert.match(JSON.stringify(f.latest().card.payload), /思考：高/);
+});
+
+test("card actions recover once after restart, never repeat an uncertain mutation, and reject malformed stored actions", async () => {
+  const f = cardFixture();
+  f.bot.receive(f.event("/panel"));
+  await f.bot.tick();
+  f.bot.action(f.click("model", "two"));
+  const restarted = f.restart();
+  await restarted.tick();
+  assert.equal(f.calls.filter((r) => r.operation === "model").length, 1);
+  const state = JSON.parse(readFileSync(f.store.file, "utf8"));
+  const action = state.deliveries.find((d: Delivery) => d.action);
+  action.phase = "dispatching";
+  action.outgoing = [];
+  writeFileSync(f.store.file, JSON.stringify(state));
+  await f.restart().tick();
+  assert.equal(f.calls.filter((r) => r.operation === "model").length, 1);
+  assert.match(JSON.stringify(f.latest().card.payload), /未能确认/);
+  action.action = { kind: "reasoning", level: "high" };
+  writeFileSync(f.store.file, JSON.stringify(state));
+  assert.throws(() => new Store(f.folder, "app:owner"), /preserved/);
+});
+
+test("stale selections and forwarded cards cannot mutate a different conversation; clock rollback and expiry reject callbacks", async () => {
+  const f = cardFixture();
+  f.bot.receive(f.event("/panel"));
+  await f.bot.tick();
+  const click = f.click("model", "two");
+  const forwarded = structuredClone(click);
+  forwarded.context.open_chat_id = "oc_elsewhere";
+  assert.equal(f.bot.action(forwarded).toast.type, "error");
+  f.store.state.bindings.oc_chat!.conversationId = "different";
+  assert.equal(f.bot.action(click).toast.type, "error");
+  f.store.state.bindings.oc_chat!.conversationId = "c";
+  f.advance(-1);
+  assert.equal(f.bot.action(click).toast.type, "error");
+  f.advance(DAY + 2);
+  assert.equal(f.bot.action(click).toast.type, "error");
+  assert.equal(f.calls.filter((r) => r.operation === "model").length, 0);
+});
+
+test("queued card actions recheck the selection before mutating", async () => {
+  const f = cardFixture();
+  f.bot.receive(f.event("/panel", "om_1"));
+  await f.bot.tick();
+  const first = f.latest();
+  f.bot.receive(f.event("/panel", "om_2"));
+  await f.bot.tick();
+  f.bot.action(f.click("model", "two", first));
+  f.store.state.bindings.oc_chat!.conversationId = "changed-after-ack";
+  await f.bot.tick();
+  assert.equal(f.calls.filter((r) => r.operation === "model").length, 0);
+});
+
+test("task cards keep Markdown results in place and stop only the recorded turn", async () => {
+  const f = cardFixture();
+  f.bot.receive(f.event("Build"));
+  await f.bot.tick();
+  const progress = f.latest();
+  assert.match(JSON.stringify(progress.card.payload), /正在处理/);
+  assert.equal(f.bot.action(f.click("stop")).toast.type, "info");
+  await f.bot.tick();
+  assert.deepEqual(
+    f.calls.find((r) => r.operation === "stop"),
+    { operation: "stop", projectId: "p", conversationId: "c", turnId: "t" },
+  );
+  f.finish("## 完成\n\n```ts\nconst x = a < b;\n```");
+  await f.bot.tick();
+  const result = f.sent.findLast((s) => s.id === progress.id)!;
+  assert.match(JSON.stringify(result.card.payload), /## 完成/);
+  assert.match(JSON.stringify(result.card.payload), /a < b/);
+  assert.ok(!Object.values(result.card.actions).some((a) => a.kind === "stop"));
+});
+
+test("failed callback persistence returns an error and cannot execute from mutated memory", async () => {
+  const f = cardFixture();
+  f.bot.receive(f.event("/panel"));
+  await f.bot.tick();
+  const click = f.click("model", "two");
+  renameSync(f.store.file, `${f.store.file}.original`);
+  mkdirSync(f.store.file);
+  assert.equal(f.bot.action(click).toast.type, "error");
+  await assert.rejects(f.bot.tick(), /restart/);
+  assert.equal(f.calls.filter((r) => r.operation === "model").length, 0);
+});
+
+test("v1 outboxes migrate without dropping pending replies or unknown data; newer versions stay untouched", () => {
+  const f = fixture();
+  f.bot.receive(f.event("/help"));
+  const old = JSON.parse(readFileSync(f.store.file, "utf8"));
+  old.version = 1;
+  old.extra = { retained: true };
+  writeFileSync(f.store.file, JSON.stringify(old));
+  const migrated = new Store(f.folder, "app:owner");
+  migrated.save();
+  const saved = JSON.parse(readFileSync(f.store.file, "utf8"));
+  assert.equal(saved.version, 2);
+  assert.deepEqual(saved.deliveries, old.deliveries);
+  assert.deepEqual(saved.extra, old.extra);
+  saved.version = 3;
+  const raw = JSON.stringify(saved);
+  writeFileSync(f.store.file, raw);
+  assert.throws(() => new Store(f.folder, "app:owner"), /preserved/);
+  assert.equal(readFileSync(f.store.file, "utf8"), raw);
+});
+
+test("REST cards use interactive replies, retain the returned message ID and PATCH the same message without another permission", async () => {
+  const { resultCard } = await import("../plugins/feishu/src/cards.ts");
+  const requests: { url: string; method: string; body: unknown }[] = [];
+  const transport = new FeishuTransport(
+    "cli_1234567890abcdef",
+    "fixture",
+    (async (url: string | URL | Request, init?: RequestInit) => {
+      requests.push({
+        url: String(url),
+        method: init!.method!,
+        body: JSON.parse(init!.body as string),
+      });
+      return Response.json(
+        String(url).includes("tenant_access_token")
+          ? { code: 0, tenant_access_token: "fixture", expire: 7200 }
+          : { code: 0, data: { message_id: "om_created" } },
+      );
+    }) as typeof fetch,
+  );
+  const signal = new AbortController().signal;
+  const card = resultCard("## 完成\n\n结果 **已保存**。");
+  assert.equal(
+    await transport.card("om_user", card, "stable-uuid", signal),
+    "om_created",
+  );
+  await transport.card("om_created", card, "stable-uuid", signal, true);
+  assert.equal(requests[1]!.method, "POST");
+  assert.deepEqual(requests[1]!.body, {
+    msg_type: "interactive",
+    content: JSON.stringify(card.payload),
+    uuid: "stable-uuid",
+  });
+  assert.equal(requests[2]!.method, "PATCH");
+  assert.ok(requests[2]!.url.endsWith("/messages/om_created"));
+  assert.deepEqual(requests[2]!.body, {
+    content: JSON.stringify(card.payload),
+  });
+});
+
+test("panel pagination retains all choices and identifies current selections outside the visible page", async () => {
+  const { panel } = await import("../plugins/feishu/src/cards.ts");
+  const f = cardFixture();
+  const original = f.sessions.request;
+  f.sessions.request = (async (r: PluginSessionRequest) =>
+    r.operation === "projects"
+      ? {
+          projects: Array.from({ length: 45 }, (_, i) => ({
+            id: i === 44 ? "p" : `p${i}`,
+            name: `项目 ${i}`,
+          })),
+          truncated: false,
+        }
+      : original(r)) as PluginSessions["request"];
+  const first = await panel(
+    f.sessions.request,
+    f.store.state.bindings.oc_chat,
+    false,
+  );
+  const third = await panel(
+    f.sessions.request,
+    f.store.state.bindings.oc_chat,
+    false,
+    2,
+    "projects",
+  );
+  assert.equal(
+    Object.values(first.actions).filter((a) => a.kind === "project").length,
+    20,
+  );
+  assert.equal(
+    Object.values(third.actions).filter((a) => a.kind === "project").length,
+    5,
+  );
+  assert.match(JSON.stringify(first.payload), /项目 44/);
+  assert.ok(
+    Object.values(third.actions).some(
+      (a) => a.kind === "project" && a.projectId === "p",
+    ),
+  );
+  assert.ok(Buffer.byteLength(JSON.stringify(first.payload)) < 30_000);
+});
+
+test("a lost card-create acknowledgement reuses its UUID and updates the recovered message with the final result", async () => {
+  const f = cardFixture();
+  const uuids: string[] = [];
+  let created = false;
+  f.transport.card = async (id, card, uuid, _signal, update = false) => {
+    if (!update) {
+      uuids.push(uuid);
+      if (!created) {
+        created = true;
+        throw new Error("Lost acknowledgement after remote creation");
+      }
+      return "om_remote";
+    }
+    assert.equal(id, "om_remote");
+    f.sent.push({ id, card: structuredClone(card), update });
+    return id;
+  };
+  f.bot.receive(f.event("Build"));
+  await f.bot.tick();
+  f.finish("## 完成\n\n恢复后的结果");
+  const bot = f.restart();
+  await bot.tick();
+  assert.equal(uuids.length, 2);
+  assert.equal(uuids[0], uuids[1]);
+  assert.match(JSON.stringify(f.latest().card.payload), /恢复后的结果/);
+  assert.equal(f.calls.filter((r) => r.operation === "send").length, 1);
 });

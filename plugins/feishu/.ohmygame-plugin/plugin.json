@@ -3,7 +3,7 @@
   "id": "ohmygame/feishu",
   "version": "0.1.0",
   "engines": {
-    "ohmygame-api": "^2.5.0"
+    "ohmygame-api": "^2.6.0"
   },
   "displayName": "%plugin.name%",
   "description": "%plugin.description%",

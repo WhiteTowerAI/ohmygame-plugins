@@ -1,3 +1,4 @@
+import { validAction, validCard, type Card, type CardAction } from "./cards.ts";
 import {
   closeSync,
   existsSync,
@@ -20,6 +21,8 @@ export type Outgoing = {
   attempts: number;
   nextAt: number;
   firstAt?: number;
+  card?: Card;
+  messageId?: string;
 };
 export type Delivery = {
   id: string;
@@ -31,11 +34,15 @@ export type Delivery = {
   prompt?: string;
   turnId?: string;
   approvalNotified?: boolean;
+  action?: CardAction;
+  expectedBinding?: Binding;
+  replyTo?: string;
+  updateMessageId?: string;
   outgoing: Outgoing[];
 };
 export type Binding = { projectId: string; conversationId?: string };
 type State = {
-  version: 1;
+  version: 2;
   bindings: Record<string, Binding>;
   deliveries: Delivery[];
 };
@@ -65,7 +72,7 @@ export class Store {
       `feishu-${createHash("sha256").update(identity).digest("hex")}.json`,
     );
     if (!existsSync(this.file)) {
-      this.state = { version: 1, bindings: {}, deliveries: [] };
+      this.state = { version: 2, bindings: {}, deliveries: [] };
       return;
     }
     const raw = readFileSync(this.file);
@@ -76,7 +83,7 @@ export class Store {
     const v: unknown = JSON.parse(raw.toString("utf8"));
     if (
       !object(v) ||
-      v.version !== 1 ||
+      (v.version !== 1 && v.version !== 2) ||
       !object(v.bindings) ||
       !Object.entries(v.bindings).every(
         ([key, value]) => string(key) && binding(value),
@@ -93,6 +100,10 @@ export class Store {
           ["new", "dispatching", "watching", "done"].includes(
             d.phase as string,
           ) &&
+          (d.action === undefined || validAction(d.action)) &&
+          (d.expectedBinding === undefined || binding(d.expectedBinding)) &&
+          (d.replyTo === undefined || string(d.replyTo)) &&
+          (d.updateMessageId === undefined || string(d.updateMessageId)) &&
           (d.target === undefined || target(d.target)) &&
           (d.prompt === undefined || string(d.prompt, 32_000)) &&
           (d.turnId === undefined || string(d.turnId)) &&
@@ -112,7 +123,9 @@ export class Store {
               ) &&
               number(o.attempts) &&
               number(o.nextAt) &&
-              (o.firstAt === undefined || number(o.firstAt)),
+              (o.firstAt === undefined || number(o.firstAt)) &&
+              (o.messageId === undefined || string(o.messageId)) &&
+              (o.card === undefined || validCard(o.card)),
           ),
       ) ||
       new Set(v.deliveries.map((d) => d.id)).size !== v.deliveries.length
@@ -120,7 +133,11 @@ export class Store {
       throw new Error(
         "Cannot read Feishu delivery store; original file preserved",
       );
+    // compat: since 0.1.0, remove from 0.3 and 2026-12-13. Keep pending v1 text replies.
+    const migrate = v.version === 1;
+    v.version = 2;
     this.state = v as unknown as State;
+    if (migrate) this.save();
   }
   save() {
     if (this.failed)
@@ -148,7 +165,20 @@ export class Store {
       if (existsSync(temp)) unlinkSync(temp);
     }
   }
-  receive(input: Pick<Delivery, "id" | "chatId" | "text" | "at">, now: number) {
+  receive(
+    input: Pick<
+      Delivery,
+      | "id"
+      | "chatId"
+      | "text"
+      | "at"
+      | "action"
+      | "expectedBinding"
+      | "replyTo"
+      | "updateMessageId"
+    >,
+    now: number,
+  ) {
     if (this.failed)
       throw new Error(
         "Feishu delivery store needs a restart after a write failure",

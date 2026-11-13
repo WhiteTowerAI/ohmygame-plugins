@@ -133,6 +133,13 @@ export class Pairing {
       await old?.close();
     });
   }
+  action(event: unknown) {
+    if (this.stopped || !this.bot)
+      return {
+        toast: { type: "error", content: "请先在 OhMyGame 绑定账号。" },
+      };
+    return this.bot.action(event);
+  }
   receive(event: unknown) {
     return this.serial(async () => {
       const message = parseMessage(event, this.now());

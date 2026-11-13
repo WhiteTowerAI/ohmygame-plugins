@@ -1,9 +1,10 @@
 # Feishu
 
 An optional OhMyGame plugin for a private conversation with your own Feishu
-bot. It is not preinstalled. Requires the app's API 2.5 session support
-(OhMyGame PR #819) and the connection settings UI from PR #820. Older
-API 2.5 builds lack the pairing controls; use a build including both PRs.
+bot. It is not preinstalled. Requires plugin API **2.6** from
+[OhMyGame PR #820](https://github.com/WhiteTowerAI/ohmygame/pull/820), including
+the session service from #819. Install/update the app before this plugin.
+The plugin manifest prevents API 2.5 hosts from activating this version.
 
 ## Set up
 
@@ -19,17 +20,23 @@ API 2.5 builds lack the pairing controls; use a build including both PRs.
    **Receive events through persistent connection**, then subscribe to
    `im.message.receive_v1`. The plugin must be running while Feishu verifies
    the connection. Save/publish the subscription as required by the console.
-4. Once Settings shows **Connected**, click **Bind account**, copy the generated
+4. In **Events and Callbacks → Callback configuration**, also select
+   **Receive callbacks through persistent connection**, and add **Card action
+   trigger** (`card.action.trigger`, the new callback, not `card.action.trigger_v1`).
+   Save/publish as required by the console. This is separate from the message
+   event subscription in step 3. No public URL, relay or card template is needed.
+5. Once Settings shows **Connected**, click **Bind account**, copy the generated
    `/bind …` message and send it privately to this bot within five minutes.
    The plugin recognizes and saves your account, and the bot confirms binding.
    A connected socket alone does not prove the message subscription is working:
    this exchange confirms incoming and outgoing messages. If no confirmation
    appears, check the subscription and bot permissions above.
-5. Private-message the bot with `/projects`, then `/project <id>` and `/new`
-   (or `/conversations` and `/conversation <id>`). Send a text message to start.
-   Choose a default model in OhMyGame first, or use an existing conversation
-   with its selected model.
-6. Keep OhMyGame open, or accept its offer to keep running after closing the
+6. The binding reply opens an operation card. Choose a project and a conversation,
+   or click **新建会话**. Select the model and thinking intensity for this
+   conversation, then send text to start. Send `/panel` or `面板` to reopen it.
+   Lists page by name; no copying IDs is needed. Configure/sign into models in
+   OhMyGame first. Model and intensity changes also appear in the desktop app.
+7. Keep OhMyGame open, or accept its offer to keep running after closing the
    window. Quit stops the bot; sleep interrupts connectivity. Reopen normally
    to reconnect. Approve pending actions in OhMyGame, never through bot text.
 
@@ -46,16 +53,39 @@ unbind stays unbound after restart, even if that old setting is still stored.
 
 No public callback URL or relay is required. This version supports Feishu
 self-built apps and private text messages only: no Lark, groups, attachments,
-streaming replies or remote approval buttons. Bot command replies are English;
-the plugin settings are localized in English and Chinese.
+streaming replies or remote approval buttons. Use Feishu 7.20 or newer for JSON
+2.0 cards. Feedback and controls are Chinese; agent answers retain their original
+language and Markdown formatting. Plugin settings support English and Chinese.
+
+### 已配置用户需要补什么
+
+在飞书开发者后台进入 **事件与回调 → 回调配置**，选择 **使用长连接接收回调**，
+添加 **卡片回传交互 `card.action.trigger`**，保存并按控制台要求发布。
+已有的 `im.message.receive_v1` 消息事件继续保留。无需公网地址或手工发布卡片模板。
+
+已有的 `im:message:send_as_bot` 权限支持发送和更新机器人自己的卡片；这次不需要
+增加通讯录、历史消息、群聊或 CardKit 权限。模型和思考强度切换发生在本地 OhMyGame，
+使用当前会话已有的模型账号。流式 CardKit 及其 `cardkit:card:write` 权限不在本次范围。
+如果可以收到卡片但点击失败，先检查**回调配置**，再确认应用在线、版本已发布且账号仍已绑定。
+
+本地验收：
+
+- 发送 `/panel`，选择项目、会话或新建会话；有多页时检查翻页和当前选择。
+- 切换模型及思考强度，对照桌面当前会话；无思考选项的模型不显示该选择器。
+- 发送文字，检查“正在处理”卡片随后原位变成 Markdown 结果；审批仍在桌面处理。
+- 任务中点击“停止任务”，结束后再点旧按钮，确认不会停止新任务。
+- 重复点击、转发卡片、应用重启后点击旧卡片；过期或已处理的操作应拒绝并提示重新打开面板。
+- 检查中文反馈、代码块和长结果在桌面/手机飞书中的实际排版。
 
 ## Commands
 
 | Command              | Action                                                              |
 | -------------------- | ------------------------------------------------------------------- |
-| `/projects`          | List up to 30 projects with their IDs                               |
+| `/panel` / `面板`     | Open the operation card                                           |
+| `/projects`          | Open the project/conversation operation card                       |
 | `/project <id>`      | Select a project; clear the selected conversation                   |
-| `/conversations`     | List up to 30 conversations in that project                         |
+| `/conversations`     | Open the conversation operation card                               |
+| `/models`            | Open the model and thinking-intensity controls                     |
 | `/conversation <id>` | Select an existing conversation                                     |
 | `/new`               | Create and select a conversation (send text to persist it)          |
 | `/status`            | Show the selection, agent status and failed reply count             |
@@ -73,8 +103,18 @@ content and leaves the computer for Feishu.
 
 The app owns accepted agent tasks. Disabling the plugin, changing its settings,
 closing its connection or restarting its host does not stop those tasks.
-`/stop` is explicit. Pending approvals are reported once per request, and a
-completed response is split into ordered UTF-8-safe chunks if needed.
+`/stop` is explicit and stops the currently selected conversation. The card's
+**停止任务** button instead carries its original turn ID: an old card never stops
+a later turn. Pending approvals are reported once per request, and a
+completed response replaces its task card, with ordered UTF-8-safe continuation
+cards if needed. This is a status/final-result update, not token streaming.
+
+Callbacks validate the bound owner, original chat/message, a persisted opaque
+card/action token, selection and a 24-hour lifetime. A click consumes that card
+revision and persists intent before returning a short toast; network and agent
+work happen later in the worker. Repeated clicks do not repeat mutations. A
+changed selection is checked again before execution. Refresh replaces the panel
+in place. The callback's toast confirms receipt, not successful execution.
 
 The plugin saves the bound account in a versioned App ID-scoped account file.
 It also stores versioned chat selections, incoming message IDs, request text and
@@ -82,7 +122,7 @@ pending replies in its private app data folder. A ledger is scoped by App ID
 and allowed open_id; changing the secret retains it, changing either identity
 starts a separate ledger. Rebinding stops old-account delivery and polling;
 it does not stop accepted agent tasks. Rebinding the same account retains its
-ledger. The App Secret can change without losing the saved account. Unknown fields are preserved, and invalid or newer
+ledger. The App Secret can change without losing the saved account. Delivery ledger v1 loads as v2 without dropping pending text replies (remove the migration no earlier than 0.3 and 2026-12-13). Unknown fields are preserved, and invalid or newer
 stores are never overwritten. Keep one OhMyGame instance per data directory.
 
 Incoming messages are persisted before acknowledgement. IDs are retained for
@@ -94,7 +134,7 @@ on subsequent receipt; unfinished tasks are
 reported after a day and left running in OhMyGame. Disk write failures stop
 further mutations until the plugin restarts; check the plugin log.
 
-Send/create/stop calls are never automatically retried after interruption.
+Send/create/stop/model/reasoning calls are never automatically retried after interruption.
 Agent prompts include a stable `[Feishu message om_…]` marker, so a lost send
 acknowledgement can be reconciled from source-attributed history even after
 runtime turn IDs change. If no matching history can be found (including
@@ -119,15 +159,26 @@ with Develop on. The build bundles the pinned official Node SDK and includes
 its dependency licenses; the installed app runs no package installation.
 The test/publish workflows build the same artifact before packing it.
 
+Rollout: merge app #820 first. CI temporarily pins its API 2.6 commit; restore
+`OHMYGAME_REF` to `dev` after that merge and before merging this plugin PR.
+Publishing continues to use the app development branch. Do not publish the
+plugin until API 2.6 app builds are available.
+
 Tests cover durable deduplication, ambiguous sends, restart reconciliation,
 owner isolation, approvals, bounded/partial retries, corrupted state and real
-SDK WebSocket framing/reconnect/close against a local server. Live tenant
+SDK WebSocket framing/reconnect/close and card callback ACKs against a local
+server. Card cases cover model/effort changes, stale/forwarded/repeated callbacks,
+turn-scoped stop, pagination, restart and v1 ledger migration. App tests exercise
+the shared desktop/plugin model transitions and renderer settings events. Live tenant
 subscription, permission approval and end-user delivery still need a real
 Feishu test app; local fixtures cannot establish those outcomes.
 
 Protocol references: [official Node SDK](https://github.com/larksuite/node-sdk),
 [receive-message event](https://open.feishu.cn/document/server-docs/im-v1/message/events/receive),
-[reply API](https://open.feishu.cn/document/server-docs/im-v1/message/reply).
+[reply API](https://open.feishu.cn/document/server-docs/im-v1/message/reply),
+[callback setup and three-second ACK](https://open.feishu.cn/document/event-subscription-guide/callback-subscription/receive-and-handle-callbacks),
+[JSON 2.0 menus](https://open.feishu.cn/document/feishu-cards/card-json-v2-components/interactive-components/single-select-dropdown-menu),
+[message permissions](https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/im-v1).
 
 The plugin bundles the Feishu logo from the official website; source and
 artwork attribution are in [assets/NOTICE.md](assets/NOTICE.md).

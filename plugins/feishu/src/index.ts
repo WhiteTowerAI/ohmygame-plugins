@@ -7,6 +7,7 @@ interface Connection extends Transport {
   start(
     receive: (data: unknown) => Promise<void>,
     status: (state: ConnectionState) => void,
+    action: (data: unknown) => unknown,
   ): Promise<void>;
   close(): void;
 }
@@ -118,6 +119,7 @@ export async function activate(
       (state) => {
         if (!stopped) connection.connection = state;
       },
+      (data) => connection.action(data),
     );
   } catch {
     connection.connection = "error";

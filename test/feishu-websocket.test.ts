@@ -82,7 +82,9 @@ test(
     assert.ok(address && typeof address !== "string");
     const sockets: WebSocket[] = [],
       acknowledgements: number[] = [],
-      received: unknown[] = [];
+      received: unknown[] = [],
+      callbacks: unknown[] = [],
+      replies: { code: number; data?: string }[] = [];
     let reject = false;
     server.on("connection", (socket) => {
       sockets.push(socket);
@@ -91,10 +93,11 @@ test(
           method: number;
           payload?: Uint8Array;
         };
-        if (data.method === 1 && data.payload)
-          acknowledgements.push(
-            JSON.parse(Buffer.from(data.payload).toString()).code,
-          );
+        if (data.method === 1 && data.payload) {
+          const reply = JSON.parse(Buffer.from(data.payload).toString());
+          acknowledgements.push(reply.code);
+          replies.push(reply);
+        }
       });
     });
     const transport = new FeishuTransport(
@@ -115,7 +118,7 @@ test(
         },
       }),
     );
-    const send = (socket: WebSocket, id: string) =>
+    const send = (socket: WebSocket, id: string, callback = false) =>
       socket.send(
         frame
           .encode({
@@ -132,31 +135,57 @@ test(
             payload: Buffer.from(
               JSON.stringify({
                 schema: "2.0",
-                header: { event_type: "im.message.receive_v1", event_id: id },
-                event: {
-                  sender: {
-                    sender_type: "user",
-                    sender_id: { open_id: "ou_owner" },
-                  },
-                  message: {
-                    message_id: "om_test",
-                    chat_id: "oc_test",
-                    chat_type: "p2p",
-                    message_type: "text",
-                    content: '{"text":"hello"}',
-                    create_time: String(Date.now()),
-                  },
+                header: {
+                  event_type: callback
+                    ? "card.action.trigger"
+                    : "im.message.receive_v1",
+                  event_id: id,
                 },
+                event: callback
+                  ? {
+                      operator: { open_id: "ou_owner" },
+                      host: "im_message",
+                      context: {
+                        open_message_id: "om_card",
+                        open_chat_id: "oc_test",
+                      },
+                      action: {
+                        tag: "select_static",
+                        option: "model-token",
+                        value: { card: "card-id" },
+                      },
+                    }
+                  : {
+                      sender: {
+                        sender_type: "user",
+                        sender_id: { open_id: "ou_owner" },
+                      },
+                      message: {
+                        message_id: "om_test",
+                        chat_id: "oc_test",
+                        chat_type: "p2p",
+                        message_type: "text",
+                        content: '{"text":"hello"}',
+                        create_time: String(Date.now()),
+                      },
+                    },
               }),
             ),
           })
           .finish(),
       );
     try {
-      await transport.start((data) => {
-        if (reject) throw new Error("disk unavailable");
-        received.push(data);
-      });
+      await transport.start(
+        (data) => {
+          if (reject) throw new Error("disk unavailable");
+          received.push(data);
+        },
+        () => {},
+        (data) => {
+          callbacks.push(data);
+          return { toast: { type: "info", content: "已收到" } };
+        },
+      );
       await until(() => sockets.length === 1);
       await delay(30);
       send(sockets[0]!, "event-1");
@@ -176,6 +205,20 @@ test(
       reject = false;
       send(sockets[1]!, "event-3");
       await until(() => received.length === 2);
+      await until(() => acknowledgements.length === 3);
+      const before = Date.now();
+      send(sockets[1]!, "card-1", true);
+      await until(() => acknowledgements.length === 4);
+      assert.ok(Date.now() - before < 3_000);
+      assert.equal(acknowledgements[3], 200);
+      assert.deepEqual(
+        JSON.parse(Buffer.from(replies[3]!.data!, "base64").toString()),
+        { toast: { type: "info", content: "已收到" } },
+      );
+      assert.equal(
+        (callbacks[0] as { action: { option: string } }).action.option,
+        "model-token",
+      );
       transport.close();
       await until(() => server.clients.size === 0);
       await delay(100);
