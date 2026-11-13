@@ -73,7 +73,7 @@ Local archive/preflight tests and fixture-driven panel checks do not verify
 live uploads, platform gameplay, review acceptance or publication; those require
 a developer account and an explicitly selected test app.
 
-![Version history and neutral notices](docs/versions.png)
+![Version history and warning notices](docs/versions.png)
 
 ## Development and release
 
