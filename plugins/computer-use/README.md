@@ -8,7 +8,7 @@ preinstalled and has no app-wide background connection or cross-project session 
 
 ## Try locally
 
-1. Use an OhMyGame build with plugin API **2.7 or newer** ([app #822](https://github.com/WhiteTowerAI/ohmygame/pull/822), branch `feat/plugin-app-approvals`; app #820 alone is insufficient).
+1. Use an OhMyGame build with plugin API **2.7 or newer** ([app #822](https://github.com/WhiteTowerAI/ohmygame/pull/822) is merged into `dev`; use that branch until a compatible app release is available).
 2. Install Node.js **22.19+** with npm. `npx` must be on the PATH available to
    OhMyGame; restart the desktop app after installing Node.js.
 3. In this repository, run `npm ci` and `npm run build:computer-use`.
@@ -134,8 +134,8 @@ and is checked against `PluginServices`; revisit it if that host contract change
 
 ## 本地验收（macOS）
 
-需要应用 [#822](https://github.com/WhiteTowerAI/ohmygame/pull/822) 分支 **`feat/plugin-app-approvals`（插件 API 2.7）** 和插件分支
-**`feat/computer-use`**；仅 #820 不够。插件仍未发布、未合并。仓库已有依赖时，
+需要包含 [#822](https://github.com/WhiteTowerAI/ohmygame/pull/822) 的应用 **`dev` 分支（插件 API 2.7）**。
+插件仍未发布，使用本仓库中的 `plugins/computer-use`。仓库已有依赖时，
 执行 `npm run build:computer-use`；全新工作区先执行 `npm ci`。
 
 1. 在 **插件 → 添加插件 → 本机** 选择 `plugins/computer-use` 文件夹，开启
