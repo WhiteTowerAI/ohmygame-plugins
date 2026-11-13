@@ -1,0 +1,28 @@
+{
+  "name": "@ohmygame/godot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Make Godot games: a project type that plays in the game panel as a web build, tools and an MCP server to build scenes and run the game, and skills for scenes and scripts.",
+  "keywords": [
+    "ohmygame-plugin"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/godot"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "native",
+    "skills",
+    "templates",
+    "tools"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

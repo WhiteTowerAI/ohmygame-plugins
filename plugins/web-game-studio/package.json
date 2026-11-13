@@ -1,0 +1,25 @@
+{
+  "name": "@ohmygame/web-game-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Build and improve polished browser games.",
+  "keywords": [
+    "ohmygame-plugin"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/web-game-studio"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "skills"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

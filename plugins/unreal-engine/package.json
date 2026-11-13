@@ -1,0 +1,25 @@
+{
+  "name": "@ohmygame/unreal-engine",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Inspect scenes and edit actors through Unreal MCP.",
+  "keywords": [
+    "ohmygame-plugin"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/unreal-engine"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "skills"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

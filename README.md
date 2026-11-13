@@ -9,6 +9,9 @@ the index to list plugins and checks every download against it.
 Each folder in [`plugins/`](plugins) is published as `@ohmygame/<folder>`, the
 publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
 
+- [Preinstalled-plugin migration](docs/preinstalled-plugins.md): the 12 existing
+  game workflows and creative-tool plugins, packaged here with their original
+  IDs and runtime contents. Publication is held until the app cutover is ready.
 - Model providers, one plugin each, so a person adds only those they use:
   [`siliconflow-cn`](plugins/siliconflow-cn), [`modelscope`](plugins/modelscope),
   [`command-code`](plugins/command-code) and [`fal`](plugins/fal) (images, video,
