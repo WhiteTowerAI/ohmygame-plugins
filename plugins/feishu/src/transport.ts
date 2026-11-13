@@ -4,6 +4,7 @@ import {
   WSClient,
   defaultHttpInstance,
 } from "@larksuiteoapi/node-sdk";
+import type { ConnectionState } from "./pairing.ts";
 import type { Transport } from "./bot.ts";
 
 const ORIGIN = "https://open.feishu.cn";
@@ -35,7 +36,10 @@ export class FeishuTransport implements Transport {
       signal: AbortSignal,
     ): Promise<unknown> => defaultHttpInstance.request({ ...options, signal }),
   ) {}
-  async start(receive: (data: unknown) => void) {
+  async start(
+    receive: (data: unknown) => void | Promise<void>,
+    status: (state: ConnectionState) => void = () => {},
+  ) {
     // SDK logs can contain endpoint credentials. Only fixed lifecycle messages leave this adapter.
     this.lifetime.signal.throwIfAborted();
     const httpInstance = Object.create(defaultHttpInstance) as NonNullable<
@@ -58,19 +62,30 @@ export class FeishuTransport implements Transport {
       logger: quietLogger,
       httpInstance,
       handshakeTimeoutMs: 15_000,
-      onReady: () => console.info("Feishu connected"),
-      onReconnected: () => console.info("Feishu reconnected"),
-      onReconnecting: () => console.warn("Feishu reconnecting"),
-      onError: () =>
+      onReady: () => {
+        if (!this.lifetime.signal.aborted) status("connected");
+        console.info("Feishu connected");
+      },
+      onReconnected: () => {
+        if (!this.lifetime.signal.aborted) status("connected");
+        console.info("Feishu reconnected");
+      },
+      onReconnecting: () => {
+        if (!this.lifetime.signal.aborted) status("connecting");
+        console.warn("Feishu reconnecting");
+      },
+      onError: () => {
+        if (!this.lifetime.signal.aborted) status("error");
         console.error(
           "Feishu connection failed; check app credentials, event subscription and network, then restart the plugin",
-        ),
+        );
+      },
     });
     await this.socket.start({
       eventDispatcher: new EventDispatcher({ logger: quietLogger }).register({
         "im.message.receive_v1": async (data) => {
           this.lifetime.signal.throwIfAborted();
-          receive(data);
+          await receive(data);
         },
       }),
     });

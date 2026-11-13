@@ -59,7 +59,7 @@ test("the distributable activates in standalone ESM without node_modules and dis
     import assert from 'node:assert/strict';
     import { activate } from './index.mjs';
     const disposers = []; let started = 0, closed = 0;
-    await activate({ sessions: { request: async () => { throw Error('Unexpected session request'); } }, configuration: { appId: 'cli_1234567890abcdef', appSecret: 'fixture', ownerOpenId: 'ou_owner' }, dataFolder: ${JSON.stringify(folder)}, onDispose: fn => disposers.push(fn) }, () => ({ start: async () => { started++; }, close: () => { closed++; }, reply: async () => {} }));
+    await activate({ sessions: { request: async () => { throw Error('Unexpected session request'); } }, configuration: { appId: 'cli_1234567890abcdef', appSecret: 'fixture', ownerOpenId: 'ou_owner' }, dataFolder: ${JSON.stringify(folder)}, registerCommand: () => {}, onDispose: fn => disposers.push(fn) }, () => ({ start: async () => { started++; }, close: () => { closed++; }, reply: async () => {} }));
     assert.equal(started, 1); for (const dispose of disposers) await dispose(); assert.equal(closed, 1);
   `,
   );
@@ -532,4 +532,258 @@ test("REST transport refreshes tokens and preserves reply UUID/content, rejects 
     transport.reply("om_1", "text", "id", signal),
     /too large/,
   );
+});
+
+test("pairing requires a fresh local code in a private user message; one concurrent sender wins", async () => {
+  const f = fixture();
+  const { Pairing } = await import("../plugins/feishu/src/pairing.ts");
+  const pair = new Pairing(
+    f.folder,
+    "pair-app",
+    f.sessions,
+    f.transport,
+    undefined,
+    f.clock,
+    f.clock,
+  );
+  await assert.rejects(pair.begin(), /connection/);
+  pair.connection = "connected";
+  await pair.receive(f.event("/projects"));
+  await pair.tick();
+  assert.equal(f.calls.length, 0);
+  await pair.begin();
+  const code = pair.status().code!;
+  await pair.begin();
+  assert.deepEqual(pair.status().code, code);
+  const group = f.event(code.text);
+  group.message.chat_type = "group";
+  const app = f.event(code.text);
+  app.sender.sender_type = "app";
+  const stale = f.event(code.text);
+  stale.message.create_time = String(f.clock() - 60_001);
+  for (const event of [group, app, stale, f.event("/bind wrong")])
+    await pair.receive(event);
+  assert.equal(pair.account.owner, null);
+  const other = f.event(code.text, "om_other");
+  other.sender.sender_id.open_id = "ou_other";
+  await Promise.all([pair.receive(f.event(code.text)), pair.receive(other)]);
+  assert.equal(pair.account.owner, "ou_owner");
+  assert.equal(pair.status().code, undefined);
+  await pair.tick();
+  assert.equal(f.calls.length, 0, "pairing must never dispatch an agent task");
+  assert.match(f.replies[0]!.text, /Account bound/);
+  const ledger = new Store(f.folder, "pair-app:ou_owner");
+  assert.equal(
+    ledger.state.deliveries[0]!.text,
+    "/bind",
+    "consumed code is not stored",
+  );
+  await pair.receive(f.event("/projects", "om_projects"));
+  await pair.tick();
+  assert.equal(f.calls[0]?.operation, "projects");
+  await pair.close();
+});
+
+test("pairing expires without renewal on reads, on clock rollback and on restart", async () => {
+  const f = fixture();
+  const { Pairing } = await import("../plugins/feishu/src/pairing.ts");
+  let monotonic = 0;
+  const make = () =>
+    new Pairing(
+      f.folder,
+      "expiry-app",
+      f.sessions,
+      f.transport,
+      undefined,
+      f.clock,
+      () => monotonic,
+    );
+  let pair = make();
+  pair.connection = "connected";
+  await pair.begin();
+  let code = pair.status().code!;
+  monotonic += 300_000;
+  await pair.receive(f.event(code.text));
+  assert.equal(pair.account.owner, null);
+  assert.equal(pair.status().code, undefined);
+  await pair.begin();
+  code = pair.status().code!;
+  f.advance(-1);
+  await pair.receive(f.event(code.text));
+  assert.equal(pair.account.owner, null);
+  await pair.begin();
+  code = pair.status().code!;
+  await pair.close();
+  pair = make();
+  pair.connection = "connected";
+  await pair.receive(f.event(code.text));
+  assert.equal(pair.account.owner, null);
+  await pair.begin();
+  code = pair.status().code!;
+  f.advance(300_000);
+  await pair.receive(f.event(code.text));
+  assert.equal(pair.account.owner, null);
+  await pair.close();
+});
+
+test("rebind keeps the old owner until success, isolates ledgers and persists explicit unbind", async () => {
+  const f = fixture();
+  const { Pairing } = await import("../plugins/feishu/src/pairing.ts");
+  const make = () =>
+    new Pairing(
+      f.folder,
+      "rebind-app",
+      f.sessions,
+      f.transport,
+      "ou_owner",
+      f.clock,
+      f.clock,
+    );
+  let pair = make();
+  pair.connection = "connected";
+  const oldLedger = new Store(f.folder, "rebind-app:ou_owner");
+  await pair.begin();
+  await pair.cancel();
+  assert.equal(pair.account.owner, "ou_owner");
+  assert.equal(pair.status().code, undefined);
+  await pair.begin();
+  await pair.receive(f.event("/project p", "om_select"));
+  await pair.tick();
+  assert.equal(
+    new Store(f.folder, "rebind-app:ou_owner").state.bindings.oc_chat
+      ?.projectId,
+    "p",
+  );
+  const event = f.event(pair.status().code!.text, "om_bind2");
+  event.sender.sender_id.open_id = "ou_second";
+  await pair.receive(event);
+  await pair.tick();
+  assert.equal(pair.account.owner, "ou_second");
+  assert.deepEqual(
+    new Store(f.folder, "rebind-app:ou_second").state.bindings,
+    {},
+  );
+  const before = f.calls.length;
+  await pair.receive(f.event("/projects", "om_old"));
+  await pair.tick();
+  assert.equal(f.calls.length, before);
+  await pair.close();
+  pair = make();
+  assert.equal(pair.account.owner, "ou_second");
+  await pair.unbind();
+  await pair.close();
+  pair = make();
+  assert.equal(
+    pair.account.owner,
+    null,
+    "legacy owner must not resurrect after unbind",
+  );
+  assert.ok(readFileSync(oldLedger.file, "utf8").includes("om_select"));
+  await pair.close();
+});
+
+test("account files preserve unknown data and reject damaged/newer formats; failed writes cannot grant a new owner", async () => {
+  const f = fixture();
+  const { AccountStore } = await import("../plugins/feishu/src/store.ts");
+  const { Pairing } = await import("../plugins/feishu/src/pairing.ts");
+  const account = new AccountStore(f.folder, "account-app", "ou_owner");
+  writeFileSync(
+    account.file,
+    JSON.stringify({ version: 1, owner: "ou_owner", future: { keep: true } }),
+  );
+  new AccountStore(f.folder, "account-app").set(null);
+  assert.deepEqual(JSON.parse(readFileSync(account.file, "utf8")).future, {
+    keep: true,
+  });
+  for (const raw of [
+    '{"version":2,"owner":null}',
+    '{"version":1,"owner":42}',
+    "broken",
+  ]) {
+    writeFileSync(account.file, raw);
+    assert.throws(() => new AccountStore(f.folder, "account-app", "ou_owner"));
+    assert.equal(readFileSync(account.file, "utf8"), raw);
+  }
+  const pair = new Pairing(
+    f.folder,
+    "failure-app",
+    f.sessions,
+    f.transport,
+    "ou_owner",
+    f.clock,
+    f.clock,
+  );
+  pair.connection = "connected";
+  await pair.begin();
+  renameSync(pair.account.file, `${pair.account.file}.saved`);
+  mkdirSync(pair.account.file);
+  const event = f.event(pair.status().code!.text);
+  event.sender.sender_id.open_id = "ou_second";
+  await assert.rejects(pair.receive(event));
+  assert.equal(pair.account.owner, "ou_owner");
+  await assert.rejects(pair.unbind());
+  assert.equal(pair.account.owner, "ou_owner");
+  await pair.close();
+});
+
+test("rebinding aborts the old delivery waiter without stopping accepted daemon tasks", async () => {
+  const f = fixture();
+  const { Pairing } = await import("../plugins/feishu/src/pairing.ts");
+  const ledger = new Store(f.folder, "lifetime-app:ou_owner");
+  ledger.state.bindings.oc_chat = { projectId: "p", conversationId: "c" };
+  ledger.save();
+  let waiting = false,
+    aborted = false;
+  const sessions = {
+    request: async (
+      request: PluginSessionRequest,
+      options?: { signal?: AbortSignal },
+    ) => {
+      if (request.operation === "send") {
+        waiting = true;
+        return new Promise((_resolve, reject) =>
+          options?.signal?.addEventListener(
+            "abort",
+            () => {
+              aborted = true;
+              reject(options.signal!.reason);
+            },
+            { once: true },
+          ),
+        );
+      }
+      return f.sessions.request(request);
+    },
+  } as PluginSessions;
+  const pair = new Pairing(
+    f.folder,
+    "lifetime-app",
+    sessions,
+    f.transport,
+    "ou_owner",
+    f.clock,
+    f.clock,
+  );
+  pair.connection = "connected";
+  await pair.receive(f.event("Build", "om_build"));
+  const tick = pair.tick().catch(() => {});
+  for (let i = 0; i < 20 && !waiting; i++)
+    await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(waiting, true);
+  await pair.begin();
+  const event = f.event(pair.status().code!.text, "om_switch");
+  event.sender.sender_id.open_id = "ou_second";
+  await pair.receive(event);
+  await tick;
+  assert.equal(aborted, true);
+  assert.equal(pair.account.owner, "ou_second");
+  assert.equal(
+    f.calls.some((call) => call.operation === "stop"),
+    false,
+  );
+  assert.equal(
+    f.replies.some((reply) => reply.id === "om_build"),
+    false,
+  );
+  await pair.close();
 });

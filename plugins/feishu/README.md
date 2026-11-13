@@ -2,7 +2,8 @@
 
 An optional OhMyGame plugin for a private conversation with your own Feishu
 bot. It is not preinstalled. Requires the app's API 2.5 session support
-(OhMyGame PR #819); older builds without `context.sessions` cannot connect.
+(OhMyGame PR #819) and the connection settings UI from PR #820. Older
+API 2.5 builds lack the pairing controls; use a build including both PRs.
 
 ## Set up
 
@@ -12,24 +13,36 @@ bot. It is not preinstalled. Requires the app's API 2.5 session support
    send bot messages (`im:message:send_as_bot`). Publish the app version with
    those permissions according to your tenant's approval process.
 2. Add this plugin in OhMyGame and review its native code, secrets and
-   cross-project session access. In its Settings, enter the App ID, App Secret
-   and **your user open_id for this app** (`ou_…`). Use [API Explorer](https://open.feishu.cn/api-explorer), select the same app
-   as the App ID above, open **Send message**, choose the `open_id` ID type,
-   then **Copy open_id**. Select yourself and copy the member ID; no test
-   message needs to be sent. `user_id` and `union_id` are not substitutes.
-   See the [official ID guide](https://open.feishu.cn/document/home/user-identity-introduction/open-id).
-   Other users and every group chat are ignored, without an information reply.
+   cross-project session access. In its Settings, enter the App ID and App Secret,
+   then save. You do not need to look up a user ID.
 3. Enable the plugin for all projects. In Feishu's Events and Callbacks, select
    **Receive events through persistent connection**, then subscribe to
    `im.message.receive_v1`. The plugin must be running while Feishu verifies
    the connection. Save/publish the subscription as required by the console.
-4. Private-message the bot with `/projects`, then `/project <id>` and `/new`
+4. Once Settings shows **Connected**, click **Bind account**, copy the generated
+   `/bind …` message and send it privately to this bot within five minutes.
+   The plugin recognizes and saves your account, and the bot confirms binding.
+   A connected socket alone does not prove the message subscription is working:
+   this exchange confirms incoming and outgoing messages. If no confirmation
+   appears, check the subscription and bot permissions above.
+5. Private-message the bot with `/projects`, then `/project <id>` and `/new`
    (or `/conversations` and `/conversation <id>`). Send a text message to start.
    Choose a default model in OhMyGame first, or use an existing conversation
    with its selected model.
-5. Keep OhMyGame open, or accept its offer to keep running after closing the
+6. Keep OhMyGame open, or accept its offer to keep running after closing the
    window. Quit stops the bot; sleep interrupts connectivity. Reopen normally
    to reconnect. Approve pending actions in OhMyGame, never through bot text.
+
+Use **Rebind account** to generate a new code for another account. The current
+account keeps working until that code is received. **Cancel binding** keeps the
+current account; **Unbind account** removes access immediately. Codes are
+single-use, expire after five minutes and do not survive a plugin restart.
+Closing the Settings tab does not cancel one. Ordinary first messages, wrong
+codes and group messages never bind an account or receive project information.
+
+Existing manually configured `ownerOpenId` values are imported once when no
+account file exists. The field is hidden in the new settings UI. An explicit
+unbind stays unbound after restart, even if that old setting is still stored.
 
 No public callback URL or relay is required. This version supports Feishu
 self-built apps and private text messages only: no Lark, groups, attachments,
@@ -63,10 +76,13 @@ closing its connection or restarting its host does not stop those tasks.
 `/stop` is explicit. Pending approvals are reported once per request, and a
 completed response is split into ordered UTF-8-safe chunks if needed.
 
-The plugin stores versioned bindings, incoming message IDs, request text and
+The plugin saves the bound account in a versioned App ID-scoped account file.
+It also stores versioned chat selections, incoming message IDs, request text and
 pending replies in its private app data folder. A ledger is scoped by App ID
 and allowed open_id; changing the secret retains it, changing either identity
-starts a separate ledger. Unknown fields are preserved, and invalid or newer
+starts a separate ledger. Rebinding stops old-account delivery and polling;
+it does not stop accepted agent tasks. Rebinding the same account retains its
+ledger. The App Secret can change without losing the saved account. Unknown fields are preserved, and invalid or newer
 stores are never overwritten. Keep one OhMyGame instance per data directory.
 
 Incoming messages are persisted before acknowledgement. IDs are retained for

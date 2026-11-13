@@ -1,11 +1,16 @@
 {
   "plugin.name": "Feishu",
   "plugin.description": "Send messages to your OhMyGame agent from a private Feishu bot chat.",
-  "plugin.longDescription": "An optional connection to your own Feishu self-built app. Only the configured user can list projects, select conversations, send text and stop work. Approve pending actions in OhMyGame. Keep OhMyGame open or enable background running. Group chats, attachments and Lark accounts are not supported. Setup instructions are in the plugin README.",
+  "plugin.longDescription": "An optional connection to your own Feishu self-built app. Only the bound user can list projects, select conversations, send text and stop work. Approve pending actions in OhMyGame. Keep OhMyGame open or enable background running. Group chats, attachments and Lark accounts are not supported. Setup instructions are in the plugin README.",
   "config.appId.title": "App ID",
   "config.appId.description": "The cli_ App ID of your self-built Feishu app. Enable its bot and long-connection message events.",
   "config.appSecret.title": "App Secret",
   "config.appSecret.description": "The App Secret from Feishu Developer Console.",
   "config.ownerOpenId.title": "Allowed user open_id",
-  "config.ownerOpenId.description": "Your ou_ ID for this app, not user_id or union_id. Other users and group chats are ignored.\n\n1. In API Explorer, select the app matching the App ID above.\n2. Open Send message, set the ID type to open_id, then choose Copy open_id.\n3. Select yourself, copy the member ID and paste it here. No test message needs to be sent.\n\nOfficial guide: https://open.feishu.cn/document/home/user-identity-introduction/open-id"
+  "config.ownerOpenId.description": "Your ou_ ID for this app, not user_id or union_id. Other users and group chats are ignored.\n\n1. In API Explorer, select the app matching the App ID above.\n2. Open Send message, set the ID type to open_id, then choose Copy open_id.\n3. Select yourself, copy the member ID and paste it here. No test message needs to be sent.\n\nOfficial guide: https://open.feishu.cn/document/home/user-identity-introduction/open-id",
+  "action.settings-status": "Connection status",
+  "action.pair": "Bind account",
+  "action.rebind": "Rebind account",
+  "action.cancel-pair": "Cancel binding",
+  "action.unbind": "Unbind account"
 }

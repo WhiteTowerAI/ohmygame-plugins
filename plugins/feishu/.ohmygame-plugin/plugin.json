@@ -9,7 +9,9 @@
   "description": "%plugin.description%",
   "longDescription": "%plugin.longDescription%",
   "icon": "./assets/icon.png",
-  "categories": ["integration"],
+  "categories": [
+    "integration"
+  ],
   "entrypoints": {
     "native": "./dist/index.mjs"
   },
@@ -17,7 +19,10 @@
     "native": true,
     "sessions": true,
     "secrets": true,
-    "network": ["open.feishu.cn", "msg-frontier.feishu.cn"]
+    "network": [
+      "open.feishu.cn",
+      "msg-frontier.feishu.cn"
+    ]
   },
   "configuration": {
     "appId": {
@@ -35,8 +40,92 @@
     "ownerOpenId": {
       "type": "text",
       "title": "%config.ownerOpenId.title%",
-      "description": "%config.ownerOpenId.description%",
-      "required": true
+      "description": "%config.ownerOpenId.description%"
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "id": "settings-status",
+        "title": "%action.settings-status%",
+        "run": {
+          "native": "settingsStatus",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "pair",
+        "title": "%action.pair%",
+        "run": {
+          "native": "beginPairing",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "rebind",
+        "title": "%action.rebind%",
+        "run": {
+          "native": "beginPairing",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "cancel-pair",
+        "title": "%action.cancel-pair%",
+        "run": {
+          "native": "cancelPairing",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "unbind",
+        "title": "%action.unbind%",
+        "run": {
+          "native": "unbind",
+          "changesFiles": false
+        }
+      }
+    ],
+    "settings": {
+      "groups": [
+        {
+          "rows": [
+            {
+              "field": "appId"
+            },
+            {
+              "field": "appSecret"
+            },
+            {
+              "widget": "status"
+            },
+            {
+              "title": "%action.pair%",
+              "action": {
+                "command": "pair"
+              }
+            },
+            {
+              "title": "%action.rebind%",
+              "action": {
+                "command": "rebind"
+              }
+            },
+            {
+              "title": "%action.cancel-pair%",
+              "action": {
+                "command": "cancel-pair"
+              }
+            },
+            {
+              "title": "%action.unbind%",
+              "action": {
+                "command": "unbind"
+              }
+            }
+          ]
+        }
+      ]
     }
   }
 }

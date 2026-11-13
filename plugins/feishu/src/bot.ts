@@ -14,6 +14,57 @@ const HELP =
 const UNCERTAIN =
   "The request was not confirmed. Check the conversation in OhMyGame before sending it again; it will not be retried automatically.";
 
+export function parseMessage(event: unknown, now: number) {
+  if (!event || typeof event !== "object") return;
+  const { sender, message } = event as {
+    sender?: { sender_type?: string; sender_id?: { open_id?: string } };
+    message?: {
+      message_id?: string;
+      chat_id?: string;
+      chat_type?: string;
+      message_type?: string;
+      content?: string;
+      create_time?: string;
+    };
+  };
+  // Do not acknowledge strangers with project information, or trust user_id/union_id fallbacks.
+  if (
+    sender?.sender_type !== "user" ||
+    !/^ou_[a-zA-Z0-9_-]{1,100}$/.test(sender.sender_id?.open_id ?? "") ||
+    message?.chat_type !== "p2p" ||
+    message.message_type !== "text"
+  )
+    return;
+  if (
+    !/^om_[a-zA-Z0-9_-]{1,100}$/.test(message.message_id ?? "") ||
+    !/^oc_[a-zA-Z0-9_-]{1,100}$/.test(message.chat_id ?? "")
+  )
+    return;
+  const at = Number(message.create_time);
+  if (
+    !Number.isSafeInteger(at) ||
+    at < now - DAY ||
+    at > now + 60_000 ||
+    typeof message.content !== "string" ||
+    message.content.length > 64_000
+  )
+    return;
+  let text: unknown;
+  try {
+    text = JSON.parse(message.content).text;
+  } catch {
+    return;
+  }
+  if (typeof text !== "string" || !text.trim() || text.length > 31_000) return;
+  return {
+    id: message.message_id!,
+    chatId: message.chat_id!,
+    text: text.trim(),
+    at,
+    owner: sender.sender_id!.open_id!,
+  };
+}
+
 /** Only this worker mutates bindings and delivery phases. Receive persists before acknowledging Feishu. */
 export class Bot {
   private readonly controller = new AbortController();
@@ -28,58 +79,11 @@ export class Bot {
   ) {}
 
   receive(event: unknown) {
-    if (this.controller.signal.aborted || !event || typeof event !== "object")
-      return;
-    const { sender, message } = event as {
-      sender?: { sender_type?: string; sender_id?: { open_id?: string } };
-      message?: {
-        message_id?: string;
-        chat_id?: string;
-        chat_type?: string;
-        message_type?: string;
-        content?: string;
-        create_time?: string;
-      };
-    };
-    // Do not acknowledge strangers with project information, or trust user_id/union_id fallbacks.
-    if (
-      sender?.sender_type !== "user" ||
-      sender.sender_id?.open_id !== this.owner ||
-      message?.chat_type !== "p2p" ||
-      message.message_type !== "text"
-    )
-      return;
-    if (
-      !/^om_[a-zA-Z0-9_-]{1,100}$/.test(message.message_id ?? "") ||
-      !/^oc_[a-zA-Z0-9_-]{1,100}$/.test(message.chat_id ?? "")
-    )
-      return;
-    const at = Number(message.create_time);
-    if (
-      !Number.isSafeInteger(at) ||
-      at < this.now() - DAY ||
-      at > this.now() + 60_000 ||
-      typeof message.content !== "string" ||
-      message.content.length > 64_000
-    )
-      return;
-    let text: unknown;
-    try {
-      text = JSON.parse(message.content).text;
-    } catch {
-      return;
-    }
-    if (typeof text !== "string" || !text.trim() || text.length > 31_000)
-      return;
-    this.store.receive(
-      {
-        id: message.message_id!,
-        chatId: message.chat_id!,
-        text: text.trim(),
-        at,
-      },
-      this.now(),
-    );
+    if (this.controller.signal.aborted) return;
+    const message = parseMessage(event, this.now());
+    if (!message || message.owner !== this.owner) return;
+    const { owner: _, ...input } = message;
+    this.store.receive(input, this.now());
   }
 
   tick(): Promise<void> {
@@ -200,6 +204,11 @@ export class Bot {
         other !== d && other.chatId === d.chatId && other.phase === "watching",
     );
     try {
+      if (command === "/bind")
+        return this.done(
+          d,
+          "Account bound. Send /projects to choose a project, then /new to start a conversation.",
+        );
       if (command === "/help") return this.done(d, HELP);
       if (command === "/projects") {
         const result = await this.request({ operation: "projects" });

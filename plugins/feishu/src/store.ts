@@ -188,3 +188,68 @@ export function parts(text: string): string[] {
 export function replyUuid(id: string, key: string) {
   return createHash("sha256").update(`${id}:${key}`).digest("hex").slice(0, 32);
 }
+
+/** App-scoped owner. A null owner is an explicit unbind, not missing configuration. */
+export class AccountStore {
+  readonly file: string;
+  private state: Record<string, unknown> & { version: 1; owner: string | null };
+  get owner() {
+    return this.state.owner;
+  }
+  constructor(folder: string, appId: string, legacyOwner?: unknown) {
+    mkdirSync(folder, { recursive: true, mode: 0o700 });
+    this.file = path.join(
+      folder,
+      `feishu-account-${createHash("sha256").update(appId).digest("hex")}.json`,
+    );
+    if (existsSync(this.file)) {
+      const raw = readFileSync(this.file);
+      if (raw.length > 64_000)
+        throw new Error(
+          "Feishu account store is too large; original file preserved",
+        );
+      const v: unknown = JSON.parse(raw.toString("utf8"));
+      if (
+        !object(v) ||
+        v.version !== 1 ||
+        (v.owner !== null && !validOwner(v.owner))
+      )
+        throw new Error(
+          "Cannot read Feishu account store; original file preserved",
+        );
+      this.state = v as typeof this.state;
+    } else {
+      this.state = { version: 1, owner: null };
+      // compat: since 0.1.0, remove from 0.3 and 2026-12-13. Import the early manual-owner setting once.
+      // Persist null too: later configuration changes must never resurrect a previous owner.
+      this.set(validOwner(legacyOwner) ? legacyOwner : null);
+    }
+  }
+  set(owner: string | null) {
+    if (owner !== null && !validOwner(owner))
+      throw new Error("Invalid Feishu account");
+    const next = { ...this.state, owner };
+    const data = JSON.stringify(next);
+    if (Buffer.byteLength(data) > 64_000)
+      throw new Error(
+        "Feishu account store is too large; original file preserved",
+      );
+    const temp = `${this.file}.${randomUUID()}.tmp`;
+    let fd: number | undefined;
+    try {
+      fd = openSync(temp, "wx", 0o600);
+      writeFileSync(fd, data);
+      fsyncSync(fd);
+      closeSync(fd);
+      fd = undefined;
+      renameSync(temp, this.file);
+      this.state = next;
+    } finally {
+      if (fd !== undefined) closeSync(fd);
+      if (existsSync(temp)) unlinkSync(temp);
+    }
+  }
+}
+function validOwner(value: unknown): value is string {
+  return typeof value === "string" && /^ou_[a-zA-Z0-9_-]{1,100}$/.test(value);
+}
