@@ -1,0 +1,11 @@
+{
+  "plugin.name": "Feishu",
+  "plugin.description": "Send messages to your OhMyGame agent from a private Feishu bot chat.",
+  "plugin.longDescription": "An optional connection to your own Feishu self-built app. Only the configured user can list projects, select conversations, send text and stop work. Approve pending actions in OhMyGame. Keep OhMyGame open or enable background running. Group chats, attachments and Lark accounts are not supported. Setup instructions are in the plugin README.",
+  "config.appId.title": "App ID",
+  "config.appId.description": "The cli_ App ID of your self-built Feishu app. Enable its bot and long-connection message events.",
+  "config.appSecret.title": "App Secret",
+  "config.appSecret.description": "The App Secret from Feishu Developer Console.",
+  "config.ownerOpenId.title": "Allowed user open_id",
+  "config.ownerOpenId.description": "Your ou_ user ID for this app. All other users and group chats are ignored."
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/feishu",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.5.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "categories": ["integration"],
+  "entrypoints": {
+    "native": "./dist/index.mjs"
+  },
+  "capabilities": {
+    "native": true,
+    "sessions": true,
+    "secrets": true,
+    "network": ["open.feishu.cn", "msg-frontier.feishu.cn"]
+  },
+  "configuration": {
+    "appId": {
+      "type": "text",
+      "title": "%config.appId.title%",
+      "description": "%config.appId.description%",
+      "required": true
+    },
+    "appSecret": {
+      "type": "secret",
+      "title": "%config.appSecret.title%",
+      "description": "%config.appSecret.description%",
+      "required": true
+    },
+    "ownerOpenId": {
+      "type": "text",
+      "title": "%config.ownerOpenId.title%",
+      "description": "%config.ownerOpenId.description%",
+      "required": true
+    }
+  }
+}

@@ -13,6 +13,9 @@ publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
   [`siliconflow-cn`](plugins/siliconflow-cn), [`modelscope`](plugins/modelscope),
   [`command-code`](plugins/command-code) and [`fal`](plugins/fal) (images, video,
   audio and 3D only).
+- Messaging connections: [`feishu`](plugins/feishu), an optional private-chat
+  bot with an explicit allowed user, durable delivery tracking and approvals
+  kept in OhMyGame. Build it with `npm run build:feishu` before local use.
 - Coding agents that speak the Agent Client Protocol, one plugin each:
   [`antigravity-cli`](plugins/antigravity-cli), [`codebuddy-code`](plugins/codebuddy-code)
   and [`gemini-cli`](plugins/gemini-cli). Command Code's agent is in
