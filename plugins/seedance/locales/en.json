@@ -1,0 +1,11 @@
+{
+  "plugin.name": "Seedream & Seedance",
+  "plugin.description": "Create images and videos with your Ark or BytePlus account.",
+  "plugin.longDescription": "Seedream images and Seedance 2.5/2.0 videos, with independent Ark and BytePlus keys. Ark images and videos share one key. Supports image references and first/last frames. Video tasks can resume after restart. Stop ends local waiting; remote work may continue and incur charges. Existing built-in settings are not migrated by this plugin.",
+  "config.ark.title": "Volcengine Ark API key",
+  "config.ark.description": "Used for Seedream images and Seedance videos in China.",
+  "config.byteplus.title": "BytePlus ModelArk API key",
+  "config.byteplus.description": "Used only for Dreamina Seedance videos in your BytePlus account.",
+  "provider.ark": "Volcengine Ark (plugin)",
+  "provider.byteplus": "BytePlus ModelArk (plugin)"
+}

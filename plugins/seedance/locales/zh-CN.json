@@ -1,0 +1,11 @@
+{
+  "plugin.name": "Seedream 与 Seedance",
+  "plugin.description": "使用火山方舟或 BytePlus 账户生成图片和视频。",
+  "plugin.longDescription": "支持 Seedream 图片和 Seedance 2.5/2.0 视频。火山方舟图片与视频共用一个密钥，BytePlus 密钥独立。支持参考图片和首尾帧，视频任务可在重启后继续。停止仅结束本地等待，远端任务可能继续运行并计费。此插件不会迁移现有内置设置。",
+  "config.ark.title": "火山方舟 API 密钥",
+  "config.ark.description": "用于中国区的 Seedream 图片与 Seedance 视频。",
+  "config.byteplus.title": "BytePlus ModelArk API 密钥",
+  "config.byteplus.description": "仅用于 BytePlus 账户的 Dreamina Seedance 视频。",
+  "provider.ark": "火山方舟（插件）",
+  "provider.byteplus": "BytePlus ModelArk（插件）"
+}
