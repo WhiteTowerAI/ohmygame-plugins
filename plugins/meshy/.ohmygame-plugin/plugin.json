@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/meshy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "engines": {
     "ohmygame-api": "^2.16.0"
   },
@@ -209,7 +209,7 @@
                 "min": 100,
                 "max": 300000,
                 "default": 30000,
-                "presets": [10000, 30000, 100000]
+                "presets": [1000, 4000, 10000, 30000, 100000, 300000]
               },
               "texture": true,
               "pbr": true,
