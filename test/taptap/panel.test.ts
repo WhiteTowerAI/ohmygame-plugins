@@ -94,10 +94,9 @@ const html = <T extends HTMLElement = HTMLElement>(markup: string): T => {
   document.body.innerHTML = markup;
   return document.body.firstElementChild as T;
 };
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
 
 describe("TapTap panel", () => {
-  it("imports a TapTap image only after confirmation and reuses it after a hidden-dialog upload failure", async () => {
+  it("preserves draft editing through a confirmed image upload, hidden failure and retry", async () => {
     const fixtures = JSON.parse(
       await readFile("test/taptap/panel-scenarios.json", "utf8"),
     )["ohmygame/taptap"].connected;
@@ -108,6 +107,20 @@ describe("TapTap panel", () => {
       state: "required",
       current_value: null,
     };
+    for (const [fieldId, state, validation_error] of [
+      ["website", "readonly", undefined],
+      ["age_rating", "required", undefined],
+      ["qualification", "readonly", "Check qualification"],
+    ]) {
+      fixtures.module.fields[fieldId!] = {
+        field_id: fieldId,
+        label: fieldId,
+        input_type: "text",
+        state,
+        current_value: "fixture",
+        validation_error,
+      };
+    }
     let confirmed = false;
     let pendingUpload: number | undefined;
     let attempts = 0;
@@ -118,6 +131,22 @@ describe("TapTap panel", () => {
       }
       if (method === "command.run") {
         const command = String(params?.command);
+        if (command === "save-fields") {
+          const input = params?.input as {
+            changes: { fieldId: string; value: unknown }[];
+          };
+          for (const change of input.changes)
+            fixtures.module.fields[change.fieldId].current_value = change.value;
+          app.postMessage({
+            id,
+            result: {
+              module: fixtures.module,
+              saved: input.changes.map((change) => change.fieldId),
+              unresolved: [],
+            },
+          });
+          return;
+        }
         if (command === "upload-image") {
           attempts++;
           if (attempts === 1) {
@@ -160,6 +189,14 @@ describe("TapTap panel", () => {
       const modulePath = path.join(served, "taptap-panel.js");
       await writeFile(modulePath, source);
       await import(/* @vite-ignore */ modulePath);
+      // Collapse optional reference fields, never required or invalid fields.
+      const fields = document.querySelector(".fields")!;
+      const additional = fields.querySelector("omg-disclosure")!;
+      expect(additional.textContent).toContain("website");
+      expect(additional.textContent).not.toContain("age_rating");
+      expect(additional.textContent).not.toContain("qualification");
+      expect(fields.textContent).toContain("age_rating");
+      expect(fields.textContent).toContain("Check qualification");
       const dialog = document.querySelector("omg-dialog")! as HTMLElement & {
         open: boolean;
       };
@@ -222,6 +259,53 @@ describe("TapTap panel", () => {
       expect(uploads[0]!.params!.input).toEqual(uploads[1]!.params!.input);
       expect(calls.some((call) => call.params?.command === "save-fields")).toBe(
         false,
+      );
+      const titleInput = document.querySelector(
+        'omg-input[label="Game name *"]',
+      )! as HTMLElement & { value: string };
+      titleInput.value = "Renamed garden";
+      titleInput.dispatchEvent(new Event("input", { bubbles: true }));
+      const save = document.querySelector(
+        '.save-bar omg-button[variant="primary"]',
+      )!;
+      shadow(save, "button").click();
+      await vi.waitFor(() =>
+        expect(document.querySelector("#taptap")!.getAttribute("heading")).toBe(
+          "Renamed garden",
+        ),
+      );
+      await vi.waitFor(() => expect(save.hasAttribute("disabled")).toBe(true));
+      expect(document.querySelector("#taptap > .notice")!.textContent).toBe("");
+      expect(document.querySelector(".store-preview")!.textContent).toContain(
+        "Renamed garden",
+      );
+      const refresh = [...document.querySelectorAll("omg-button")].find(
+        (button) => button.textContent === "Refresh",
+      )!;
+      const uploadBuild = [...document.querySelectorAll("omg-button")].find(
+        (button) => button.textContent === "Check and upload",
+      )!;
+      fixtures.capabilities.available_package_types = [];
+      fixtures.capabilities.empty_reason = "declared_not_applicable";
+      shadow(refresh, "button").click();
+      await vi.waitFor(() =>
+        expect(uploadBuild.hasAttribute("disabled")).toBe(true),
+      );
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain(
+          "Platform support is required",
+        ),
+      );
+      await vi.waitFor(() =>
+        expect(refresh.hasAttribute("disabled")).toBe(false),
+      );
+      fixtures.capabilities.available_package_types = ["h5"];
+      shadow(refresh, "button").click();
+      await vi.waitFor(() =>
+        expect(uploadBuild.hasAttribute("disabled")).toBe(false),
+      );
+      expect(document.body.textContent).not.toContain(
+        "Platform support is required",
       );
     } finally {
       timers.mockRestore();

@@ -13,7 +13,8 @@ paged games, and remembers the selected H5 app per local workspace. A declared H
 game with conflicting capabilities can be inspected, but cannot upload or bind;
 the panel shows the platform diagnosis instead of changing its package type.
 Install the CLI using its [official instructions](https://developer.taptap.cn/v3/cli/).
-The **CLI settings** path can select an executable when it is not on PATH;
+Use the header’s **Switch game** menu to change the target; **Account & settings**
+contains the developer console, CLI settings and login. The **CLI settings** path can select an executable when it is not on PATH;
 Windows requires the actual CLI `.exe`, not the npm `.cmd` shim. Login and
 installation can be handed to the agent from the panel. Credentials stay in
 the CLI's own store. The panel currently requires CLI contract 3; it was checked
@@ -32,7 +33,8 @@ against `2026.11.12` and metadata `1.0.77`.
   binding are separate actions; neither submits review. If no editable draft
   exists, use the developer console to create one first.
 - **Store page:** edit basic text, category, developer words and supported image
-  fields directly, with a store-content preview. Choose PNG/JPEG/WebP images
+  fields directly, with a store-content preview. Optional read-only fields are
+  grouped under **More settings**; required fields and validation errors are not moved into that group. Choose PNG/JPEG/WebP images
   from the project grid or choose/drop a local image in the image dialog.
   Local images up to 20 MB are imported into `taptap-materials/` through the
   existing project-file bridge after upload confirmation; an imported copy is

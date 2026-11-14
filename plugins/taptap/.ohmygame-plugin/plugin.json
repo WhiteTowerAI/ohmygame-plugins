@@ -239,11 +239,7 @@
     "native": "./native/index.mjs"
   },
   "ui": {
-    "major": 1,
-    "accent": {
-      "light": "#00857a",
-      "dark": "#00d8c4"
-    }
+    "major": 1
   },
   "capabilities": {
     "native": true,

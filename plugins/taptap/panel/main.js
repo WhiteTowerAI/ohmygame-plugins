@@ -83,8 +83,6 @@ const TEXT = {
     cancelled: "Schedule cancelled",
     uploadHint:
       "Use the finished web build containing index.html. This does not build the project.",
-    notice:
-      "Refresh after changes made by the agent or in the developer console.",
     working: "Working…",
     continue: "Review and release with agent",
   },
@@ -170,7 +168,6 @@ const TEXT = {
     cancelled: "已撤销定时上线",
     uploadHint:
       "选择已完成构建、直接包含 index.html 的目录，此操作不会构建项目。",
-    notice: "Agent 或开发者后台修改后，刷新查看最新状态。",
     working: "正在处理…",
     continue: "让 Agent 继续提审发布",
   },
@@ -209,14 +206,10 @@ Object.assign(TEXT["en"], {
   discardConfirm: "Discard your unsaved changes in this section?",
   discardAction: "Discard",
   keepEdits: "Your local edits are preserved.",
-  nothingChanged: "No unsaved changes",
   openConsole: "Developer console",
   account: "Account & settings",
   chooseGame: "Choose a TapTap game",
   selectGame: "Select game",
-  chooseHint:
-    "Use an existing H5 game. Its original package type is preserved.",
-  available: "H5 upload available",
   conflict:
     "H5 declaration conflicts with this game’s current form. Platform support is required.",
   unavailable: "This game currently has no H5 upload target.",
@@ -306,13 +299,10 @@ Object.assign(TEXT["zh-CN"], {
   discardConfirm: "放弃当前分类中尚未保存的修改？",
   discardAction: "放弃修改",
   keepEdits: "本地修改已保留。",
-  nothingChanged: "暂无未保存的修改",
   openConsole: "开发者后台",
   account: "账号与设置",
   chooseGame: "选择 TapTap 游戏",
   selectGame: "选择此游戏",
-  chooseHint: "关联已有 H5 游戏，保留它原有的包体类型。",
-  available: "可以上传 H5 包体",
   conflict: "H5 声明与游戏当前形态冲突，需要平台支持处理。",
   unavailable: "该游戏当前没有可用的 H5 上传入口。",
   unknownAvailability: "暂时无法确认 H5 上传能力",
@@ -370,7 +360,7 @@ const t = TEXT[host.locale] ?? TEXT.en;
 document.documentElement.lang = host.locale;
 const root = document.getElementById("taptap");
 root.setAttribute("wide", "");
-root.removeAttribute("heading");
+
 const state = {
   busy: false,
   visible: true,
@@ -456,12 +446,11 @@ const consoleUrl = () =>
     ? `https://developer.taptap.cn/v3/${state.selected.developerId}/app/${state.selected.appId}/store/update`
     : "https://developer.taptap.cn/";
 const openConsole = () => host.request("browser.open", { url: consoleUrl() });
-const title = h("h1", {}, "TapTap");
-const identity = p(t.noSelection, "muted");
 const connectionStatus = h("div");
-const chooser = h("omg-disclosure", {
+const chooser = h("omg-popover", {
   class: "game-chooser",
-  heading: t.switchGame,
+  label: t.switchGame,
+  placement: "bottom-end",
 });
 const account = h(
   "omg-popover",
@@ -469,6 +458,7 @@ const account = h(
   stack(
     connectionStatus,
     row(
+      button(t.openConsole, openConsole, { variant: "ghost" }),
       button(t.setup, () => request("settings")),
       button(t.login, () =>
         agent(
@@ -479,22 +469,12 @@ const account = h(
     ),
   ),
 );
-const topbar = h(
-  "header",
-  { class: "topbar" },
-  row(
-    h("img", { src: "../assets/icon.svg", alt: "", class: "brand" }),
-    stack(title, identity),
-  ),
-  row(
-    button(t.openConsole, openConsole, { variant: "ghost" }),
-    h(
-      "omg-tooltip",
-      { content: t.notice },
-      button(t.refresh, refresh, { variant: "ghost" }),
-    ),
-    account,
-  ),
+const headerActions = h(
+  "div",
+  { slot: "actions", class: "row" },
+  chooser,
+  button(t.refresh, refresh, { variant: "ghost" }),
+  account,
 );
 const developer = h("omg-combobox", {
   label: t.developer,
@@ -534,7 +514,6 @@ const appPagination = h("omg-pagination", {
 });
 chooser.append(
   stack(
-    p(t.chooseHint, "muted"),
     h(
       "div",
       { class: "search-row" },
@@ -626,7 +605,7 @@ async function loadGames(
   appPagination.hidden = value.total <= value.page_size;
 }
 const summary = h("div", { class: "summary-grid" });
-const capabilityView = h("div");
+const capabilityView = h("div", { class: "notice" });
 const buildOptions = h("omg-radio-group", {
   "aria-label": t.build,
   on: {
@@ -640,6 +619,7 @@ const buildChoices = h("div", { class: "stack" });
 const build = h("omg-input", {
   label: t.build,
   placeholder: "dist",
+  hint: t.uploadHint,
   on: {
     input: () => {
       renderBuildSelection();
@@ -844,11 +824,17 @@ const editableFields = {
 };
 const moduleNav = h("nav", { class: "module-nav", "aria-label": t.module });
 const moduleView = h("div", { class: "fields" });
+const additionalFields = stack();
+const additionalDetails = h(
+  "omg-disclosure",
+  { heading: t.moreSettings },
+  additionalFields,
+);
 const previewView = h("aside", {
   class: "store-preview",
   "aria-label": t.preview,
 });
-const dirtyStatus = p(t.nothingChanged, "muted");
+const dirtyStatus = p(t.draftOnly, "muted");
 const saveButton = button(t.save, saveFields, { variant: "primary" });
 const discardButton = button(
   t.discard,
@@ -908,7 +894,12 @@ function editField(field, value) {
   updateControls();
 }
 function imageView(value, label, attrs = {}) {
-  const view = h("omg-image-preview", { alt: label, "close-label": t.close, fit: "cover", ...attrs });
+  const view = h("omg-image-preview", {
+    alt: label,
+    "close-label": t.close,
+    fit: "cover",
+    ...attrs,
+  });
   if (!value?.url) return view;
   let pending = state.imageCache.get(value.url);
   if (!pending) {
@@ -1095,10 +1086,16 @@ function imageField(field, mutable) {
       : t.chooseImage,
   );
 
-  return stack(
+  return h(
+    "div",
+    {
+      class:
+        images.length && field.input_type === "image"
+          ? "image-editor"
+          : "stack",
+    },
     gallery,
-    p(imageSpec(field), "muted spec"),
-    row(openPicker),
+    stack(p(imageSpec(field), "muted spec"), row(openPicker)),
     picker,
   );
 }
@@ -1120,7 +1117,8 @@ function renderModule() {
   const value = state.modules[state.moduleId];
   if (!value) return;
   const main = [],
-    ios = [];
+    ios = [],
+    additional = [];
   const fieldOrder = [
     "title",
     "category",
@@ -1135,6 +1133,11 @@ function renderModule() {
     (a, b) =>
       (fieldOrder.includes(a.field_id) ? fieldOrder.indexOf(a.field_id) : 100) -
       (fieldOrder.includes(b.field_id) ? fieldOrder.indexOf(b.field_id) : 100),
+  );
+  const hasEditable = fields.some(
+    (field) =>
+      editableFields[state.moduleId]?.includes(field.field_id) &&
+      field.state !== "readonly",
   );
   for (const field of fields) {
     const mutable =
@@ -1157,7 +1160,7 @@ function renderModule() {
         {
           label: `${field.label}${field.state === "required" ? " *" : ""}`,
           value: current ?? "",
-          rows: field.input_type === "textarea" ? "6" : undefined,
+          rows: field.input_type === "textarea" ? "4" : undefined,
           hint: field.hint,
           on: {
             input: (event) => editField(field, event.currentTarget.value),
@@ -1202,7 +1205,9 @@ function renderModule() {
     const wrapped = h(
       "div",
       {
-        class: `field ${["title", "category"].includes(field.field_id) ? "short-field" : ""} ${field.input_type === "image" ? "image-field" : ""}`,
+        class: ["title", "category"].includes(field.field_id)
+          ? "field short-field"
+          : "field",
       },
       control,
       field.validation_error
@@ -1210,10 +1215,21 @@ function renderModule() {
         : undefined,
       conflict ? p(t.refreshConflict, "field-error") : undefined,
     );
-    (field.field_id.endsWith("_ios") ? ios : main).push(wrapped);
+    if (field.field_id.endsWith("_ios")) ios.push(wrapped);
+    else if (
+      hasEditable &&
+      !mutable &&
+      field.state !== "required" &&
+      !field.validation_error &&
+      !conflict
+    )
+      additional.push(wrapped);
+    else main.push(wrapped);
   }
+  additionalFields.replaceChildren(...additional);
   moduleView.replaceChildren(
     ...main,
+    ...(additional.length ? [additionalDetails] : []),
     ...(ios.length
       ? [
           h(
@@ -1248,7 +1264,7 @@ async function saveFields() {
   state.modules[state.moduleId] = value.module;
   if (value.saved.includes("title")) {
     state.selected.title = value.module.fields.title.current_value;
-    title.textContent = state.selected.title;
+    root.setAttribute("heading", state.selected.title);
   }
   await persistEdits();
   renderModule();
@@ -1315,7 +1331,6 @@ function renderPreview() {
           : undefined,
       ),
     ),
-    p(t.draftOnly, "muted"),
   );
 }
 const packageActions = new Map();
@@ -1508,17 +1523,17 @@ async function loadCapabilities() {
   try {
     state.capabilities = await request("capabilities");
     const allowed = state.capabilities.available_package_types?.includes("h5");
-    capabilityView.replaceChildren(
-      allowed
-        ? note(t.available, "good")
-        : h(
-            "omg-banner",
-            { tone: "warning" },
-            state.capabilities.empty_reason === "declared_not_applicable"
-              ? t.conflict
-              : t.unavailable,
-          ),
-    );
+    capabilityView.replaceChildren();
+    if (!allowed)
+      capabilityView.append(
+        h(
+          "omg-banner",
+          { tone: "warning" },
+          state.capabilities.empty_reason === "declared_not_applicable"
+            ? t.conflict
+            : t.unavailable,
+        ),
+      );
   } catch (error) {
     state.capabilities = undefined;
     capabilityView.replaceChildren(
@@ -1538,10 +1553,11 @@ async function refreshStatus() {
     orientation.value = String(state.status.prepared.orientation);
   }
   state.selected = state.status.selection;
-  title.textContent = state.selected?.title || "TapTap";
-  identity.textContent = state.selected
-    ? `TapTap · ${state.selected.appId}`
-    : t.noSelection;
+  root.setAttribute("heading", state.selected?.title || "TapTap");
+  root.setAttribute(
+    "description",
+    state.selected ? `TapTap · ${state.selected.appId}` : t.noSelection,
+  );
   connectionStatus.replaceChildren(
     state.status.cli.error
       ? h("omg-banner", { tone: "warning" }, state.status.cli.error)
@@ -1601,9 +1617,7 @@ function updateControls() {
     !state.capabilities?.available_package_types?.includes("h5") ||
     pending;
   const dirty = Object.keys(edits()).length;
-  dirtyStatus.textContent = dirty
-    ? `${t.unsaved} · ${dirty}`
-    : t.nothingChanged;
+  dirtyStatus.textContent = dirty ? `${t.unsaved} · ${dirty}` : t.draftOnly;
   saveButton.disabled = state.busy || !dirty || !state.selected;
   discardButton.disabled = state.busy || !dirty;
 }
@@ -1611,35 +1625,28 @@ const uploadTab = h(
   "omg-tab",
   { name: "upload", heading: t.upload },
   h(
-    "div",
-    { class: "workspace-grid" },
-    stack(
-      h(
-        "section",
-        { class: "build-section" },
-        h(
-          "div",
-          { class: "section-header" },
-          h("h2", {}, t.source),
-          button(t.rescan, discover, { variant: "ghost" }),
-        ),
-        p(t.uploadHint, "muted"),
-        buildChoices,
-        manualFolder,
-        h(
-          "div",
-          { class: "upload-actions" },
-          orientation,
-          row(buildAgent, uploadButton),
-        ),
-        preparedView,
-      ),
-      h("section", {}, h("h2", {}, t.recentUploads), uploadView),
+    "omg-section",
+    { heading: t.source },
+    button(t.rescan, discover, { variant: "ghost", slot: "actions" }),
+    capabilityView,
+    h(
+      "div",
+      { class: "build-options" },
+      stack(buildChoices, manualFolder),
+      orientation,
     ),
-    stack(
-      h("section", {}, h("h2", {}, t.remotePackages), libraryView),
-      capabilityView,
-    ),
+    row(uploadButton, buildAgent),
+    preparedView,
+  ),
+  h(
+    "omg-section",
+    { heading: t.remotePackages, class: "package-section" },
+    libraryView,
+  ),
+  h(
+    "omg-section",
+    { heading: t.recentUploads, class: "history-section" },
+    uploadView,
   ),
 );
 const detailsTab = h(
@@ -1648,7 +1655,7 @@ const detailsTab = h(
   moduleNav,
   h(
     "div",
-    { class: "workspace-grid details-grid" },
+    { class: "workspace-grid" },
     h(
       "div",
       {},
@@ -1679,15 +1686,20 @@ const versionsTab = h(
 );
 const tabs = h(
   "omg-tabs",
-  { value: "upload" },
+  { value: "upload", class: "workspace-tabs" },
   uploadTab,
   detailsTab,
   versionsTab,
 );
-const workspaceView = stack(summary, tabs);
+const workspaceView = h("div", { class: "workspace" }, summary, tabs);
 root.append(
-  topbar,
-  h("div", { class: "connection-row" }, chooser),
+  h("img", {
+    slot: "brand",
+    src: "../assets/icon.svg",
+    alt: "",
+    class: "brand",
+  }),
+  headerActions,
   errorBox,
   activity,
   feedback,
