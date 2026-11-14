@@ -1,7 +1,6 @@
 {
   "name": "@ohmygame/minimax",
   "version": "0.1.0",
-  "private": true,
   "description": "MiniMax H3 video models for China and Global accounts.",
   "keywords": [
     "ohmygame-plugin",

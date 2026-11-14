@@ -1,6 +1,6 @@
 {
   "name": "@ohmygame/taptap-maker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Make TapTap Maker games (UrhoX/Lua) with the official Maker CLI: create or connect a Maker project, preview it in Maker Runtime, and submit builds. Needs a Maker account and Python 3.8 or later.",
   "keywords": [
