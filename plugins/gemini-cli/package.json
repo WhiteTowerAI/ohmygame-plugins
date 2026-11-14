@@ -1,6 +1,6 @@
 {
   "name": "@ohmygame/gemini-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Google's Gemini CLI as a coding agent, for Gemini Code Assist plans.",
   "keywords": [
     "ohmygame-plugin",

@@ -17,6 +17,8 @@ publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
   [`siliconflow-cn`](plugins/siliconflow-cn), [`modelscope`](plugins/modelscope),
   [`command-code`](plugins/command-code) and [`fal`](plugins/fal) (images, video,
   audio and 3D only).
+- Video generation: [`minimax`](plugins/minimax), an optional beta provider for
+  China and Global accounts (requires OhMyGame API 2.7).
 - Messaging connections: [`feishu`](plugins/feishu), an optional private-chat
   bot with an explicit allowed user, durable delivery tracking and approvals
   kept in OhMyGame. Build it with `npm run build:feishu` before local use.
@@ -49,6 +51,11 @@ remove the secret.
 
 To try one in OhMyGame before releasing it, add its folder under Plugins › Add
 plugin › This computer with Develop on.
+
+All current official plugins carry `beta: true` in their plugin manifest. This
+shows the app's Beta badge; it is independent of npm prerelease versions or
+dist-tags. Existing published packages get a patch version when this metadata
+changes. Feishu and Computer Use remain private until their separate releases.
 
 ## Publishing a plugin
 

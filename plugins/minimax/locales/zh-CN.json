@@ -1,0 +1,11 @@
+{
+  "plugin.name": "MiniMax 视频",
+  "plugin.description": "使用自己的 API 密钥，通过 MiniMax H3 和 H3 Max 生成视频。",
+  "plugin.longDescription": "提供独立的中国区和国际区视频服务，支持文字、首尾帧和最多九张参考图。停止只结束本地等待，远端任务可能继续运行并计费。现有内置 MiniMax 设置尚未迁移。",
+  "provider.cn": "MiniMax 中国区（插件）",
+  "provider.global": "MiniMax 国际区（插件）",
+  "config.cn.title": "中国区 API 密钥",
+  "config.cn.description": "从 platform.minimax.cn 的 API 密钥页面获取，仅中国区服务需要。",
+  "config.global.title": "国际区 API 密钥",
+  "config.global.description": "从 platform.minimax.io 的 API 密钥页面获取，仅国际区服务需要。"
+}
