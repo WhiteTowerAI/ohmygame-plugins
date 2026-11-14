@@ -1,0 +1,7 @@
+{
+  "plugin.name": "Meshy",
+  "plugin.description": "通过 Meshy 生成 3D 模型、制作贴图、重建网格和生成动画。",
+  "plugin.longDescription": "可选的 Meshy Beta 插件，使用你自己的 API 账户。支持文字与图片生成、网格重建、贴图、角色骨骼复用、动作库动画、余额查询和手动模型版本。需要 OhMyGame API 2.16。",
+  "config.key.title": "Meshy API 密钥",
+  "config.key.description": "在 Meshy 账户中创建 API 密钥。生成和处理会消耗你的 Meshy 积分。"
+}

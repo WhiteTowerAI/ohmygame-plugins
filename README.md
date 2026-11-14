@@ -22,6 +22,9 @@ publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
 - Image and video generation: [`seedance`](plugins/seedance) combines Ark
   Seedream images and Seedance videos under one key, with a separate BytePlus
   account (optional Beta, requires OhMyGame API 2.8).
+- 3D generation and processing: [`meshy`](plugins/meshy) includes text/image
+  generation, remeshing, texturing, reusable rigs and library animations
+  (optional Beta, requires OhMyGame API 2.16).
 - Messaging connections: [`feishu`](plugins/feishu), an optional private-chat
   bot with an explicit allowed user, durable delivery tracking and approvals
   kept in OhMyGame. Build it with `npm run build:feishu` before local use.

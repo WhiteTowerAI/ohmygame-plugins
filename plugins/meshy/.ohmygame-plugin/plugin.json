@@ -1,0 +1,226 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/meshy",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.16.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "categories": ["provider"],
+  "beta": true,
+  "capabilities": {
+    "network": ["api.meshy.ai", "assets.meshy.ai"]
+  },
+  "configuration": {
+    "apiKey": {
+      "type": "secret",
+      "title": "%config.key.title%",
+      "description": "%config.key.description%"
+    }
+  },
+  "contributes": {
+    "providers": [
+      {
+        "id": "meshy",
+        "title": "Meshy",
+        "icon": "./assets/icon.svg",
+        "apiKey": "apiKey",
+        "media": {
+          "adapter": "./media/adapter.js",
+          "3d": {
+            "inputFiles": true,
+            "editableModels": true,
+            "balance": true,
+            "maxMinutes": 60,
+            "models": [
+              {
+                "id": "meshy-t2",
+                "title": "Meshy T2",
+                "operations": ["text", "image"],
+                "optionProfile": "meshy",
+                "modelSettings": {
+                  "imageOperation": "image-to-3d",
+                  "modelType": "smart-topology"
+                },
+                "maxReferenceImages": 1,
+                "polycount": {
+                  "min": 100,
+                  "max": 15000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 15000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "meshy-t2.5",
+                "title": "Meshy T2.5",
+                "operations": ["text", "image"],
+                "optionProfile": "meshy",
+                "modelSettings": {
+                  "imageOperation": "image-to-3d",
+                  "modelType": "smart-topology"
+                },
+                "maxReferenceImages": 1,
+                "polycount": {
+                  "min": 100,
+                  "max": 30000,
+                  "default": 15000,
+                  "presets": [1000, 4000, 10000, 15000, 30000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "meshy-7.1",
+                "title": "Meshy 7.1",
+                "operations": ["text", "image"],
+                "optionProfile": "meshy",
+                "modelSettings": {
+                  "imageOperation": "multi-image-to-3d",
+                  "modelType": "standard"
+                },
+                "maxReferenceImages": 4,
+                "polycount": {
+                  "min": 100,
+                  "max": 300000,
+                  "default": 30000,
+                  "presets": [10000, 30000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "meshy-7",
+                "title": "Meshy 7 (deprecated)",
+                "operations": ["text", "image"],
+                "optionProfile": "meshy",
+                "modelSettings": {
+                  "imageOperation": "multi-image-to-3d",
+                  "modelType": "standard"
+                },
+                "maxReferenceImages": 4,
+                "polycount": {
+                  "min": 100,
+                  "max": 300000,
+                  "default": 30000,
+                  "presets": [10000, 30000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "meshy-6",
+                "title": "Meshy 6",
+                "operations": ["text", "image"],
+                "optionProfile": "meshy",
+                "modelSettings": {
+                  "imageOperation": "multi-image-to-3d",
+                  "modelType": "standard"
+                },
+                "maxReferenceImages": 4,
+                "polycount": {
+                  "min": 100,
+                  "max": 300000,
+                  "default": 30000,
+                  "presets": [10000, 30000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "meshy-6-lite",
+                "title": "Meshy 6 Lite",
+                "operations": ["text", "image"],
+                "optionProfile": "meshy",
+                "modelSettings": {
+                  "imageOperation": "multi-image-to-3d",
+                  "modelType": "standard"
+                },
+                "maxReferenceImages": 4,
+                "polycount": {
+                  "min": 100,
+                  "max": 300000,
+                  "default": 30000,
+                  "presets": [10000, 30000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "latest",
+                "title": "Meshy Latest",
+                "operations": ["text", "image"],
+                "optionProfile": "meshy",
+                "modelSettings": {
+                  "imageOperation": "multi-image-to-3d",
+                  "modelType": "standard"
+                },
+                "maxReferenceImages": 4,
+                "polycount": {
+                  "min": 100,
+                  "max": 300000,
+                  "default": 30000,
+                  "presets": [10000, 30000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              }
+            ],
+            "processing": {
+              "id": "connection",
+              "title": "Meshy",
+              "operations": ["remesh", "retexture", "animate"],
+              "optionProfile": "meshy",
+              "animationSourceAxis": "+Z",
+              "maxReferenceImages": 1,
+              "polycount": {
+                "min": 100,
+                "max": 300000,
+                "default": 30000,
+                "presets": [10000, 30000, 100000]
+              },
+              "texture": true,
+              "pbr": true,
+              "defaults": {
+                "texture": true,
+                "pbr": false
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}
