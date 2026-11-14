@@ -157,7 +157,7 @@
             ]
           },
           "video": {
-            "maxMinutes": 30,
+            "maxMinutes": 15,
             "models": [
               {
                 "id": "doubao-seedance-2-5-260628",
@@ -215,7 +215,7 @@
         "media": {
           "adapter": "./media/adapter.js",
           "video": {
-            "maxMinutes": 30,
+            "maxMinutes": 15,
             "models": [
               {
                 "id": "dreamina-seedance-2-5-260628",

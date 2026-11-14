@@ -29,6 +29,9 @@ API calls. Result downloads do not carry the key.
 - Video task IDs are stored by OhMyGame. After restarting, retry checks the
   original task. A lost submission response blocks retry from starting another
   paid task; check the provider console before intentionally creating a new job.
+  Each video attempt waits up to 15 minutes, as the built-in provider does; a
+  timeout retains its task for retry. Synchronous image requests wait up to
+  180 seconds.
 - Stop ends local waiting. This adapter does not call DELETE, which can remove
   completed task records. Remote work may continue and incur charges.
 
