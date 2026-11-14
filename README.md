@@ -18,7 +18,7 @@ publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
   [`command-code`](plugins/command-code) and [`fal`](plugins/fal) (images, video,
   audio and 3D only).
 - Video generation: [`minimax`](plugins/minimax), an optional beta provider for
-  China and Global accounts (requires OhMyGame API 2.7).
+  China and Global accounts (requires OhMyGame API 2.8).
 - Messaging connections: [`feishu`](plugins/feishu), an optional private-chat
   bot with an explicit allowed user, durable delivery tracking and approvals
   kept in OhMyGame. Build it with `npm run build:feishu` before local use.

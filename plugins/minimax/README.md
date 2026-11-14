@@ -4,8 +4,8 @@ Optional MiniMax H3 and H3 Max video provider for OhMyGame, with independent Chi
 and Global API keys. Includes text-to-video, first/last frames and up to nine
 reference images. The provider and plugin details use the MiniMax logo.
 
-This is an optional beta plugin. It needs OhMyGame API 2.7 with
-reference-dependent video aspect ratios ([app #825](https://github.com/WhiteTowerAI/ohmygame/pull/825)).
+This is an optional beta plugin. It needs OhMyGame API 2.8 with durable retry ownership
+([app #848](https://github.com/WhiteTowerAI/ohmygame/pull/848)).
 Install it from the plugin catalog in a compatible app. It is not preinstalled.
 Apps with MiniMax migration support can move existing keys, switches, global and
 project defaults, and saved canvas selections to this plugin. Migration requires
@@ -26,7 +26,7 @@ starting a new generation. Plugin jobs retain the recovery behavior below.
 
 ## Local testing / 本地测试
 
-1. Use an app with OhMyGame API 2.7. In Plugins, install this `plugins/minimax`
+1. Use an app with OhMyGame API 2.8. In Plugins, install this `plugins/minimax`
    folder, review its three network hosts, then enable it for every project.
    在配套应用分支中，打开插件页，安装本目录并启用；检查图标和中英文说明。
 2. Set either **China API key** from [platform.minimax.cn](https://platform.minimax.cn/)
@@ -46,8 +46,8 @@ starting a new generation. Plugin jobs retain the recovery behavior below.
 5. Stop a pending job. Local waiting should end promptly; inspect the original
    job in MiniMax yourself. **Stop does not cancel the remote job or its charges.**
    MiniMax's DELETE endpoint also deletes completed records, so this plugin does
-   not call it. Retry after a deliberate stop is a new generation.
-   停止仅结束本地等待，远端任务可能继续并计费；停止后重试会创建新任务。
+   not call it. Retry checks the same task; it must not send a second create request.
+   停止仅结束本地等待，远端任务可能继续并计费；重试继续查询原任务，不重复创建。
 6. For migration testing, use an isolated profile and the official npm version
    reviewed by the app. Restart after enabling it for every project. Check both
    regions' choices, defaults and saved boards; original keys and historical
@@ -73,8 +73,10 @@ unexpected host fails visibly instead of broadening access.
 A lost create response or server error is treated as possibly accepted; retry
 cannot submit another paid job. Check the vendor console before starting a new
 one. A structured 4xx rejection allows a corrected retry. Repeated polling errors
-end the attempt under the host's existing retry policy; they never submit a new
-task automatically. Only a normal app shutdown preserves a pending job for resume.
+end the local attempt and preserve its task for retry, as do local stop, timeout,
+app shutdown and interrupted downloads. Retry queries the original task rather
+than submitting a replacement. A definite terminal vendor error clears the task;
+starting a new generation is a separate intentional action.
 
 Sources checked 2026-11-14:
 [create](https://platform.minimax.io/docs/api-reference/video-generation-v2-create),
