@@ -806,6 +806,7 @@ function renderUploads() {
             `${t.prepared} · ${(prepared.bytes / 1024 / 1024).toFixed(2)} MB`,
             "good",
           ),
+          ...(prepared.path ? [h("omg-path", { path: prepared.path })] : []),
           ...prepared.warnings.map((text) =>
             h("omg-banner", { tone: "warning" }, text),
           ),
@@ -907,7 +908,7 @@ function editField(field, value) {
   updateControls();
 }
 function imageView(value, label, attrs = {}) {
-  const view = h("omg-image", { alt: label, fit: "cover", ...attrs });
+  const view = h("omg-image-preview", { alt: label, "close-label": t.close, fit: "cover", ...attrs });
   if (!value?.url) return view;
   let pending = state.imageCache.get(value.url);
   if (!pending) {

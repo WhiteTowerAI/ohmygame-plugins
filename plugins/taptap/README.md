@@ -40,6 +40,8 @@ against `2026.11.12` and metadata `1.0.77`.
   stores the image in the material library, and **Save draft** applies their complete metadata to the chosen field. Screenshot arrays
   can append or remove images. Current image specifications appear beside each
   field; unsupported/video/distribution settings remain in the developer console.
+  Click an existing thumbnail to enlarge it; Escape or the close button returns
+  focus to the thumbnail. Prepared packages show their local archive path.
   Image preview only fetches read-back URLs on `img.tapimg.com` and `img-tc.tapimg.com`, with no credentials,
   no redirects and a 5 MB limit. Other image hosts show an unavailable preview.
 - **Draft edits:** local edits persist per developer/game and section through
