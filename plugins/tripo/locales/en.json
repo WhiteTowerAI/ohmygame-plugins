@@ -1,0 +1,7 @@
+{
+  "plugin.name": "Tripo",
+  "plugin.description": "Generate, texture, remesh and animate 3D models with Tripo.",
+  "plugin.longDescription": "Optional Beta for your Tripo API account. Includes text and image generation, multiview references, texturing, remeshing, rig checks and animation presets, balance and editable model versions. Requires OhMyGame API 2.16.",
+  "config.key.title": "Tripo API key",
+  "config.key.description": "Create an API key in your Tripo account. Generation and processing use your Tripo credits."
+}
