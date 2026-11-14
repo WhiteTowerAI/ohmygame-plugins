@@ -1,0 +1,7 @@
+{
+  "plugin.name": "Meshy",
+  "plugin.description": "Generate, texture, remesh and animate 3D models with Meshy.",
+  "plugin.longDescription": "Optional Beta for your Meshy API account. Includes text and image generation, remeshing, texturing, reusable character rigs, library animations, balance and editable model versions. Requires OhMyGame API 2.16.",
+  "config.key.title": "Meshy API key",
+  "config.key.description": "Create an API key in your Meshy account. Generation and processing use your Meshy credits."
+}

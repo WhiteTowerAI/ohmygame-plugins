@@ -1,0 +1,27 @@
+{
+  "name": "@ohmygame/meshy",
+  "version": "0.1.0",
+  "description": "Meshy 3D generation, remeshing, texturing and animation for OhMyGame.",
+  "keywords": [
+    "ohmygame-plugin",
+    "model-provider",
+    "meshy",
+    "3d",
+    "animation"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/meshy"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "media"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
