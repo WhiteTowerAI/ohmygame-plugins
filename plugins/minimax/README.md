@@ -7,17 +7,26 @@ reference images. The provider and plugin details use the MiniMax logo.
 This is an optional beta plugin. It needs OhMyGame API 2.7 with
 reference-dependent video aspect ratios ([app #825](https://github.com/WhiteTowerAI/ohmygame/pull/825)).
 Install it from the plugin catalog in a compatible app. It is not preinstalled.
-Existing built-in MiniMax keys, switches, model selections and saved boards are
-unchanged; their migration is a later increment. The provider names include
-“(plugin)” to distinguish them.
+Apps with MiniMax migration support can move existing keys, switches, global and
+project defaults, and saved canvas selections to this plugin. Migration requires
+an enabled, authorized official npm release whose exact contents the app has
+reviewed. An unpacked development folder is not a migration target. Installing or
+updating the plugin alone does not activate migration; see the app's
+[migration and cutover guide](https://github.com/WhiteTowerAI/ohmygame/blob/dev/docs/media-provider-plugins.md#minimax-committed-profile-cutover).
 
-The beta release has automated adapter coverage; live video generation and
-quit/reopen recovery still need the local acceptance below. Publication does not
-activate migration or replace the built-in provider.
+After migration commits, manage MiniMax credentials in this plugin. The app keeps
+original keys and task history, hides the built-in connection, and does not
+reactivate it if the plugin is disabled or removed. Old built-in jobs have no
+recoverable vendor task ID: check their status in MiniMax before intentionally
+starting a new generation. Plugin jobs retain the recovery behavior below.
+
+支持迁移的应用会在确认官方 npm 包、启用状态和授权后，迁移密钥、开关、默认模型和
+画布选择。迁移后在插件中管理密钥；停用或卸载插件不会恢复旧内置服务。原密钥及
+任务记录保留，旧内置任务无法安全恢复，请先在 MiniMax 确认任务状态再决定是否重新生成。
 
 ## Local testing / 本地测试
 
-1. Run app `dev` including merged #825. In Plugins, install this `plugins/minimax`
+1. Use an app with OhMyGame API 2.7. In Plugins, install this `plugins/minimax`
    folder, review its three network hosts, then enable it for every project.
    在配套应用分支中，打开插件页，安装本目录并启用；检查图标和中英文说明。
 2. Set either **China API key** from [platform.minimax.cn](https://platform.minimax.cn/)
@@ -39,9 +48,14 @@ activate migration or replace the built-in provider.
    MiniMax's DELETE endpoint also deletes completed records, so this plugin does
    not call it. Retry after a deliberate stop is a new generation.
    停止仅结束本地等待，远端任务可能继续并计费；停止后重试会创建新任务。
-6. Existing built-in provider keys/switches and saved boards must still work.
-   Disable this plugin and confirm only its two providers disappear.
-   禁用本插件后，原内置服务与已保存画布保持不变。
+6. For migration testing, use an isolated profile and the official npm version
+   reviewed by the app. Restart after enabling it for every project. Check both
+   regions' choices, defaults and saved boards; original keys and historical
+   task inputs must remain on disk. After migration, disable the plugin: its
+   models disappear and the old built-in provider stays retired. A profile
+   whose migration is deferred keeps its existing built-in connection.
+   使用独立测试目录及应用已校验的官方 npm 版本验证迁移；确认密钥、开关、默认选择
+   和历史任务保留。迁移后禁用插件不能回退到旧服务；尚未迁移的账户保持原行为。
 
 Automated tests use the actual sandbox adapter, host permission/network boundary,
 regional secret lookup and durable journals with mocked HTTP. They cover request
