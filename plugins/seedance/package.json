@@ -1,0 +1,28 @@
+{
+  "name": "@ohmygame/seedance",
+  "version": "0.1.0",
+  "description": "Seedream images and Seedance videos through Volcengine Ark and BytePlus ModelArk.",
+  "keywords": [
+    "ohmygame-plugin",
+    "model-provider",
+    "seedream",
+    "seedance",
+    "image",
+    "video"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/seedance"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "media"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

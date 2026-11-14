@@ -19,6 +19,9 @@ publisher only OhMyGame can use, and is plugin `ohmygame/<folder>`:
   audio and 3D only).
 - Video generation: [`minimax`](plugins/minimax), an optional beta provider for
   China and Global accounts (requires OhMyGame API 2.7).
+- Image and video generation: [`seedance`](plugins/seedance) combines Ark
+  Seedream images and Seedance videos under one key, with a separate BytePlus
+  account (optional Beta, requires OhMyGame API 2.8).
 - Messaging connections: [`feishu`](plugins/feishu), an optional private-chat
   bot with an explicit allowed user, durable delivery tracking and approvals
   kept in OhMyGame. Build it with `npm run build:feishu` before local use.
