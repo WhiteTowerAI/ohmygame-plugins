@@ -1,0 +1,7 @@
+{
+  "plugin.name": "Hyper3D",
+  "plugin.description": "Generate and texture 3D models with Hyper3D Rodin.",
+  "plugin.longDescription": "Optional Beta for your Hyper3D API account. Includes text and image generation, multiview references, texturing, balance and editable model versions. Requires OhMyGame API 2.16.",
+  "config.key.title": "Hyper3D API key",
+  "config.key.description": "Create a key in your Hyper3D API dashboard. Generation and texturing use your Hyper3D credits."
+}
