@@ -1,0 +1,27 @@
+{
+  "name": "@ohmygame/tripo",
+  "version": "0.1.0",
+  "description": "Tripo 3D generation, texturing, remeshing and animation for OhMyGame.",
+  "keywords": [
+    "ohmygame-plugin",
+    "model-provider",
+    "tripo",
+    "3d",
+    "animation"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/tripo"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "media"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

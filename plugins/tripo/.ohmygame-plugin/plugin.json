@@ -1,0 +1,159 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/tripo",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.16.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "categories": ["provider"],
+  "beta": true,
+  "capabilities": {
+    "network": ["openapi.tripo3d.ai", "cdn.tripo3d.ai"]
+  },
+  "configuration": {
+    "apiKey": {
+      "type": "secret",
+      "title": "%config.key.title%",
+      "description": "%config.key.description%"
+    }
+  },
+  "contributes": {
+    "providers": [
+      {
+        "id": "tripo",
+        "title": "Tripo",
+        "icon": "./assets/icon.svg",
+        "apiKey": "apiKey",
+        "media": {
+          "adapter": "./media/adapter.js",
+          "3d": {
+            "inputFiles": true,
+            "editableModels": true,
+            "balance": true,
+            "maxMinutes": 60,
+            "models": [
+              {
+                "id": "P1-20260311",
+                "title": "Tripo P1",
+                "operations": ["text", "image"],
+                "optionProfile": "tripo",
+                "maxReferenceImages": 4,
+                "polycount": {
+                  "min": 50,
+                  "max": 20000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "v3.1-20260211",
+                "title": "Tripo V3.1",
+                "operations": ["text", "image"],
+                "optionProfile": "tripo",
+                "maxReferenceImages": 4,
+                "polycount": {
+                  "min": 100,
+                  "max": 1500000,
+                  "default": 30000,
+                  "presets": [10000, 30000, 100000, 300000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "P2-20260801",
+                "title": "Tripo P2 (preview)",
+                "operations": ["text", "image"],
+                "optionProfile": "tripo",
+                "maxReferenceImages": 4,
+                "polycount": {
+                  "min": 48,
+                  "max": 50000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 50000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "v3.0-20250812",
+                "title": "Tripo V3.0",
+                "operations": ["text", "image"],
+                "optionProfile": "tripo",
+                "maxReferenceImages": 4,
+                "polycount": {
+                  "min": 100,
+                  "max": 1000000,
+                  "default": 30000,
+                  "presets": [10000, 30000, 100000, 300000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "v2.5-20250123",
+                "title": "Tripo V2.5",
+                "operations": ["text", "image"],
+                "optionProfile": "tripo",
+                "maxReferenceImages": 4,
+                "polycount": {
+                  "min": 100,
+                  "max": 500000,
+                  "default": 30000,
+                  "presets": [10000, 30000, 100000, 300000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              }
+            ],
+            "processing": {
+              "id": "connection",
+              "title": "Tripo",
+              "operations": ["remesh", "retexture", "animate"],
+              "optionProfile": "tripo",
+              "maxReferenceImages": 1,
+              "polycount": {
+                "min": 500,
+                "max": 20000,
+                "default": 4000,
+                "presets": [1000, 4000, 10000, 20000]
+              },
+              "texture": true,
+              "pbr": true,
+              "defaults": {
+                "texture": true,
+                "pbr": false
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}
