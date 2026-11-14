@@ -364,10 +364,10 @@ it("rejects an ungranted output host and retries the original task to download",
   assert.equal(s.requests.filter((r) => r.method === "POST").length, 1);
 });
 
-it("stops locally without calling MiniMax's destructive DELETE endpoint", async (t) => {
+it("resumes a locally stopped task without DELETE or another paid submission", async (t) => {
   const controller = new AbortController();
   const s = await setup(t, (r) => {
-    if (r.url.includes("/query/")) {
+    if (r.url.includes("/query/") && !controller.signal.aborted) {
       controller.abort(new Error("user stopped"));
       return json({ task: { id: "task-1", status: "running" } });
     }
@@ -391,6 +391,22 @@ it("stops locally without calling MiniMax's destructive DELETE endpoint", async 
     await readFile(path.join(s.root, "tasks/job-1.json"))
       .then(() => true)
       .catch(() => false),
+    true,
+  );
+  assert.deepEqual(
+    (
+      await s.media.generateVideo(
+        s.providers[0]!.models[0]!,
+        { prompt: "fox" },
+        undefined,
+        await s.journal(),
+      )
+    ).bytes,
+    MP4,
+  );
+  assert.equal(s.requests.filter((r) => r.method === "POST").length, 1);
+  assert.equal(
+    s.requests.some((r) => r.method === "DELETE"),
     false,
   );
 });
