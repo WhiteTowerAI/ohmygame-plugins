@@ -4,12 +4,16 @@ Optional MiniMax H3 and H3 Max video provider for OhMyGame, with independent Chi
 and Global API keys. Includes text-to-video, first/last frames and up to nine
 reference images. The provider and plugin details use the MiniMax logo.
 
-This package is private while the first adapter increment is tested. It needs
-OhMyGame API 2.7 with reference-dependent video aspect ratios ([app #825](https://github.com/WhiteTowerAI/ohmygame/pull/825)).
-Do not publish it until that app version ships and the local acceptance below
-passes. It is not preinstalled. Existing built-in MiniMax keys, switches, model
-selections and saved boards are unchanged; their migration is a later increment.
-During testing the provider names include “(plugin)” to distinguish them.
+This is an optional beta plugin. It needs OhMyGame API 2.7 with
+reference-dependent video aspect ratios ([app #825](https://github.com/WhiteTowerAI/ohmygame/pull/825)).
+Install it from the plugin catalog in a compatible app. It is not preinstalled.
+Existing built-in MiniMax keys, switches, model selections and saved boards are
+unchanged; their migration is a later increment. The provider names include
+“(plugin)” to distinguish them.
+
+The beta release has automated adapter coverage; live video generation and
+quit/reopen recovery still need the local acceptance below. Publication does not
+activate migration or replace the built-in provider.
 
 ## Local testing / 本地测试
 

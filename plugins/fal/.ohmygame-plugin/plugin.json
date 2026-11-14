@@ -1,7 +1,8 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/fal",
-  "version": "0.2.0",
+  "beta": true,
+  "version": "0.2.1",
   "engines": {
     "ohmygame-api": "^2.5.0"
   },

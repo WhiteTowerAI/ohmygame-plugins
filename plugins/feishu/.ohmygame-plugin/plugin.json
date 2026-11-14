@@ -1,6 +1,7 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/feishu",
+  "beta": true,
   "version": "0.1.0",
   "engines": {
     "ohmygame-api": "^2.6.0"
