@@ -388,6 +388,16 @@ it("installs Beta presets and logo, expands files outside the sandbox and downlo
     "./assets/icon.svg",
   );
   assert.equal(s.provider.models.length, 7);
+  assert.deepEqual(
+    s.provider.processing!.remeshPolycount,
+    {
+      min: 100,
+      max: 300000,
+      default: 30000,
+      presets: [1000, 4000, 10000, 30000, 100000, 300000],
+    },
+    "preserve every native remesh shortcut",
+  );
   assert.deepEqual(s.provider.processing!.operations, [
     "remesh",
     "retexture",

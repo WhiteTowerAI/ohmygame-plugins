@@ -1,6 +1,6 @@
 {
   "name": "@ohmygame/meshy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Meshy 3D generation, remeshing, texturing and animation for OhMyGame.",
   "keywords": [
     "ohmygame-plugin",
