@@ -1,0 +1,28 @@
+{
+  "name": "@ohmygame/taptap",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Manage H5 builds, store drafts and package bindings on TapTap with the official CLI, using your existing game engine.",
+  "keywords": [
+    "ohmygame-plugin"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/taptap"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "native",
+    "panel",
+    "schemas",
+    "skills",
+    "docs"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
