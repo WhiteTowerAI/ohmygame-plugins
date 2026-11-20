@@ -12,8 +12,9 @@
     "test": "tsx --conditions=ohmygame-source --test test/*.test.ts && npm run test:taptap",
     "typecheck": "tsc --noEmit",
     "build:feishu": "node scripts/build-feishu.mjs",
-    "pretest": "npm run build:feishu && npm run build:computer-use",
+    "pretest": "npm run build:feishu && npm run build:computer-use && npm run build:game-tests",
     "build:computer-use": "node scripts/build-computer-use.mjs",
+    "build:game-tests": "node scripts/build-game-tests.mjs",
     "test:taptap": "vitest run"
   },
   "dependencies": {

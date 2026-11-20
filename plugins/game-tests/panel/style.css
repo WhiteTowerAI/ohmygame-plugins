@@ -1,0 +1,294 @@
+/*
+ * One rhythm for the whole page, in 4px steps: a section's summary sits 4px
+ * under its heading and its list 4px under that, so the summary and the
+ * rows are as far apart as one row's text from the next; its actions follow
+ * 4px after. Sections are 24px apart. Rows are 32px, and their dots line up
+ * with the headings' text.
+ */
+p,
+ul,
+ol {
+  margin: 0;
+}
+
+/* The page and its sections. */
+omg-page::part(header) {
+  margin-bottom: var(--space-4);
+}
+omg-page::part(body) {
+  gap: var(--space-6);
+}
+omg-section::part(section) {
+  gap: var(--space-1);
+}
+omg-section::part(header) {
+  align-items: center;
+  min-height: 28px;
+}
+/* The section's own gap between its contents would add to the spacing here. */
+omg-section::part(body) {
+  gap: 0;
+}
+/* The unit tests start under a line, the page's only divider. */
+omg-section.unit {
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+.summary {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+.summary.is-bad {
+  color: var(--color-danger, #c0392b);
+}
+/* A summary that opens its list: the text, then an arrow that turns down. */
+.summary-toggle {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-1);
+  margin: 0 calc(-1 * var(--space-2));
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm, 4px);
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  line-height: 24px;
+  cursor: pointer;
+}
+.summary-toggle:hover {
+  background: var(--color-hover);
+}
+.chevron {
+  display: inline-block;
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 120ms;
+}
+.summary-toggle[aria-expanded="true"] .chevron {
+  transform: rotate(90deg);
+}
+.muted {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+/* Buttons that are only an icon: square, the heading's height. */
+.icon-button::part(button) {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 11px;
+}
+
+/* Quiet actions after a list, their text in line with the rows'. */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: var(--space-1) calc(-1 * var(--space-2)) 0;
+}
+.link {
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm, 4px);
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.link:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+/* Lists of tests. Rows reach past the text's edge so their hover fills
+   around it, and their dots sit where the headings start. */
+.tests {
+  display: flex;
+  flex-direction: column;
+  margin: var(--space-1) calc(-1 * var(--space-2)) 0;
+  padding: 0;
+  list-style: none;
+}
+.test {
+  min-width: 0;
+}
+.test-row {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  border-radius: var(--radius-sm, 4px);
+}
+.test-row:hover {
+  background: var(--color-hover);
+}
+.test-toggle,
+.test-line {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px var(--space-2);
+  line-height: 20px;
+}
+.test-toggle {
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.test-status {
+  flex: none;
+  /* Centred on the first line. */
+  margin-top: 6px;
+}
+/* The dot says it; the words stay for screen readers and the tooltip. */
+.test-status::part(label) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.titles {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.test-name,
+.test-problem {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.test-problem {
+  color: var(--color-danger, #c0392b);
+  font-size: 12px;
+  line-height: 18px;
+}
+.test-aside {
+  flex: none;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.muted-inline {
+  color: var(--color-text-secondary);
+}
+/* Running one: shown on the row the pointer or focus is on, and on a failed one. */
+.run-one {
+  margin: 4px 4px 0 0;
+  opacity: 0;
+}
+.run-one::part(button) {
+  width: 24px;
+  height: 24px;
+  font-size: 9px;
+}
+.test-row:hover .run-one,
+.test-row:focus-within .run-one,
+.test.is-failed .run-one {
+  opacity: 1;
+}
+.file-heading {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+/* A test's details, under its name. */
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-3) 26px;
+  font-size: 12px;
+  line-height: 18px;
+}
+.full-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px var(--space-3);
+  margin: 0;
+}
+.facts dt {
+  color: var(--color-text-secondary);
+}
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.steps-title {
+  color: var(--color-text-secondary);
+}
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-left: 20px;
+}
+.step.is-passed::marker {
+  color: var(--color-success, #2e7d32);
+}
+.step.is-failed {
+  color: var(--color-danger, #c0392b);
+}
+.checks {
+  padding-left: var(--space-4);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+.step.is-failed .checks {
+  color: inherit;
+}
+
+/* Why a test failed: the step, the reasons, the frame and the console. */
+.failure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.failure-title {
+  color: var(--color-danger, #c0392b);
+}
+.reasons {
+  padding-left: var(--space-4);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.frame {
+  display: block;
+  max-width: 100%;
+  max-height: 180px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 4px);
+}
+.log {
+  max-height: 200px;
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2);
+  overflow: auto;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-hover);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  white-space: pre-wrap;
+}
