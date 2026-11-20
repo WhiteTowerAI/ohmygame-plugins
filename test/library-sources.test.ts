@@ -168,4 +168,15 @@ describe("pixel-sprites", () => {
     assert.ok(requests.includes(`${PINNED}vec-a.bin`));
     assert.ok(!requests.some((url) => url.startsWith(SITE) && url !== `${SITE}manifest.json`));
   });
+
+  it("says Hugging Face can't be reached, and why, when the search data can't download", async () => {
+    globalThis.fetch = (async () => {
+      throw new TypeError("fetch failed", { cause: Object.assign(new Error("Connect Timeout Error (attempted address: huggingface.co:443)"), { code: "UND_ERR_CONNECT_TIMEOUT" }) });
+    }) as typeof fetch;
+    const { commands } = await activate("pixel-sprites");
+    await assert.rejects(
+      commands.search!({ query: "sword" }),
+      /^Error: Couldn't reach Hugging Face to download the sprite search data \(UND_ERR_CONNECT_TIMEOUT: Connect Timeout Error \(attempted address: huggingface\.co:443\)\)\. Check the network or proxy, then search again\.$/,
+    );
+  });
 });

@@ -311,8 +311,20 @@ export function fileName(caption, sprite) {
   return `${words.slice(0, 8).join("-") || "sprite"}-${sprite}.png`;
 }
 
+/** Why a request didn't reach Hugging Face: fetch keeps it on its cause, such as a connect timeout. */
+function unreachable(error) {
+  const inner = error?.cause instanceof Error ? error.cause : error;
+  const code = typeof inner?.code === "string" && !String(inner.message).includes(inner.code) ? `${inner.code}: ` : "";
+  return new Error(
+    `Couldn't reach Hugging Face to download the sprite search data (${code}${inner?.message ?? inner}). Check the network or proxy, then search again.`,
+    { cause: error },
+  );
+}
+
 async function download(url) {
-  const response = await fetch(url, { headers: HEADERS });
+  const response = await fetch(url, { headers: HEADERS }).catch((error) => {
+    throw unreachable(error);
+  });
   if (!response.ok)
     throw new Error(
       `Hugging Face answered ${response.status} for ${url.slice(url.lastIndexOf("/") + 1)}`,
