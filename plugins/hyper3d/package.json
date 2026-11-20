@@ -1,0 +1,27 @@
+{
+  "name": "@ohmygame/hyper3d",
+  "version": "0.1.0",
+  "description": "Hyper3D Rodin generation and texturing for OhMyGame.",
+  "keywords": [
+    "ohmygame-plugin",
+    "model-provider",
+    "hyper3d",
+    "3d"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/hyper3d"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "media"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "private": true
+}

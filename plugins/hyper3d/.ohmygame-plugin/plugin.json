@@ -1,0 +1,254 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/hyper3d",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.16.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.png",
+  "categories": ["provider"],
+  "beta": true,
+  "capabilities": {
+    "network": ["api.hyper3d.com"]
+  },
+  "configuration": {
+    "apiKey": {
+      "type": "secret",
+      "title": "%config.key.title%",
+      "description": "%config.key.description%"
+    }
+  },
+  "contributes": {
+    "providers": [
+      {
+        "id": "hyper3d",
+        "title": "Hyper3D",
+        "icon": "./assets/icon.png",
+        "apiKey": "apiKey",
+        "media": {
+          "adapter": "./media/adapter.js",
+          "3d": {
+            "inputFiles": true,
+            "editableModels": true,
+            "balance": true,
+            "maxMinutes": 60,
+            "models": [
+              {
+                "id": "Gen-2.5-Medium",
+                "title": "Rodin Gen 2.5 Medium",
+                "operations": ["text", "image"],
+                "optionProfile": "hyper3d",
+                "maxReferenceImages": 5,
+                "polycount": {
+                  "min": 500,
+                  "max": 1000000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "Gen-2.5-Low",
+                "title": "Rodin Gen 2.5 Low",
+                "operations": ["text", "image"],
+                "optionProfile": "hyper3d",
+                "maxReferenceImages": 5,
+                "polycount": {
+                  "min": 500,
+                  "max": 1000000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "Gen-2.5-High",
+                "title": "Rodin Gen 2.5 High",
+                "operations": ["text", "image"],
+                "optionProfile": "hyper3d",
+                "maxReferenceImages": 5,
+                "polycount": {
+                  "min": 500,
+                  "max": 2000000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "Gen-2.5-Extreme-Low",
+                "title": "Rodin Gen 2.5 Extreme Low",
+                "operations": ["text", "image"],
+                "optionProfile": "hyper3d",
+                "maxReferenceImages": 5,
+                "polycount": {
+                  "min": 500,
+                  "max": 1000000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "Gen-2.5-Extreme-High",
+                "title": "Rodin Gen 2.5 Extreme High",
+                "operations": ["text", "image"],
+                "optionProfile": "hyper3d",
+                "maxReferenceImages": 5,
+                "polycount": {
+                  "min": 500,
+                  "max": 2000000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "Gen-2",
+                "title": "Rodin Gen 2",
+                "operations": ["text", "image"],
+                "optionProfile": "hyper3d",
+                "maxReferenceImages": 5,
+                "polycount": {
+                  "min": 500,
+                  "max": 1000000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "Sketch",
+                "title": "Rodin Gen 1/1.5 Sketch",
+                "operations": ["text", "image"],
+                "optionProfile": "hyper3d",
+                "maxReferenceImages": 5,
+                "polycount": {
+                  "min": 500,
+                  "max": 200000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "Regular",
+                "title": "Rodin Gen 1/1.5 Regular",
+                "operations": ["text", "image"],
+                "optionProfile": "hyper3d",
+                "maxReferenceImages": 5,
+                "polycount": {
+                  "min": 500,
+                  "max": 200000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "Detail",
+                "title": "Rodin Gen 1/1.5 Detail",
+                "operations": ["text", "image"],
+                "optionProfile": "hyper3d",
+                "maxReferenceImages": 5,
+                "polycount": {
+                  "min": 500,
+                  "max": 200000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              },
+              {
+                "id": "Smooth",
+                "title": "Rodin Gen 1/1.5 Smooth",
+                "operations": ["text", "image"],
+                "optionProfile": "hyper3d",
+                "maxReferenceImages": 5,
+                "polycount": {
+                  "min": 500,
+                  "max": 200000,
+                  "default": 4000,
+                  "presets": [1000, 4000, 10000, 20000, 100000]
+                },
+                "texture": true,
+                "pbr": true,
+                "defaults": {
+                  "texture": true,
+                  "pbr": false
+                }
+              }
+            ],
+            "processing": {
+              "id": "connection",
+              "title": "Hyper3D",
+              "operations": ["retexture"],
+              "optionProfile": "hyper3d",
+              "maxReferenceImages": 1,
+              "polycount": {
+                "min": 500,
+                "max": 2000000,
+                "default": 4000,
+                "presets": [1000, 4000, 10000, 20000, 100000]
+              },
+              "texture": true,
+              "pbr": true,
+              "defaults": {
+                "texture": true,
+                "pbr": false
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}
