@@ -51,6 +51,14 @@ describe("official plugins", async () => {
           assert.equal(packed.has("templates/godot-game/.gitignore"), false);
         }
       }
+      // A project template is copied into projects whole, so npm must keep every file of it.
+      if (folder === "claude-code-game-studios") {
+        const packed = new Set(files.map((file: { path: string }) => file.path));
+        for (const file of await runtimeFiles(path.join(dir, "template"))) {
+          assert.ok(packed.has(`template/${file}`), `${folder}: npm omitted template/${file}`);
+        }
+        assert.ok(packed.has("template/gitignore"));
+      }
       const verdict = await judgeTarball(app, pkg.name, pkg.version, await readFile(path.join(scratch, filename)));
       assert.deepEqual(verdict.rejected, undefined);
       assert.equal(verdict.plugin?.id, manifest.id);
