@@ -1,0 +1,92 @@
+{
+  "nodes": [
+    {
+      "id": "photo",
+      "type": "image",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "prompt": "",
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [],
+        "sourceInput": true
+      }
+    },
+    {
+      "id": "pixels",
+      "type": "image",
+      "position": {
+        "x": 500,
+        "y": 0
+      },
+      "data": {
+        "prompt": "",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "to-pixel-art-pro-flash"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [
+          {
+            "type": "node",
+            "nodeId": "photo"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cutout",
+      "type": "image",
+      "position": {
+        "x": 1000,
+        "y": 0
+      },
+      "data": {
+        "prompt": "",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "remove-background"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [
+          {
+            "type": "node",
+            "nodeId": "pixels"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rotations",
+      "type": "image",
+      "position": {
+        "x": 1500,
+        "y": 0
+      },
+      "data": {
+        "prompt": "",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "rotations-8"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [
+          {
+            "type": "node",
+            "nodeId": "cutout"
+          }
+        ]
+      }
+    }
+  ],
+  "edges": []
+}

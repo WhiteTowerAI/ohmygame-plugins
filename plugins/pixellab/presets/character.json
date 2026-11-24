@@ -1,0 +1,96 @@
+{
+  "nodes": [
+    {
+      "id": "character",
+      "type": "image",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "prompt": "a young wizard in a purple robe",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "character-8"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": []
+      }
+    },
+    {
+      "id": "walk",
+      "type": "image",
+      "position": {
+        "x": 500,
+        "y": 0
+      },
+      "data": {
+        "prompt": "walk in place",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "frame-animation"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [
+          {
+            "type": "node",
+            "nodeId": "character"
+          }
+        ]
+      }
+    },
+    {
+      "id": "outfit",
+      "type": "image",
+      "position": {
+        "x": 500,
+        "y": 520
+      },
+      "data": {
+        "prompt": "wearing a red hooded cloak",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "character-state"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [
+          {
+            "type": "node",
+            "nodeId": "character"
+          }
+        ]
+      }
+    },
+    {
+      "id": "spell",
+      "type": "image",
+      "position": {
+        "x": 1000,
+        "y": 0
+      },
+      "data": {
+        "prompt": "a blue magic burst with sparkles",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "vfx"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [
+          {
+            "type": "node",
+            "nodeId": "character"
+          }
+        ]
+      }
+    }
+  ],
+  "edges": []
+}

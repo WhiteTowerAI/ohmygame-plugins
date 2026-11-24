@@ -1,0 +1,69 @@
+{
+  "nodes": [
+    {
+      "id": "ground",
+      "type": "image",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "prompt": "grass",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "tileset"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [],
+        "modelParams": {
+          "upper": "shallow water",
+          "transition": "sandy shore"
+        }
+      }
+    },
+    {
+      "id": "platform",
+      "type": "image",
+      "position": {
+        "x": 500,
+        "y": 0
+      },
+      "data": {
+        "prompt": "mossy stone bricks",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "tileset-sidescroller"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [],
+        "modelParams": {
+          "surface": "grass"
+        }
+      }
+    },
+    {
+      "id": "block",
+      "type": "image",
+      "position": {
+        "x": 1000,
+        "y": 0
+      },
+      "data": {
+        "prompt": "grass on top of dirt",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "isometric-tile"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": []
+      }
+    }
+  ],
+  "edges": []
+}

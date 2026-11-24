@@ -60,9 +60,11 @@ for them; the models marked *aspect* offer aspect ratios. Settings in
 | | Tiles (Pro) (`tiles-pro`) | `create-tiles-pro` | Description | First 32px top-down tile |
 | Effects | Effect (`vfx`) | `vfx` | Description; optional sprite; *quality* (lite or pro) | GIF |
 
-Asset presets shows a PixelLab pack: 16 one-node presets, one for each common
-job, each an Image node with that model, an example prompt and a picture the
-model made.
+Asset presets shows a PixelLab pack of five workflows, each a few linked
+Image nodes with example prompts: a character kit (eight directions, walk,
+outfit, spell effect), a prop kit (prop, animation, eight directions), map
+tiles, picture to sprite (pixel art, background removed, eight rotations) and
+a UI kit. Single models stay in the Image node's model list.
 
 Frame results are composed by the app into a GIF. References larger than each
 model's limit are scaled down by the app with nearest-neighbour sampling

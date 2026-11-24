@@ -1,0 +1,72 @@
+{
+  "nodes": [
+    {
+      "id": "prop",
+      "type": "image",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "prompt": "a wooden treasure chest with iron bands",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "object"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": []
+      }
+    },
+    {
+      "id": "open",
+      "type": "image",
+      "position": {
+        "x": 500,
+        "y": 0
+      },
+      "data": {
+        "prompt": "opening slowly",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "object-animation"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [
+          {
+            "type": "node",
+            "nodeId": "prop"
+          }
+        ]
+      }
+    },
+    {
+      "id": "turn",
+      "type": "image",
+      "position": {
+        "x": 500,
+        "y": 520
+      },
+      "data": {
+        "prompt": "",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "object-8"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": [
+          {
+            "type": "node",
+            "nodeId": "prop"
+          }
+        ]
+      }
+    }
+  ],
+  "edges": []
+}

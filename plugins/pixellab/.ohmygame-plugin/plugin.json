@@ -613,22 +613,11 @@
       }
     ],
     "canvasPresets": [
-      { "id": "pixflux", "title": "%preset.pixflux%", "description": "%preset.pixflux.description%", "board": "./presets/pixflux.json", "preview": "./presets/pixflux.png" },
-      { "id": "object", "title": "%preset.object%", "description": "%preset.object.description%", "board": "./presets/object.json", "preview": "./presets/object.png" },
-      { "id": "object-8", "title": "%preset.object-8%", "description": "%preset.object-8.description%", "board": "./presets/object-8.json", "preview": "./presets/object-8.gif" },
-      { "id": "character-4", "title": "%preset.character-4%", "description": "%preset.character-4.description%", "board": "./presets/character-4.json", "preview": "./presets/character-4.gif" },
-      { "id": "character-8", "title": "%preset.character-8%", "description": "%preset.character-8.description%", "board": "./presets/character-8.json", "preview": "./presets/character-8.gif" },
-      { "id": "character-state", "title": "%preset.character-state%", "description": "%preset.character-state.description%", "board": "./presets/character-state.json", "preview": "./presets/character-state.gif" },
-      { "id": "rotations-8", "title": "%preset.rotations-8%", "description": "%preset.rotations-8.description%", "board": "./presets/rotations-8.json", "preview": "./presets/rotations-8.gif" },
-      { "id": "frame-animation", "title": "%preset.frame-animation%", "description": "%preset.frame-animation.description%", "board": "./presets/frame-animation.json", "preview": "./presets/frame-animation.gif" },
-      { "id": "object-animation", "title": "%preset.object-animation%", "description": "%preset.object-animation.description%", "board": "./presets/object-animation.json", "preview": "./presets/object-animation.gif" },
-      { "id": "vfx", "title": "%preset.vfx%", "description": "%preset.vfx.description%", "board": "./presets/vfx.json", "preview": "./presets/vfx.gif" },
-      { "id": "tileset", "title": "%preset.tileset%", "description": "%preset.tileset.description%", "board": "./presets/tileset.json", "preview": "./presets/tileset.png" },
-      { "id": "tileset-sidescroller", "title": "%preset.tileset-sidescroller%", "description": "%preset.tileset-sidescroller.description%", "board": "./presets/tileset-sidescroller.json", "preview": "./presets/tileset-sidescroller.png" },
-      { "id": "isometric-tile", "title": "%preset.isometric-tile%", "description": "%preset.isometric-tile.description%", "board": "./presets/isometric-tile.json", "preview": "./presets/isometric-tile.png" },
-      { "id": "ui", "title": "%preset.ui%", "description": "%preset.ui.description%", "board": "./presets/ui.json", "preview": "./presets/ui.png" },
-      { "id": "to-pixel-art", "title": "%preset.to-pixel-art%", "description": "%preset.to-pixel-art.description%", "board": "./presets/to-pixel-art.json", "preview": "./presets/to-pixel-art.png" },
-      { "id": "remove-background", "title": "%preset.remove-background%", "description": "%preset.remove-background.description%", "board": "./presets/remove-background.json", "preview": "./presets/remove-background.png" }
+      { "id": "character", "title": "%preset.character%", "description": "%preset.character.description%", "board": "./presets/character.json", "preview": "./presets/character.gif" },
+      { "id": "prop", "title": "%preset.prop%", "description": "%preset.prop.description%", "board": "./presets/prop.json", "preview": "./presets/prop.gif" },
+      { "id": "map", "title": "%preset.map%", "description": "%preset.map.description%", "board": "./presets/map.json", "preview": "./presets/map.png" },
+      { "id": "photo-to-sprite", "title": "%preset.photo-to-sprite%", "description": "%preset.photo-to-sprite.description%", "board": "./presets/photo-to-sprite.json", "preview": "./presets/photo-to-sprite.png" },
+      { "id": "ui-kit", "title": "%preset.ui-kit%", "description": "%preset.ui-kit.description%", "board": "./presets/ui-kit.json", "preview": "./presets/ui-kit.png" }
     ],
     "skills": "./skills/"
   }

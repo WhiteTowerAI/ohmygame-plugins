@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -333,6 +333,14 @@ it("declares every PixelLab model the plugin implements", async (t) => {
   assert.equal(s.model("pixen").supportsResolution, false);
   assert.deepEqual(s.model("character").params?.map((param: { key: string }) => param.key), ["directions", "view"]);
   assert.deepEqual(s.model("interpolation").referenceImageLabels, ["Start picture", "End picture"]);
+  // Each Asset preset is a workflow of the plugin's own models, linked in order.
+  const manifest = JSON.parse(await readFile(path.join(pluginRoot, ".ohmygame-plugin/plugin.json"), "utf8"));
+  const ids = new Set(provider!.models.map((model: { id: string }) => model.id));
+  for (const preset of manifest.contributes.canvasPresets) {
+    const board = JSON.parse(await readFile(path.join(pluginRoot, preset.board), "utf8"));
+    assert.ok(board.nodes.length > 1, preset.id);
+    for (const node of board.nodes) if (node.data.model) assert.ok(ids.has(node.data.model.id), `${preset.id} ${node.data.model.id}`);
+  }
 });
 
 it("sends each model's request and returns its result", async (t) => {

@@ -1,0 +1,62 @@
+{
+  "nodes": [
+    {
+      "id": "button",
+      "type": "image",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "prompt": "a medieval stone button",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "ui"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": []
+      }
+    },
+    {
+      "id": "bar",
+      "type": "image",
+      "position": {
+        "x": 500,
+        "y": 0
+      },
+      "data": {
+        "prompt": "a red health bar in a stone frame",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "ui"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": []
+      }
+    },
+    {
+      "id": "slot",
+      "type": "image",
+      "position": {
+        "x": 1000,
+        "y": 0
+      },
+      "data": {
+        "prompt": "an inventory slot with a wooden border",
+        "promptExpanded": true,
+        "model": {
+          "provider": "plugin.ohmygame.pixellab.pixellab",
+          "id": "ui"
+        },
+        "resolution": "1K",
+        "aspectRatio": "1:1",
+        "images": []
+      }
+    }
+  ],
+  "edges": []
+}
