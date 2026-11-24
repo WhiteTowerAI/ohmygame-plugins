@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Browse 244 pixel art effects, tune them and export sprite sheets.",
+  "description": "Browse 244 pixel art effects, make your own in the project and export sprite sheets.",
   "keywords": [
     "ohmygame-plugin",
     "pixel-art",
@@ -21,6 +21,8 @@
     "assets",
     "locales",
     "panel",
+    "skills",
+    "tools",
     "LICENSE",
     "NOTICE.md"
   ],

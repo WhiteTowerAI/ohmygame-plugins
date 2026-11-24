@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "effect": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+/[a-z0-9-]+$",
+      "description": "Project effect id; the file is pixelfx/fx/<category>/<name>.js."
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200000,
+      "description": "The whole module."
+    }
+  },
+  "required": [
+    "effect",
+    "code"
+  ],
+  "additionalProperties": false
+}

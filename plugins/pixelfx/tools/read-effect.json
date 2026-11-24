@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "effect": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+/[a-z0-9-]+$",
+      "description": "Effect id, category/name, such as fire/torch."
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "builtin",
+        "project"
+      ],
+      "description": "Which copy: the plugin's built-in effect or the project's. Defaults to the project's when it has one."
+    }
+  },
+  "required": [
+    "effect"
+  ],
+  "additionalProperties": false
+}

@@ -18,7 +18,13 @@ license in `panel/lib/LICENSE`.
   rehan-remade, MIT), which `act.js` adapts.
 - `panel/export.js`, `panel/options.js`, `panel/stage.js`, `panel/main.js` and
   `panel/style.css` are adapted from pixelfx's `gallery/export-utils.js`,
-  `gallery/app.js` and `gallery/style.css`, under the same MIT license.
+  `gallery/app.js` and `gallery/style.css`, `panel/check.js` from its
+  `tools/check.mjs`, the new effect template in `panel/project.js` from its
+  `tools/new.mjs`, and `skills/pixelfx/SKILL.md` from its Skill and workspace
+  rules, all under the same MIT license.
+- The panel copies `panel/lib/core/` and effects from `panel/lib/fx/` into a
+  project's `pixelfx/` folder unchanged, headers included, with pixelfx's MIT
+  license and these credits in `pixelfx/LICENSE-pixelfx.md`.
 
 The Patch Pixel font in pixelfx's `gallery/fonts` is not under its MIT license
 and is not included.

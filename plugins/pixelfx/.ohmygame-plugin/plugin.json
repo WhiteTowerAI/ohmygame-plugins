@@ -26,7 +26,8 @@
   "projectFiles": ["./pixelfx/"],
   "capabilities": {
     "project.files": "write",
-    "library": true
+    "library": true,
+    "composer": true
   },
   "contributes": {
     "panels": [
@@ -37,6 +38,58 @@
         "area": "center",
         "entry": "./panel/index.html"
       }
-    ]
+    ],
+    "tools": [
+      {
+        "name": "find_effects",
+        "description": "Lists pixel art effects, built-in and the project's, matching words, a category or where they are. Look here before writing a new effect.",
+        "input": "./tools/find-effects.json",
+        "panel": "studio"
+      },
+      {
+        "name": "read_effect",
+        "description": "Returns an effect's source code and meta.",
+        "input": "./tools/read-effect.json",
+        "panel": "studio"
+      },
+      {
+        "name": "copy_effect",
+        "description": "Copies a built-in effect into the project as pixelfx/fx/<category>/<name>.js, with the pixelfx core and helpers it imports, and shows it. Returns its id and the files written.",
+        "input": "./tools/copy-effect.json",
+        "panel": "studio",
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "write_effect",
+        "description": "Writes a project effect's code, adds the core files it imports when missing, then checks it. Returns errors and warnings; fix errors, then look with panel_screenshot.",
+        "input": "./tools/write-effect.json",
+        "panel": "studio",
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "check_effect",
+        "description": "Checks an effect: meta, pixels outside the canvas, loop seams, one-shots that don't end empty, seeded randomness, palettes and frame time.",
+        "input": "./tools/check-effect.json",
+        "panel": "studio",
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "show_effect",
+        "description": "Shows an effect in the Pixel Effects panel with preview settings, so panel_screenshot can see it. Returns the settings in use.",
+        "input": "./tools/show-effect.json",
+        "panel": "studio"
+      },
+      {
+        "name": "export_effect",
+        "description": "Exports the effect shown, with its preview settings, as a sprite sheet, contact sheet, GIF or PNG frames. Returns where it went.",
+        "input": "./tools/export-effect.json",
+        "panel": "studio",
+        "timeoutSeconds": 120
+      }
+    ],
+    "skills": "./skills/"
+  },
+  "ui": {
+    "projectModules": ["./pixelfx/"]
   }
 }
