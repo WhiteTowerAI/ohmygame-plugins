@@ -90,7 +90,7 @@
       },
       {
         "name": "read_sfx",
-        "description": "Returns an effect's sound: its script in pixelfx/sfx/ if any, the variants rendered or made by a model, and the effect's length and hits to line a sound up with.",
+        "description": "Returns an effect's sound: its script in pixelfx/sfx/ if any, the variants rendered or made by a model, and the effect's length and an act's hits as it plays, to line a sound up with.",
         "input": "./tools/read-sfx.json",
         "panel": "studio"
       },

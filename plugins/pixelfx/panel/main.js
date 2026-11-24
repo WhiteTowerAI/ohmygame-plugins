@@ -50,6 +50,7 @@ import {
   withPreset,
 } from "./project.js";
 import { drawThumbnail, StageRunner } from "./stage.js";
+import { actHitTimes, actLength } from "./timing.js";
 import { TEXT } from "./i18n.js";
 import { createDrawer } from "./agent.js";
 import {
@@ -690,6 +691,8 @@ function updateTimeline() {
 function setPlaying(playing) {
   state.playing = playing;
   $("#btn-play").textContent = playing ? t.pause : t.play;
+  // A sound playing with the stage stops with it; it starts again with the effect.
+  if (!playing && state.sound.sync) stopSound();
 }
 
 // ---------------------------------------------------------------------------
@@ -1035,6 +1038,7 @@ async function runExport(format) {
   }
   const fx = state.fx;
   const cfg = exportConfig();
+  const sound = shownSound();
   const name = fx.id.split("/")[1];
   state.exporting = true;
   updateExportButton();
@@ -1054,7 +1058,6 @@ async function runExport(format) {
       if (format === "sheet-png") await toLibrary(png, `${name}.png`);
       else {
         // The chosen sound goes beside the sheet, which names it.
-        const sound = shownSound();
         if (sound) {
           const file = `${name}.${sound.variant.file.split(".").pop()}`;
           await write(`${EXPORT_DIR}/${file}`, await host.files.read(variantPath(sound.id, sound.variant)));
@@ -1736,7 +1739,8 @@ async function readManifest(id) {
 let soundTicket = 0;
 /** Reads the shown effect's sound again, keeping the variant chosen when it's still there. */
 async function loadSound(fx = state.fx, choose) {
-  if (!fx) return;
+  // Only the shown effect's sound is read, so reading another's never cancels it.
+  if (!fx || state.fx?.id !== fx.id) return;
   const ticket = ++soundTicket;
   let doc;
   let error = "";
@@ -1800,7 +1804,8 @@ function drawWave() {
   }
   // Where the sound is as the stage plays it: the effect's time against the sound's own length.
   const played = stage.totalFrames > 1 ? stage.frameIdx / (stage.totalFrames - 1) : 0;
-  const ratio = Math.min(1, (played * state.fx.meta.duration) / Math.max(0.01, variant.duration || state.fx.meta.duration));
+  const base = soundBase(state.fx, variant);
+  const ratio = Math.min(1, (played * base) / Math.max(0.01, variant.duration || base));
   const stepW = (W - 8) / bars.length;
   const barW = Math.max(2, Math.floor(stepW - 1.5));
   const playX = 4 + Math.round(ratio * (W - 8));
@@ -1838,7 +1843,10 @@ async function decoded(id, variant) {
   }
 }
 
+// Each play and stop takes a turn, so a sound still decoding when it was stopped doesn't start.
+let playTurn = 0;
 function stopSound() {
+  playTurn++;
   try {
     playing?.stop();
   } catch {
@@ -1847,20 +1855,37 @@ function stopSound() {
   playing = undefined;
 }
 
+/** What the effect's length a variant was made for, as the stage plays it: the act's whole play when an actor shows it. */
+function soundBase(fx, variant) {
+  if (variant?.madeFor) return variant.madeFor;
+  return fx.mod.act && !fx.error && state.cfg.actorMode !== "hide" ? actLength(fx.mod).seconds : fx.meta.duration;
+}
+
+/** The rate a variant plays at to keep time with the stage, at its speed and length. */
+function soundRate(variant) {
+  const fx = state.fx;
+  if (!fx || !variant) return state.speed;
+  return Math.max(0.25, Math.min(4, (state.speed * soundBase(fx, variant)) / Math.max(0.05, state.cfg.duration)));
+}
+
 /** Plays the chosen variant at the stage's speed and length; with `quiet`, a failure isn't announced. */
 async function playSound(quiet = false) {
   const id = state.sound.id;
   const variant = activeVariant();
   if (!variant || id !== state.fx?.id) return;
+  const turn = ++playTurn;
   try {
     const buffer = await decoded(id, variant);
-    if (state.sound.id !== id || activeVariant() !== variant) return;
-    stopSound();
+    if (turn !== playTurn || state.sound.id !== id || activeVariant() !== variant) return;
+    try {
+      playing?.stop();
+    } catch {
+      // Already ended.
+    }
     const out = audioOut();
     const source = out.createBufferSource();
     source.buffer = buffer;
-    const stretch = state.fx.meta.duration / Math.max(0.05, state.cfg.duration);
-    source.playbackRate.value = Math.max(0.25, Math.min(4, state.speed * stretch));
+    source.playbackRate.value = soundRate(variant);
     source.connect(out.destination);
     source.start();
     playing = source;
@@ -1898,7 +1923,7 @@ async function soundCoreWrites(paths) {
 }
 
 /** Renders the script of `id` to WAV files and its list, deleting those of variants it no longer makes. */
-async function renderNow(id) {
+async function renderNow(id, signal) {
   const prev = await readManifest(id);
   const mod = await host.modules.import(sfxScriptPath(id));
   const rendered = [];
@@ -1907,6 +1932,7 @@ async function renderNow(id) {
     rendered.push({ entry: { ...entry, file: `${key}.wav` }, wav });
     await pause(0);
   }
+  signal?.throwIfAborted();
   const { doc, stale } = withScriptVariants(prev, id, rendered.map((item) => item.entry));
   const written = [];
   for (const { entry, wav } of rendered) {
@@ -1934,7 +1960,7 @@ async function renderNow(id) {
  * lacks it, and renders the script once the app has reported the change, so
  * the import is the script as written.
  */
-function writeSfx(id, code) {
+function writeSfx(id, code, signal) {
   return change(async () => {
     if (!isEffectId(id)) throw uiError(TEXT.en.badName, t.badName);
     const listing = await projectFiles();
@@ -1944,7 +1970,8 @@ function writeSfx(id, code) {
     const heard = filesHeard(writes.map((write) => write.path));
     for (const write of writes) await host.files.write(write.path, write.text);
     if (!(await heard)) return { written: writes.map((write) => write.path), loaded: false };
-    const result = await renderNow(id);
+    signal?.throwIfAborted();
+    const result = await renderNow(id, signal);
     return { ...result, written: [...writes.map((write) => write.path), ...result.written], loaded: true };
   });
 }
@@ -1991,6 +2018,8 @@ async function makeModelSound(fx, { prompt, seconds, model }, signal) {
   const file = made.files?.[0];
   if (!file?.data) throw new Error("The model gave no sound");
   const figures = await figuresOf(file.data);
+  signal?.throwIfAborted();
+  const madeFor = state.fx?.id === fx.id ? state.cfg.duration : undefined;
   const used = made.model ?? (model ? { provider: model.provider, id: model.id } : undefined);
   return change(async () => {
     const prev = await readManifest(fx.id);
@@ -1999,20 +2028,25 @@ async function makeModelSound(fx, { prompt, seconds, model }, signal) {
     const path = `${sfxDir(fx.id)}/${name}`;
     await host.files.write(path, file.data);
     const label = t.soundModelLabel(Number(key.slice(6)));
-    const entry = { id: key, label, desc: "", file: name, ...figures, cues: [], ...(used ? { model: { ...used, ...(model?.name ? { name: model.name } : {}) } } : {}), prompt: prompt.slice(0, 2000), ...(file.assetId ? { assetId: file.assetId } : {}) };
+    const entry = { id: key, label, desc: "", file: name, ...figures, cues: [], ...(madeFor ? { madeFor } : {}), ...(used ? { model: { ...used, ...(model?.name ? { name: model.name } : {}) } } : {}), prompt: prompt.slice(0, 2000), ...(file.assetId ? { assetId: file.assetId } : {}) };
     const doc = withModelVariant(prev, fx.id, entry);
     await host.files.write(manifestPath(fx.id), manifestText(doc));
     return { key, label, path, doc, ...(file.assetId ? { assetId: file.assetId } : {}) };
   });
 }
 
+/** When the effect's hits land, in seconds from its start as the stage plays it: an act's wind-up and hit-stops included when an actor shows it. */
+function stageHits(fx) {
+  if (!fx.mod.act || fx.error) return [];
+  if (state.cfg.actorMode !== "hide") return actHitTimes(fx.mod).map((at) => (at * state.cfg.duration) / actLength(fx.mod).seconds);
+  return (actTiming(fx.mod)?.hits ?? []).map((hit) => (hit.t * state.cfg.duration) / fx.meta.duration);
+}
+
 /** What to ask a model for the shown effect, with its length as it plays now. */
 function shownPrompt(fx = state.fx) {
-  const stretch = state.cfg.duration / Math.max(0.01, fx.meta.duration);
-  const timing = fx.mod.act ? actTiming(fx.mod) : null;
   return {
     seconds: state.cfg.duration,
-    prompt: soundPrompt({ name: fx.meta.name, desc: fx.meta.desc, tags: fx.meta.tags, duration: state.cfg.duration, loop: fx.meta.loop, hits: (timing?.hits ?? []).map((hit) => hit.t * stretch) }),
+    prompt: soundPrompt({ name: fx.meta.name, desc: fx.meta.desc, tags: fx.meta.tags, duration: state.cfg.duration, loop: fx.meta.loop, hits: stageHits(fx) }),
   };
 }
 
@@ -2155,10 +2189,13 @@ function contextText() {
   const fx = state.fx;
   if (!fx) return "Nothing is shown yet.";
   const check = state.checks.get(fx.key);
-  const timing = fx.mod.act && !fx.error ? actTiming(fx.mod) : null;
+  const acted = fx.mod.act && !fx.error;
+  const hits = acted ? actHitTimes(fx.mod).map((at) => `${+at.toFixed(3)}s`) : [];
   return [
     `The Pixel Effects panel shows ${fx.source === "project" ? `the project's effect ${fx.path}` : `the built-in effect ${fx.id}`}: ${fx.meta.name}${fx.meta.desc ? ` (${fx.meta.desc})` : ""}.`,
-    fx.error ? `It doesn't load: ${fx.error}` : `It lasts ${fx.meta.duration}s, ${fx.meta.loop ? "looping" : "once"}${timing?.hits.length ? `, with hits at ${timing.hits.map((hit) => `${hit.t}s`).join(", ")}` : ""}.`,
+    fx.error
+      ? `It doesn't load: ${fx.error}`
+      : `It lasts ${fx.meta.duration}s, ${fx.meta.loop ? "looping" : "once"}${acted ? `; its act plays ${+actLength(fx.mod).seconds.toFixed(3)}s with an actor${hits.length ? `, hits landing at ${hits.join(", ")} (wind-up and hit-stops included)` : ""}` : ""}.`,
     `View: ${state.view}. Preview settings that differ from the effect's own: ${JSON.stringify(settingsOf(state.cfg, fx))}`,
     check ? `Last check: ${check.errors.length} errors, ${check.warnings.length} warnings.${[...check.errors, ...check.warnings].slice(0, 10).map((line) => `\n- ${line}`).join("")}` : null,
     soundLine(fx),
@@ -2320,16 +2357,17 @@ function handleTools() {
       effect: fx.id,
       duration: fx.meta.duration,
       loop: fx.meta.loop,
-      ...(fx.raw?.act ? { hits: (actTiming(fx.mod)?.hits ?? []).map((hit) => hit.t) } : {}),
+      // A script lines up with the act as the actor plays it, wind-up and hit-stops included.
+      ...(fx.raw?.act && !fx.error ? { act: { length: +actLength(fx.mod).seconds.toFixed(3), hits: actHitTimes(fx.mod).map((at) => +at.toFixed(3)) } } : {}),
       script: script === undefined ? null : { path: sfxScriptPath(fx.id), code: script },
       variants: (doc?.variants ?? []).map(({ bars: _bars, ...item }) => ({ ...item, path: `${sfxDir(fx.id)}/${item.file}` })),
       ...(script === undefined ? { note: `No script yet. write_sfx writes ${sfxScriptPath(fx.id)}, which imports from "../../sfx-core/index.js".` } : {}),
     };
   });
-  host.tools.handle("write_sfx", async ({ effect, code, select }) => {
+  host.tools.handle("write_sfx", async ({ effect, code, select }, { signal } = {}) => {
     await projectSettled();
     const fx = requireEffect(effect);
-    const result = await writeSfx(fx.id, code);
+    const result = await writeSfx(fx.id, code, signal);
     if (!result.loaded)
       return { effect: fx.id, written: result.written, rendered: false, note: "Saved, but the app hasn't reported the change yet, so it wasn't rendered. Call write_sfx again shortly." };
     if (state.fx?.id !== fx.id) openEffect(fx);
@@ -2431,6 +2469,7 @@ $("#btn-replay").addEventListener("click", () => {
 $("#sel-speed").value = "1";
 $("#sel-speed").addEventListener("change", (event) => {
   state.speed = Number(event.target.value) || 1;
+  if (playing) playing.playbackRate.value = soundRate(activeVariant());
 });
 $("#scrub-range").addEventListener("input", (event) => {
   setPlaying(false);

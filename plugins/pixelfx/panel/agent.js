@@ -15,7 +15,7 @@ export function systemPrompt(context) {
     "- Settings first: show_effect with settings (palette, seed, fps, duration, size, flip, options) changes a look without code.",
     "- Built-in effects are read-only. copy_effect puts one in the project; write_effect writes a project effect whole and returns its check. Fix every error it names, and the warnings that matter.",
     "- An effect is one ES module: `export const meta = { name, desc, tags, size, origin, duration, loop, fps, options }` and `export function draw(p, t, o)` (pure in t) or `export function create(o)` returning { update(dt), draw(p) }. Import from \"../../core/index.js\". Never Math.random() or Date: randomness comes from o.seed. One-shots end empty at t = duration; loops match at both ends.",
-    "- Sound: write_sfx writes pixelfx/sfx/<category>/<name>.js, which imports from \"../../sfx-core/index.js\" and exports `variants`, then renders each to a WAV. Read the effect's duration and act.hits first and line the attacks up with them. Make about three variants that differ clearly. read_sfx shows the current script and variants.",
+    "- Sound: write_sfx writes pixelfx/sfx/<category>/<name>.js, which imports from \"../../sfx-core/index.js\" and exports `variants`, then renders each to a WAV. read_sfx first gives the effect's length and, for an act, its length and when its hits land as it plays; line the attacks up with them. Make about three variants that differ clearly. read_sfx shows the current script and variants.",
     "- make_sfx_with_model costs the person money: use it only when they ask for a model-made sound.",
     "- Keep answers short: say what you changed and what to try next. Each change can be undone from the app's history.",
     "",
@@ -134,6 +134,9 @@ export function createDrawer({ host, t, el, root, context, target, onBusy = () =
   let running;
   let unavailable = "";
   let loaded = false;
+  // Reading the conversation, once at a time; a conversation that can't be read can still be cleared.
+  let loading;
+  let unreadable = false;
 
   const updateTarget = () => {
     const sub = $(".agent-sub");
@@ -174,13 +177,13 @@ export function createDrawer({ host, t, el, root, context, target, onBusy = () =
     else if (unavailable) nodes.push(el("div", { className: "agent-msg assistant hint", textContent: unavailable }));
     list.replaceChildren(...nodes);
     if (atBottom || live) list.scrollTop = list.scrollHeight;
-    const blocked = !!unavailable;
+    const blocked = !!unavailable || !loaded;
     send.textContent = running ? t.agent.stop : t.agent.send;
     send.classList.toggle("stop", !!running);
     send.disabled = blocked && !running;
     input.disabled = blocked;
     for (const chip of chips.children) chip.disabled = blocked || !!running;
-    $(".agent-new").disabled = blocked || !!running || !turns.length;
+    $(".agent-new").disabled = !!running || !(unreadable || (loaded && !unavailable && turns.length));
   }
 
   async function load() {
@@ -193,8 +196,10 @@ export function createDrawer({ host, t, el, root, context, target, onBusy = () =
       }
       turns = turnsFromHistory(await host.assistant.history());
       unavailable = "";
+      unreadable = false;
     } catch (error) {
       unavailable = t.agent.unavailable(error instanceof Error ? error.message : String(error));
+      unreadable = true;
     }
     loaded = true;
     draw();
@@ -202,7 +207,7 @@ export function createDrawer({ host, t, el, root, context, target, onBusy = () =
 
   async function run(text) {
     const said = text.trim();
-    if (!said || running || unavailable) return;
+    if (!said || running || unavailable || !loaded) return;
     input.value = "";
     turns.push({ role: "user", text: said });
     live = { role: "assistant", items: [] };
@@ -247,6 +252,11 @@ export function createDrawer({ host, t, el, root, context, target, onBusy = () =
     try {
       await host.assistant.clear();
       turns = [];
+      // Read again, so a conversation that couldn't be read before starts afresh.
+      if (unreadable) {
+        loaded = false;
+        loading = load();
+      }
     } catch (error) {
       unavailable = t.agent.unavailable(error instanceof Error ? error.message : String(error));
     }
@@ -257,14 +267,14 @@ export function createDrawer({ host, t, el, root, context, target, onBusy = () =
     closeButton: $(".agent-close"),
     /** Reads the conversation the first time the drawer opens. */
     open() {
-      if (!loaded) void load();
+      loading ??= load();
       draw();
       input.focus();
     },
     refresh: updateTarget,
     /** Puts `text` in the box for the person to send or change. */
     prefill(text) {
-      if (running || unavailable) return;
+      if (running || (loaded && unavailable)) return;
       input.value = text;
       input.focus();
     },

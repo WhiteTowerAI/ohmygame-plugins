@@ -9,7 +9,7 @@ import { effects } from "../plugins/pixelfx/panel/lib/fx/index.js";
 // @ts-expect-error The panel is plain JavaScript.
 import { buildGifBlob, exportBudget, framesMeta, gifDelays, renderExportFrames, sheetLayout } from "../plugins/pixelfx/panel/export.js";
 // @ts-expect-error The panel is plain JavaScript.
-import { actFrameStep, actLength, actStepper, flippedActBounds, flippedOrigin } from "../plugins/pixelfx/panel/timing.js";
+import { actFrameStep, actHitTimes, actLength, actStepper, flippedActBounds, flippedOrigin } from "../plugins/pixelfx/panel/timing.js";
 // @ts-expect-error The panel is plain JavaScript.
 import { actBounds, createAct } from "../plugins/pixelfx/panel/lib/core/index.js";
 // @ts-expect-error The panel is plain JavaScript.
@@ -195,6 +195,12 @@ describe("pixelfx limits and timing", () => {
       for (let i = 1; i < frames; i++) step(dt);
       assert.ok(Math.abs(act.t - end) < 1e-6, `${frames} frames end at ${act.t}, not ${end}`);
     }
+  });
+
+  it("places an act's hits in its play time, after its wind-up and earlier hit-stops", () => {
+    const mod = { meta: { duration: 1, loop: false }, act: { poses: [[-0.3, {}], [1.2, {}]], hits: [{ t: 0.2, stop: 0.1 }, { t: 0.2, stop: 0.05 }, { t: 0.5, stop: 0.08 }] } };
+    assert.deepEqual(actHitTimes(mod).map((at: number) => +at.toFixed(3)), [0.5, 0.9]);
+    assert.ok(Math.abs(actLength(mod).seconds - (1.5 + 0.18)) < 1e-9);
   });
 
   it("mirrors a flipped act's box and an effect's origin", () => {

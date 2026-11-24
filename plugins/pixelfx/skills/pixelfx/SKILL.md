@@ -57,9 +57,9 @@ export function draw(p, t, o) { /* a pure function of t */ }
 
 ## 4. Give it sound
 
-An effect's sound is a script, `pixelfx/sfx/<category>/<name>.js`, for built-in and project effects alike. `read_sfx` returns the current script, its variants, and the effect's length and hits; `write_sfx` writes the script and renders each variant to a 22,050 Hz WAV in `pixelfx/sfx/<category>/<name>/`, listed in `sfx.json`, or returns why it failed.
+An effect's sound is a script, `pixelfx/sfx/<category>/<name>.js`, for built-in and project effects alike. `read_sfx` returns the current script, its variants, the effect's length and, for an effect with an act, how long the act plays and when its hits land, wind-up and hit-stops included; `write_sfx` writes the script and renders each variant to a 22,050 Hz WAV in `pixelfx/sfx/<category>/<name>/`, listed in `sfx.json`, or returns why it failed.
 
-1. Read the effect first: its `meta.duration`, whether it loops, and its `act.hits`. The sound starts with the first visible frame, never with silence, and its attacks land on the hits.
+1. Read the effect first with `read_sfx`: its `duration` and whether it loops, or for an act its `act.length` and `act.hits`, which already count the wind-up and hit-stops. The sound starts with the first visible frame, never with silence, and its attacks land on the hits.
 2. Build each variant in layers: a low body for weight, a mid layer that rings (`resonate`) or sweeps, and high grit or ticks (`pixelTick`). Mix them with `place` at the right times and cut the whole to length with `fit`.
 3. Make about three variants that differ clearly, such as default, heavy and bright, rather than three takes of one.
 
