@@ -1,6 +1,6 @@
 {
   "name": "@ohmygame/pixel-sprites",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Search 1.4 million AI-generated 16×16 pixel art sprites from the Library.",
   "keywords": [
     "ohmygame-plugin",
