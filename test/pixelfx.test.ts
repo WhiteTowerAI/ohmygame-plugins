@@ -22,6 +22,7 @@ import { TEXT } from "../plugins/pixelfx/panel/i18n.js";
 import { checkEffect } from "../plugins/pixelfx/panel/check.js";
 import {
   applySettings,
+  builtinIdOf,
   dependencies,
   effectIdOf,
   effectTemplate,
@@ -30,11 +31,13 @@ import {
   isEffectId,
   LICENSE_PATH,
   licenseNotice,
+  metaProblem,
   missingImports,
   parsePresets,
   planEffect,
   presetsFor,
   presetsText,
+  renamePresets,
   resolveImport,
   settingsOf,
   VERSION_PATH,
@@ -312,6 +315,28 @@ describe("pixelfx project files", () => {
     assert.equal(freeEffectId("fire/torch", new Set(["fire/torch", "fire/torch-2"])), "fire/torch-3");
   });
 
+  it("knows the built-in effect a copy came from", () => {
+    const ids = new Set(["fire/torch", "ui/level-up-2"]);
+    assert.equal(builtinIdOf("fire/torch", ids), "fire/torch");
+    assert.equal(builtinIdOf("fire/torch-3", ids), "fire/torch");
+    assert.equal(builtinIdOf("ui/level-up-2", ids), "ui/level-up-2");
+    assert.equal(builtinIdOf("fire/torchlight", ids), undefined);
+    assert.equal(builtinIdOf("mine/torch", ids), undefined);
+  });
+
+  it("refuses meta and acts the panel can't show, and takes every built-in effect", () => {
+    for (const fx of LIBRARY) assert.equal(metaProblem(fx.meta, fx.mod.act), undefined, fx.id);
+    const meta = fullMeta({ name: "x" });
+    assert.match(metaProblem({ ...meta, fps: "30" }), /fps/);
+    assert.match(metaProblem({ ...meta, duration: "2" }), /duration/);
+    assert.match(metaProblem({ ...meta, size: null }), /size/);
+    assert.match(metaProblem({ ...meta, loop: "yes" }), /loop/);
+    assert.match(metaProblem(meta, { poses: [] }), /act.poses/);
+    assert.match(metaProblem(meta, { poses: [[0, null]] }), /act.poses/);
+    assert.match(metaProblem(meta, { poses: [[0, {}]], hits: [{}] }), /act.hits/);
+    assert.equal(metaProblem(meta, { poses: [[0, {}]], hits: [{ t: 0.1 }] }), undefined);
+  });
+
   it("reads relative imports and resolves them within the folder", () => {
     const source = `import { a,\n  b } from "../../core/index.js";\nimport { c } from './_lib.js';\nexport { d } from "../fire/fireball.js";\nconst e = await import("./more.js");\nimport "pixelfx";\n// from "nothing"`;
     assert.deepEqual(importsOf(source), ["../../core/index.js", "./_lib.js", "../fire/fireball.js", "./more.js"]);
@@ -420,6 +445,13 @@ describe("pixelfx check", () => {
     assert.match(errors({ meta: good, draw: (p: any) => p.px(calls++ % 5, 0, 0xffffffff) }), /not deterministic/);
   });
 
+  it("draws at 120 fps at most however many frames meta asks for", () => {
+    const result = checkEffect({ meta: { ...good, fps: 1e6 }, draw: dot }, "");
+    assert.deepEqual(result.errors, []);
+    assert.equal(result.stats.frames, 60);
+    assert.match(checkEffect({ meta: { ...good, fps: "30" }, draw: dot }, "").errors.join(), /meta.fps/);
+  });
+
   it("warns about spills and one-shots that don't end empty", () => {
     const warnings = checkEffect({ meta: good, draw: (p: any) => (p.px(0, 0, 0xffffffff), p.px(30, 0, 0xffffffff)) }, "").warnings.join("\n");
     assert.match(warnings, /outside the 32x32 canvas/);
@@ -471,5 +503,11 @@ describe("pixelfx presets and settings", () => {
     assert.deepEqual(doc.presets[1], { odd: true });
     assert.deepEqual(parsePresets(presetsText(doc)), doc);
     assert.throws(() => withPreset(doc, { name: " ", effect: "fire/torch", source: "builtin", settings: {} }), /1 to 60/);
+    // A renamed project effect takes its presets along; the built-in one's stay.
+    const renamed = renamePresets(doc, "fire/torch", "fire/blue-torch");
+    assert.equal(presetsFor(renamed, "fire/blue-torch", "project").length, 1);
+    assert.equal(presetsFor(renamed, "fire/torch", "project").length, 0);
+    assert.equal(presetsFor(renamed, "fire/torch", "builtin").length, 2);
+    assert.equal(renamePresets(doc, "fire/none", "fire/other"), doc);
   });
 });

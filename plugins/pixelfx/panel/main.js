@@ -31,7 +31,10 @@ import {
   freeEffectId,
   isEffectId,
   LICENSE_PATH,
+  metaProblem,
   missingImports,
+  renamePresets,
+  builtinIdOf,
   licenseNotice,
   parsePresets,
   planEffect,
@@ -44,6 +47,10 @@ import {
 } from "./project.js";
 import { drawThumbnail, StageRunner } from "./stage.js";
 import { TEXT } from "./i18n.js";
+
+// What the agent hears is English; a toast says it in the panel's language.
+const uiError = (english, local) => Object.assign(new Error(english), { local });
+const localText = (error) => error?.local ?? (error instanceof Error ? error.message : String(error));
 
 const host = await connect();
 const zh = host.locale === "zh-CN";
@@ -83,9 +90,16 @@ function entry(id, source, raw, error) {
 
 const LIBRARY = Object.entries(effects).map(([id, mod]) => entry(id, "builtin", mod));
 
-// pixelfx's Chinese names are for its own effects; a project's copy may have changed since.
-const nameOf = (fx) => (zh && fx.source === "builtin" && ZH_FX[fx.id]?.[0]) || fx.meta.name || fx.id.split("/")[1];
-const descOf = (fx) => (zh && fx.source === "builtin" && ZH_FX[fx.id]?.[1]) || fx.meta.desc || "";
+// pixelfx's Chinese names are for its own effects, and for a copy whose name is still the built-in one's.
+const BUILTIN_IDS = new Set(LIBRARY.map((fx) => fx.id));
+function zhOf(fx) {
+  if (!zh) return undefined;
+  if (fx.source === "builtin") return ZH_FX[fx.id];
+  const base = builtinIdOf(fx.id, BUILTIN_IDS);
+  return base && LIBRARY.find((item) => item.id === base).meta.name === fx.meta.name ? ZH_FX[base] : undefined;
+}
+const nameOf = (fx) => zhOf(fx)?.[0] || fx.meta.name || fx.id.split("/")[1];
+const descOf = (fx) => zhOf(fx)?.[1] || fx.meta.desc || "";
 const catName = (id) => (zh ? ZH_CATEGORIES[id]?.name : categories.find((c) => c.id === id)?.name) || id;
 const backdropName = (key) => (zh ? ZH_BACKDROPS[key] : t.backdrops[key]) || key;
 const paletteName = (key) => (zh ? ZH_PALETTES[key] : key[0].toUpperCase() + key.slice(1)) || key;
@@ -370,6 +384,18 @@ const stage = new StageRunner($("#stage-canvas"), $("#stage-viewport"), state, {
 
 function selectEffect(fx, cfg) {
   if (!fx) return;
+  try {
+    showEffect(fx, cfg);
+  } catch (error) {
+    if (fx.source !== "project" || fx.error) throw error;
+    const broken = { ...entry(fx.id, "project", fx.raw, errorText(error)), text: fx.text };
+    state.project = state.project.map((item) => (item === fx ? broken : item));
+    if (state.space === "project") applyFilter();
+    showEffect(broken);
+  }
+}
+
+function showEffect(fx, cfg) {
   state.fx = fx;
   state.cfg = cfg ?? defaultConfig(fx);
   lastShown[fx.source] = fx.key;
@@ -876,7 +902,7 @@ async function addToLibrary(blob, name) {
   try {
     await host.library.add(blob, { name, prompt: `pixelfx ${state.fx.id}` });
   } catch (error) {
-    if (!state.visible) throw new Error(t.libraryHidden);
+    if (!state.visible) throw uiError(TEXT.en.libraryHidden, t.libraryHidden);
     throw error;
   }
 }
@@ -914,9 +940,12 @@ async function exportFrames(fx, cfg, name, write) {
 async function runExport(format) {
   if (state.exporting) throw new Error("An export is already running");
   if (!state.fx) throw new Error("No effect is shown");
-  if (state.fx.error) throw new Error(t.loadError(state.fx.error));
+  if (state.fx.error) throw uiError(TEXT.en.loadError(state.fx.error), t.loadError(state.fx.error));
   const big = tooBig({ contact: format === "contact" });
-  if (big) throw new Error(big);
+  if (big) {
+    const { frames, w, h } = exportBudget(state.fx, state.cfg, { contact: format === "contact" });
+    throw uiError(TEXT.en.tooBig(frames, w, h), big);
+  }
   const fx = state.fx;
   const cfg = exportConfig();
   const name = fx.id.split("/")[1];
@@ -964,7 +993,7 @@ async function exportAs(format) {
     if (saved.length) toast(t.savedFiles(saved), "success");
   } catch (error) {
     const saved = error.saved ?? [];
-    toast(saved.length ? t.exportFailedAfter(errorText(error), saved) : t.exportFailed(errorText(error)), "danger");
+    toast(saved.length ? t.exportFailedAfter(localText(error), saved) : t.exportFailed(localText(error)), "danger");
   }
 }
 
@@ -1001,28 +1030,21 @@ async function projectFiles() {
   }
 }
 
-const point = (value) => Array.isArray(value) && value.length === 2 && value.every(Number.isFinite);
-
-/** What in an effect's meta the panel can't play it with, or undefined. The check says more. */
-function metaProblem(meta) {
-  if (!point(meta.size) || meta.size.some((v) => v < 1)) return "meta.size must be [w, h]";
-  if (!point(meta.origin)) return "meta.origin must be [x, y]";
-  if (!(meta.duration > 0)) return "meta.duration must be above 0";
-  if (!(meta.fps > 0)) return "meta.fps must be above 0";
-  if (!meta.options || typeof meta.options !== "object" || !Array.isArray(meta.tags)) return "meta.options must be an object and meta.tags a list";
-  return undefined;
-}
-
-/** Imports a project effect; one that throws, or isn't an effect, comes back with why. */
+/**
+ * Imports a project effect; one that throws, or isn't an effect, comes back
+ * with why. Each keeps the text it was read as, which says whether the
+ * module is the file as it is now.
+ */
 async function importEffect(id) {
+  const text = await host.files.text(effectPath(id)).catch(() => undefined);
+  const made = (mod, error) => ({ ...entry(id, "project", mod, error), text });
   try {
     const mod = await host.modules.import(effectPath(id));
-    if (!mod.meta || typeof mod.meta !== "object") return entry(id, "project", mod, "exports no meta");
-    if (typeof mod.draw !== "function" && typeof mod.create !== "function") return entry(id, "project", mod, "exports neither draw nor create");
-    const problem = metaProblem(fullMeta(mod.meta));
-    return entry(id, "project", mod, problem);
+    if (!mod.meta || typeof mod.meta !== "object") return made(mod, "exports no meta");
+    if (typeof mod.draw !== "function" && typeof mod.create !== "function") return made(mod, "exports neither draw nor create");
+    return made(mod, metaProblem(fullMeta(mod.meta), mod.act));
   } catch (error) {
-    return entry(id, "project", undefined, errorText(error));
+    return made(undefined, errorText(error));
   }
 }
 
@@ -1053,7 +1075,8 @@ let projectReady = Promise.resolve();
 /** The settings of `old` (by default the effect shown) carried over to `fx`, such as a copy or a new version of it. */
 function carried(fx, old = state.fx) {
   if (!old || old.error || fx.error) return undefined;
-  return applySettings(defaultConfig(fx), settingsOf(state.cfg, old), fx).cfg;
+  const { cfg } = applySettings(defaultConfig(fx), settingsOf(state.cfg, old), fx);
+  return { ...cfg, scaleWithCanvas: state.cfg.scaleWithCanvas, ...(cfg.palette ? { paletteKey: state.cfg.paletteKey } : {}) };
 }
 
 // A renamed effect stays shown under its new name.
@@ -1080,8 +1103,8 @@ function refreshSpace() {
   const id = renamed.get(fx.id) ?? fx.id;
   renamed.delete(fx.id);
   const next = state.project.find((item) => item.id === id);
-  // A module that didn't change is the same module, so the stage keeps playing it.
-  if (next && next.raw === fx.raw && next.error === fx.error) {
+  // An effect whose file didn't change keeps playing as it was.
+  if (next && next.id === fx.id && (next.raw === fx.raw || (next.text !== undefined && next.text === fx.text)) && next.error === fx.error) {
     state.fx = next;
     highlightCarousel(true);
   } else if (next) selectEffect(next, carried(next));
@@ -1132,7 +1155,9 @@ host.on("files", ({ paths, truncated } = {}) => {
   reloadTimer = setTimeout(() => {
     const done = reloadDone;
     reloadPending = undefined;
-    void loadProject().then(done);
+    loadProject()
+      .finally(done)
+      .catch(() => {});
   }, 150);
 });
 
@@ -1178,10 +1203,10 @@ function writeEffect(id, code, options) {
 }
 
 async function writeNow(id, code, { fresh = false, onWritten } = {}) {
-  if (!isEffectId(id)) throw new Error(t.badName);
+  if (!isEffectId(id)) throw uiError(TEXT.en.badName, t.badName);
   const listing = await projectFiles();
   if (listing.truncated) throw new Error(`${ROOT}/ has too many files to check what's already there`);
-  if (fresh && listing.paths.has(effectPath(id))) throw new Error(t.nameTaken);
+  if (fresh && listing.paths.has(effectPath(id))) throw uiError(TEXT.en.nameTaken, t.nameTaken);
   const plan = await planEffect({ id, source: code, readLib, existing: listing.paths, license: await licenseText() });
   const written = plan.writes.map((write) => write.path);
   const heard = filesHeard(written);
@@ -1299,7 +1324,7 @@ async function saveEditor() {
       runCheck(loaded, code);
     }
   } catch (error) {
-    toast(t.failed(errorText(error)), "danger");
+    toast(t.failed(localText(error)), "danger");
   } finally {
     saving = false;
     $("#btn-code-save").disabled = false;
@@ -1398,7 +1423,7 @@ async function newEffect() {
     state.codeMode = "source";
     showView("code");
   } catch (error) {
-    toast(t.failed(errorText(error)), "danger");
+    toast(t.failed(localText(error)), "danger");
   }
 }
 
@@ -1417,17 +1442,22 @@ async function renameEffect(fx) {
     await change(async () => {
       const heard = filesHeard([fx.path, to]);
       await host.files.move(fx.path, to);
-    for (const map of [state.drafts, state.checks]) {
-      if (map.has(fx.key)) map.set(`project:${id}`, map.get(fx.key));
-      map.delete(fx.key);
-    }
+      for (const map of [state.drafts, state.checks]) {
+        if (map.has(fx.key)) map.set(`project:${id}`, map.get(fx.key));
+        map.delete(fx.key);
+      }
       renamed.set(fx.id, id);
+      const doc = state.presets && renamePresets(state.presets, fx.id, id);
+      if (doc && doc !== state.presets) {
+        await host.files.write(PRESETS_PATH, presetsText(doc));
+        state.presets = doc;
+      }
       await heard;
       await loadProject();
     });
   } catch (error) {
     renamed.delete(fx.id);
-    toast(t.failed(errorText(error)), "danger");
+    toast(t.failed(localText(error)), "danger");
   }
 }
 
@@ -1451,7 +1481,7 @@ async function removeEffect(fx) {
     });
     toast(t.removed(fx.path), "success");
   } catch (error) {
-    toast(t.failed(errorText(error)), "danger");
+    toast(t.failed(localText(error)), "danger");
   }
 }
 
@@ -1464,7 +1494,7 @@ $("#btn-copy").addEventListener("click", async (event) => {
     toast([t.copied(result.path), result.kept.length ? t.keptFiles(result.kept.length) : ""].filter(Boolean).join(" "), "success");
     if (result.fx) openEffect(result.fx, carried(result.fx, fx));
   } catch (error) {
-    toast(t.failed(errorText(error)), "danger");
+    toast(t.failed(localText(error)), "danger");
   } finally {
     $("#btn-copy").disabled = false;
   }
@@ -1540,6 +1570,7 @@ function applyConfig(cfg) {
 
 $("#sel-preset").addEventListener("change", (event) => {
   const fx = state.fx;
+  if (event.target.value === "") return applyConfig(defaultConfig(fx));
   const preset = presetsFor(state.presets ?? { presets: [] }, fx.id, fx.source)[Number(event.target.value)];
   if (preset) applyConfig(applySettings(defaultConfig(fx), preset.settings, fx).cfg);
 });
@@ -1564,7 +1595,7 @@ $("#btn-save-preset").addEventListener("click", async () => {
     $("#sel-preset").value = String(index);
     toast(t.presetSaved(values.name), "success");
   } catch (error) {
-    toast(t.failed(errorText(error)), "danger");
+    toast(t.failed(localText(error)), "danger");
   }
 });
 
@@ -1646,18 +1677,35 @@ function handleTools() {
   });
   host.tools.handle("write_effect", async ({ effect, code }) => {
     await projectSettled();
+    const same = state.fx?.source === "project" && state.fx.id === effect;
     const { fx, written, kept, loaded } = await writeEffect(effect, code);
     if (!fx) throw new Error(`Wrote ${written.join(", ")}, but ${effectPath(effect)} isn't listed`);
+    // The agent's code is the file now; Undo brings the person's back, and a Save of their old draft would quietly undo the agent's.
+    const draft = state.drafts.delete(fx.key);
+    if (draft) {
+      toast(t.draftReplaced(fx.path));
+      if (state.fx?.key === fx.key && state.view === "code") void refreshCode();
+    }
+    const dropped = draft ? { note: "The person's unsaved edits to this effect were dropped; they were told." } : {};
     if (!loaded)
-      return { effect, path: fx.path, written, kept, loaded: false, note: "Saved, but the app hasn't reported the change yet, so it wasn't checked. Call check_effect shortly." };
+      return { effect, path: fx.path, written, kept, loaded: false, note: "Saved, but the app hasn't reported the change yet, so it wasn't checked. Call check_effect shortly.", ...(draft ? { draftDropped: true } : {}) };
     const result = runCheck(fx, code);
-    openEffect(fx, carried(fx));
-    return { effect, path: fx.path, written, kept, ...result };
+    openEffect(fx, same ? carried(fx) : undefined);
+    return { effect, path: fx.path, written, kept, ...result, ...dropped };
   });
   host.tools.handle("check_effect", async ({ effect, source }) => {
     await projectSettled();
-    const fx = requireEffect(effect, source);
-    return { effect: fx.id, source: fx.source, ...runCheck(fx, await sourceOf(fx)) };
+    let fx = requireEffect(effect, source);
+    let text = await sourceOf(fx);
+    if (fx.source === "project" && text !== fx.text) {
+      // The file changed since it was imported: wait until the app reports it and it loads again.
+      await filesHeard([fx.path]);
+      await loadProject();
+      fx = requireEffect(effect, "project");
+      text = await sourceOf(fx);
+      if (text !== fx.text) throw new Error(`${fx.path} is still changing; check it again in a moment`);
+    }
+    return { effect: fx.id, source: fx.source, ...runCheck(fx, text) };
   });
   host.tools.handle("show_effect", async ({ effect, source, view, settings, reset }) => {
     await projectSettled();

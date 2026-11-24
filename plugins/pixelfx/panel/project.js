@@ -83,6 +83,37 @@ export async function dependencies(source, at, readLib) {
   return files;
 }
 
+/** The built-in effect a project effect was copied as, by its id or the id before a `-2`, `-3` suffix, or undefined. */
+export function builtinIdOf(id, builtinIds) {
+  if (builtinIds.has(id)) return id;
+  const base = id.replace(/-\d+$/, "");
+  return base !== id && builtinIds.has(base) ? base : undefined;
+}
+
+const point = (value) => Array.isArray(value) && value.length === 2 && value.every(Number.isFinite);
+const positive = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
+
+/**
+ * What in a module's meta (with the gallery's defaults) or `act` the panel
+ * can't show it with, or undefined. The check says more.
+ */
+export function metaProblem(meta, act) {
+  if (!point(meta.size) || meta.size.some((v) => v < 1)) return "meta.size must be [w, h]";
+  if (!point(meta.origin)) return "meta.origin must be [x, y]";
+  if (!positive(meta.duration)) return "meta.duration must be a number above 0";
+  if (!positive(meta.fps)) return "meta.fps must be a number above 0";
+  if (typeof meta.loop !== "boolean") return "meta.loop must be true or false";
+  if (!meta.options || typeof meta.options !== "object" || !Array.isArray(meta.tags)) return "meta.options must be an object and meta.tags a list";
+  if (act !== undefined) {
+    const key = (item) => Array.isArray(item) && Number.isFinite(item[0]) && item[1] && typeof item[1] === "object";
+    if (!act || typeof act !== "object" || !Array.isArray(act.poses) || !act.poses.length || !act.poses.every(key))
+      return "act.poses must be a list of [t, pose]";
+    if (act.hits !== undefined && (!Array.isArray(act.hits) || !act.hits.every((hit) => hit && Number.isFinite(hit.t))))
+      return "act.hits must be a list of { t }";
+  }
+  return undefined;
+}
+
 /** The relative imports of the project effect `id`'s `source` that no file among the project's `paths` answers. */
 export function missingImports(source, id, paths) {
   const at = effectPath(id);
@@ -258,6 +289,13 @@ export function withPreset(doc, preset) {
   const same = (other) => validPreset(other) && other.effect === preset.effect && other.source === preset.source && other.name === name;
   const presets = doc.presets.filter((other) => !same(other));
   return { ...doc, version: doc.version ?? 1, presets: [...presets, { ...preset, name }] };
+}
+
+/** The presets file with the project effect `from`'s presets moved to `to`, or the same object when it has none. */
+export function renamePresets(doc, from, to) {
+  const moves = (preset) => validPreset(preset) && preset.source === "project" && preset.effect === from;
+  if (!doc.presets.some(moves)) return doc;
+  return { ...doc, presets: doc.presets.map((preset) => (moves(preset) ? { ...preset, effect: to } : preset)) };
 }
 
 /** The presets file's text. */

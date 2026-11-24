@@ -107,7 +107,7 @@ function checkMeta(meta, source, errs, notes) {
     errs.push("meta.size must be [w, h], whole pixels 8..480");
   if (!Array.isArray(meta.origin) || meta.origin.length !== 2) errs.push("meta.origin must be [x, y]");
   if (!(meta.duration > 0 && meta.duration <= 12)) errs.push("meta.duration must be 0..12 s");
-  if (!(meta.fps > 0)) errs.push("meta.fps must be above 0");
+  if (!(typeof meta.fps === "number" && meta.fps > 0)) errs.push("meta.fps must be a number above 0");
   if (!BACKDROPS.includes(meta.bg)) errs.push(`meta.bg must be one of ${BACKDROPS.join(", ")}`);
   const taken = Object.keys(meta.options ?? {}).filter((k) => RESERVED.includes(k));
   if (taken.length) errs.push(`option ${taken.join(", ")} is reserved for placement and glow: rename it`);
@@ -127,7 +127,9 @@ function checkPixels(fx, errs, notes, stats) {
   };
   const opts = { ...(meta.options ?? {}), seed: meta.options?.seed ?? 1 };
   if (meta.actor) opts.actor = stockActor(meta.actor === 2 ? 2 : 1);
-  const n = Math.max(2, Math.round(meta.duration * meta.fps));
+  // Frames are drawn at 120 fps at most, so a huge frame rate checks in the same time as that.
+  const fps = Math.min(meta.fps, 120);
+  const n = Math.max(2, Math.round(meta.duration * fps));
   let maxPx = 0;
   let spill = 0;
   let spillLight = 0;
@@ -221,7 +223,7 @@ function checkPixels(fx, errs, notes, stats) {
       const inst = createFx(mod, { x: meta.origin[0], y: meta.origin[1], ...opts, seed });
       const shots = [];
       for (let i = 0; i <= n; i++) {
-        if (i) inst.update(1 / meta.fps);
+        if (i) inst.update(1 / fps);
         clearFrame(frame);
         const t0 = performance.now();
         inst.draw(frame);
