@@ -20,6 +20,30 @@ import { StageRunner } from "../plugins/pixelfx/panel/stage.js";
 import { TEXT } from "../plugins/pixelfx/panel/i18n.js";
 // @ts-expect-error The panel is plain JavaScript.
 import { checkEffect } from "../plugins/pixelfx/panel/check.js";
+// @ts-expect-error The panel is plain JavaScript.
+import { band, encodeWav, finish, RATE, sfxRng } from "../plugins/pixelfx/panel/sfx-core.js";
+import {
+  audioExtension,
+  audioType,
+  manifestPath,
+  manifestText,
+  modelDuration,
+  nextModelKey,
+  parseManifest,
+  renderVariant,
+  scriptVariants,
+  SFX_CORE_PATH,
+  sfxDir,
+  sfxIdOf,
+  sfxScriptPath,
+  sfxTemplate,
+  soundPrompt,
+  withModelVariant,
+  withScriptVariants,
+  // @ts-expect-error The panel is plain JavaScript.
+} from "../plugins/pixelfx/panel/sfx.js";
+// @ts-expect-error The panel is plain JavaScript.
+import { endTurn, readable, reduceTurn, systemPrompt, toolLabel, toolSummary, turnsFromHistory } from "../plugins/pixelfx/panel/agent.js";
 import {
   applySettings,
   builtinIdOf,
@@ -509,5 +533,143 @@ describe("pixelfx presets and settings", () => {
     assert.equal(presetsFor(renamed, "fire/torch", "project").length, 0);
     assert.equal(presetsFor(renamed, "fire/torch", "builtin").length, 2);
     assert.equal(renamePresets(doc, "fire/none", "fire/other"), doc);
+  });
+});
+
+// An effect's sound: the engine ported from pixelfx's browser backend, the
+// script contract and the list of variants, and the assistant's drawing of a run.
+
+describe("pixelfx sound", () => {
+  it("makes the same sound from the same seed, and encodes it as 16-bit WAV", () => {
+    const a = sfxRng(7).noise(400);
+    assert.deepEqual(sfxRng(7).noise(400), a);
+    assert.notDeepEqual(sfxRng(8).noise(400), a);
+    const pcm = finish(band(a, 200, 4000), -16.5, 0.15);
+    assert.ok(pcm.every((value: number) => Math.abs(value) <= 0.9));
+    const wav = encodeWav(pcm);
+    const view = new DataView(wav.buffer);
+    const ascii = (at: number) => String.fromCharCode(...wav.slice(at, at + 4));
+    assert.deepEqual([ascii(0), ascii(8), ascii(12), ascii(36)], ["RIFF", "WAVE", "fmt ", "data"]);
+    assert.equal(view.getUint32(4, true), wav.length - 8);
+    assert.deepEqual([view.getUint16(20, true), view.getUint16(22, true), view.getUint32(24, true), view.getUint16(34, true)], [1, 1, RATE, 16]);
+    assert.equal(view.getUint32(40, true), pcm.length * 2);
+    assert.equal(encodeWav([2, -2, Number.NaN]).length, 50);
+    assert.deepEqual([...new Int16Array(encodeWav([2, -2, Number.NaN]).buffer.slice(44))], [32767, -32768, 0]);
+  });
+
+  it("renders a project's script, which imports the engine copied beside it", async () => {
+    await withScratch(async (root) => {
+      const core = await readFile(fileURLToPath(new URL("../plugins/pixelfx/panel/sfx-core.js", import.meta.url)), "utf8");
+      await writePlan(root, [
+        { path: SFX_CORE_PATH, text: core },
+        { path: sfxScriptPath("fire/torch"), text: sfxTemplate("fire/torch") },
+      ]);
+      assert.equal(sfxIdOf(sfxScriptPath("fire/torch")), "fire/torch");
+      const mod = await import(pathToFileURL(path.join(root, sfxScriptPath("fire/torch"))).href);
+      const entries = scriptVariants(mod);
+      assert.deepEqual(entries.map(([key]: [string]) => key), ["default", "bright"]);
+      const first = await renderVariant(...entries[0]);
+      const again = await renderVariant(...entries[0]);
+      assert.deepEqual(again.wav, first.wav);
+      assert.equal(first.wav.length, 44 + Math.round(0.5 * RATE) * 2);
+      assert.equal(first.entry.duration, 0.5);
+      assert.equal(first.entry.rmsDb, -16.5);
+      assert.equal(first.entry.bars.length, 56);
+      assert.deepEqual(first.entry.cues, [{ t: 0, kind: "hit" }]);
+    });
+  });
+
+  it("says what's wrong with a script's variants", async () => {
+    assert.throws(() => scriptVariants({}), /export variants/);
+    assert.throws(() => scriptVariants({ variants: {} }), /empty/);
+    assert.throws(() => scriptVariants({ variants: { Big: { samples: [] } } }), /kebab-case/);
+    assert.throws(() => scriptVariants({ variants: { "model-1": { samples: [1] } } }), /model makes/);
+    assert.throws(() => scriptVariants({ variants: { a: { label: "A" } } }), /no samples/);
+    assert.throws(() => scriptVariants({ variants: { a: { samples: [1], texture: "x" } } }), /texture must be a number/);
+    await assert.rejects(renderVariant("a", { samples: () => [] }), /silent/);
+    await assert.rejects(renderVariant("a", { samples: 3 }), /array of samples/);
+    await assert.rejects(renderVariant("a", { samples: new Float64Array(13 * RATE) }), /longer than 12 seconds/);
+  });
+
+  it("keeps model-made variants when the script renders, and lists the files it no longer makes", () => {
+    const prev = parseManifest(
+      manifestText({
+        version: 1,
+        effect: "fire/torch",
+        variants: [
+          { id: "default", file: "default.wav", source: "script" },
+          { id: "old", file: "old.wav", source: "script" },
+          { id: "model-1", file: "model-1.mp3", source: "model" },
+        ],
+      }),
+    );
+    const { doc, stale } = withScriptVariants(prev, "fire/torch", [{ id: "default", file: "default.wav", source: "script" }]);
+    assert.deepEqual(doc.variants.map((item: any) => item.id), ["default", "model-1"]);
+    assert.deepEqual(stale, ["old.wav"]);
+    assert.equal(nextModelKey(doc), "model-2");
+    assert.equal(nextModelKey(undefined), "model-1");
+    assert.deepEqual(withModelVariant(undefined, "fire/torch", { id: "model-1", file: "model-1.wav" }).variants, [{ id: "model-1", file: "model-1.wav", source: "model" }]);
+    assert.throws(() => parseManifest("{"), SyntaxError);
+    assert.throws(() => parseManifest('{"version": 2, "variants": []}'), /sound list/);
+    assert.throws(() => parseManifest('{"version": 1, "variants": [{"id": "x", "file": "../../fx/fire/torch.js"}]}'), /sound list/);
+    assert.equal(manifestPath("fire/torch"), "pixelfx/sfx/fire/torch/sfx.json");
+    assert.equal(sfxDir("fire/torch"), "pixelfx/sfx/fire/torch");
+  });
+
+  it("asks a model for a sound that fits the effect", () => {
+    const prompt = soundPrompt({ name: "Frost nova", desc: "A ring of ice bursts out.", tags: ["ice", "burst"], duration: 0.8, loop: false, hits: [0.123] });
+    assert.match(prompt, /"Frost nova": A ring of ice bursts out\. Feel: ice, burst\. About 0.8 seconds.*Impacts at 0.12s\. No music, no voice\.$/);
+    assert.match(soundPrompt({ name: "Torch", desc: "", duration: 1.5, loop: true }), /A seamless loop of 1.5 seconds/);
+    assert.equal(modelDuration(0.2, { minDurationSeconds: 0.5, maxDurationSeconds: 22 }), 0.5);
+    assert.equal(modelDuration(40, {}), 22);
+    assert.equal(modelDuration(1.234, undefined), 1.2);
+    assert.equal(audioExtension("audio/mpeg"), "mp3");
+    assert.equal(audioExtension("application/octet-stream", "zap.ogg"), "ogg");
+    assert.equal(audioExtension("", "zap"), "mp3");
+    assert.equal(audioType("model-1.wav"), "audio/wav");
+  });
+});
+
+describe("pixelfx assistant", () => {
+  it("draws a run's events as one turn of text and tool steps", () => {
+    let turn: { role: string; items: any[] } = { role: "assistant", items: [] };
+    turn = reduceTurn(turn, { type: "text", text: "Making it brighter." });
+    turn = reduceTurn(turn, { type: "tool", id: "1", name: "ohmygame__pixelfx__write_effect", input: { effect: "fire/torch", code: "…" } });
+    assert.equal(turn.items[1].done, false);
+    turn = reduceTurn(turn, { type: "tool.result", id: "1", name: "ohmygame__pixelfx__write_effect", result: '{"errors":["meta.size must be [w, h]"]}', error: true });
+    turn = reduceTurn(turn, { type: "tool", id: "2", name: "show_effect", input: { effect: "fire/torch" } });
+    const stopped = endTurn(turn, { stopped: "user" });
+    assert.deepEqual(stopped.items.map((item: any) => [item.kind, item.done, item.error]), [["text", undefined, undefined], ["tool", true, true], ["tool", true, true]]);
+    assert.equal(stopped.items[2].stopped, true);
+    assert.equal(stopped.stopped, "user");
+    assert.equal(toolLabel(turn.items[1].name, turn.items[1].input), "write_effect · fire/torch");
+    assert.equal(toolSummary(turn.items[1].result), "meta.size must be [w, h]");
+    assert.equal(readable('{"a":1}'), '{\n  "a": 1\n}');
+    assert.equal(readable("Timed out"), "Timed out");
+    // The last reply joins the turn once, whether or not a text event already showed it.
+    assert.equal(endTurn(turn, { text: "Making it brighter." }).items.length, 3);
+    assert.equal(endTurn(turn, { text: "Done." }).items.at(-1).text, "Done.");
+  });
+
+  it("reads the kept conversation back as turns", () => {
+    const turns = turnsFromHistory([
+      { role: "user", text: "Make it blue", at: "1" },
+      { role: "assistant", text: "Writing.", tools: [{ id: "a", name: "write_effect", input: { effect: "fire/torch" }, result: "{}" }], at: "2" },
+      { role: "assistant", text: "Done.", at: "3" },
+      { role: "user", text: "Thanks", images: 1, at: "4" },
+    ]);
+    assert.deepEqual(turns.map((turn: any) => turn.role), ["user", "assistant", "user"]);
+    assert.deepEqual(turns[1].items.map((item: any) => item.kind), ["text", "tool", "text"]);
+    assert.equal(turns[1].items[1].done, true);
+    assert.deepEqual(turnsFromHistory(undefined), []);
+  });
+
+  it("tells the model what the panel shows, in English", () => {
+    const prompt = systemPrompt("The Pixel Effects panel shows the built-in effect fire/torch.");
+    assert.match(prompt, /write_sfx/);
+    assert.match(prompt, /only when they ask/);
+    assert.ok(prompt.endsWith("The Pixel Effects panel shows the built-in effect fire/torch."));
+    assert.ok(!/[一-鿿]/.test(prompt));
+    for (const locale of ["en", "zh-CN"]) for (const [, chip] of TEXT[locale].agent.chips) assert.ok(!/[一-鿿]/.test(chip));
   });
 });

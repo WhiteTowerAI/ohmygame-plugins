@@ -27,7 +27,9 @@
   "capabilities": {
     "project.files": "write",
     "library": true,
-    "composer": true
+    "composer": true,
+    "models": true,
+    "media": true
   },
   "contributes": {
     "panels": [
@@ -85,6 +87,26 @@
         "input": "./tools/export-effect.json",
         "panel": "studio",
         "timeoutSeconds": 120
+      },
+      {
+        "name": "read_sfx",
+        "description": "Returns an effect's sound: its script in pixelfx/sfx/ if any, the variants rendered or made by a model, and the effect's length and hits to line a sound up with.",
+        "input": "./tools/read-sfx.json",
+        "panel": "studio"
+      },
+      {
+        "name": "write_sfx",
+        "description": "Writes an effect's sound script, pixelfx/sfx/<category>/<name>.js, adds the sound engine it imports when missing, and renders each of its variants to a WAV file. Returns the variants, or why the script failed.",
+        "input": "./tools/write-sfx.json",
+        "panel": "studio",
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "make_sfx_with_model",
+        "description": "Makes a sound for an effect with the person's audio model and keeps it as one of its variants. It costs the person money: use it only when they ask for a model-made sound.",
+        "input": "./tools/make-sfx-with-model.json",
+        "panel": "studio",
+        "timeoutSeconds": 300
       }
     ],
     "skills": "./skills/"

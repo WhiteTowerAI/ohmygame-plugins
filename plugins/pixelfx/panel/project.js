@@ -128,7 +128,7 @@ export function licenseNotice(license) {
   return [
     "# pixelfx",
     "",
-    `\`core/\` and the effects in \`fx/\` copied from the Pixel Effects plugin are from pixelfx (${CORE_VERSION}, https://github.com/patch-gg/pixelfx), under the MIT license below. Effects written in this project are its own.`,
+    `\`core/\`, \`sfx-core/\` and the effects in \`fx/\` copied from the Pixel Effects plugin are from pixelfx (${CORE_VERSION}, https://github.com/patch-gg/pixelfx), under the MIT license below. Effects written in this project are its own.`,
     "",
     "`core/sim.js` and the effects that say so at the top of their file adapt Sprite Fusion's pixel art VFX (https://www.spritefusion.com/pixel-art-vfx), Copyright (c) 2026 Hugo Duprez, MIT License. `core/act.js` adapts how Hollow Crown plays its skills (https://github.com/rehan-remade/hollow-crown), Copyright (c) 2026 rehan-remade, MIT License.",
     "",
