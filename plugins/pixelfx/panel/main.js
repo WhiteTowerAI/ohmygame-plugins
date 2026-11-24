@@ -1,8 +1,11 @@
 // The Pixel Effects panel: pixelfx's gallery in OhMyGame. It browses the
 // built-in effects, plays one on the stage with the inspector's settings,
 // shows it as a sprite sheet or as code, and exports it to the Library or
-// the project. Ported from pixelfx's gallery/app.js (MIT, see lib/LICENSE);
-// the stage is in stage.js, rendering for export in export.js.
+// the project. The project's own effects live in its `pixelfx/` folder, where
+// the panel copies, writes, checks and plays them, and the agent's tools do
+// the same through it. Ported from pixelfx's gallery/app.js (MIT, see
+// lib/LICENSE); the stage is in stage.js, rendering for export in export.js,
+// the project's files in project.js and the check in check.js.
 import { connect } from "/_ohmygame/plugin-ui.js";
 import { effects, categories } from "./lib/fx/index.js";
 import { actTiming, PAL } from "./lib/core/index.js";
@@ -19,8 +22,35 @@ import {
   sheetLayout,
 } from "./export.js";
 import { defaultConfig, effectOptions, fullMeta, isColorRamp, normHex } from "./options.js";
+import { checkEffect } from "./check.js";
+import {
+  applySettings,
+  effectIdOf,
+  effectPath,
+  effectTemplate,
+  freeEffectId,
+  isEffectId,
+  LICENSE_PATH,
+  metaProblem,
+  missingImports,
+  renamePresets,
+  builtinIdOf,
+  licenseNotice,
+  parsePresets,
+  planEffect,
+  PRESETS_PATH,
+  presetsFor,
+  presetsText,
+  ROOT,
+  settingsOf,
+  withPreset,
+} from "./project.js";
 import { drawThumbnail, StageRunner } from "./stage.js";
 import { TEXT } from "./i18n.js";
+
+// What the agent hears is English; a toast says it in the panel's language.
+const uiError = (english, local) => Object.assign(new Error(english), { local });
+const localText = (error) => error?.local ?? (error instanceof Error ? error.message : String(error));
 
 const host = await connect();
 const zh = host.locale === "zh-CN";
@@ -50,13 +80,26 @@ const errorText = (error) => (error instanceof Error ? error.message : String(er
 // ---------------------------------------------------------------------------
 // The built-in effects and their names in the panel's language.
 
-const LIBRARY = Object.entries(effects).map(([id, mod]) => {
-  const meta = fullMeta(mod.meta);
-  return { id, cat: id.split("/")[0], mod: { ...mod, meta }, meta };
-});
+/** An effect as the panel shows it: `raw` is its module as it is, `mod` the same with the gallery's meta defaults. */
+function entry(id, source, raw, error) {
+  const name = typeof raw?.meta?.name === "string" && raw.meta.name ? raw.meta.name : id.split("/")[1];
+  const meta = fullMeta(error ? { name } : raw.meta);
+  const mod = error ? { meta, draw() {} } : { ...raw, meta };
+  return { key: `${source}:${id}`, id, cat: id.split("/")[0], source, ...(source === "project" ? { path: effectPath(id) } : {}), raw, mod, meta, ...(error ? { error } : {}) };
+}
 
-const nameOf = (fx) => (zh && ZH_FX[fx.id]?.[0]) || fx.meta.name || fx.id.split("/")[1];
-const descOf = (fx) => (zh && ZH_FX[fx.id]?.[1]) || fx.meta.desc || "";
+const LIBRARY = Object.entries(effects).map(([id, mod]) => entry(id, "builtin", mod));
+
+// pixelfx's Chinese names are for its own effects, and for a copy whose name is still the built-in one's.
+const BUILTIN_IDS = new Set(LIBRARY.map((fx) => fx.id));
+function zhOf(fx) {
+  if (!zh) return undefined;
+  if (fx.source === "builtin") return ZH_FX[fx.id];
+  const base = builtinIdOf(fx.id, BUILTIN_IDS);
+  return base && LIBRARY.find((item) => item.id === base).meta.name === fx.meta.name ? ZH_FX[base] : undefined;
+}
+const nameOf = (fx) => zhOf(fx)?.[0] || fx.meta.name || fx.id.split("/")[1];
+const descOf = (fx) => zhOf(fx)?.[1] || fx.meta.desc || "";
 const catName = (id) => (zh ? ZH_CATEGORIES[id]?.name : categories.find((c) => c.id === id)?.name) || id;
 const backdropName = (key) => (zh ? ZH_BACKDROPS[key] : t.backdrops[key]) || key;
 const paletteName = (key) => (zh ? ZH_PALETTES[key] : key[0].toUpperCase() + key.slice(1)) || key;
@@ -64,6 +107,13 @@ const optionName = (key) => (zh && ZH_OPTION_KEYS[key]) || key.replace(/([a-z])(
 const fpsText = (fps) => (Number.isInteger(fps) ? String(fps) : fps.toFixed(1));
 
 const state = {
+  space: "builtin",
+  project: [],
+  projectNote: "",
+  presets: undefined,
+  presetsError: "",
+  drafts: new Map(),
+  checks: new Map(),
   cat: "all",
   query: "",
   filtered: LIBRARY,
@@ -129,12 +179,28 @@ function buildPage() {
   });
   const header = el("header", { className: "wb-header px-panel" }, [
     el("div", { className: "wb-title-group" }, [
-      el("div", { className: "space-bar" }, [el("div", { className: "brand-tag" }, [pixelIcon(), el("span", { textContent: "PIXELFX" })])]),
+      el("div", { className: "space-bar" }, [
+        el("div", { className: "brand-tag" }, [pixelIcon(), el("span", { textContent: "PIXELFX" })]),
+        el(
+          "div",
+          { className: "space-tabs", role: "tablist" },
+          Object.entries(t.spaces).map(([space, text]) => {
+            const tab = el("button", { type: "button", className: "space-tab", role: "tab" }, [el("span", { textContent: text }), el("span", { className: "space-count" })]);
+            tab.dataset.space = space;
+            return tab;
+          }),
+        ),
+      ]),
       el("div", { className: "wb-title-line" }, [
         el("h1", { id: "fx-name" }),
         el("span", { className: "px-badge cat-badge", id: "fx-cat-badge" }),
-        el("span", { className: "px-badge source-badge readonly", textContent: t.builtIn }),
+        el("span", { className: "px-badge source-badge", id: "fx-source" }),
         el("span", { className: "wb-id", id: "fx-id" }),
+        el("span", { className: "fx-actions" }, [
+          el("button", { type: "button", className: "ctrl-btn btn-sm", id: "btn-copy", textContent: t.copyToProject }),
+          el("button", { type: "button", className: "ctrl-btn btn-sm", id: "btn-rename", textContent: t.rename }),
+          el("button", { type: "button", className: "ctrl-btn btn-sm danger-btn", id: "btn-remove", textContent: t.remove }),
+        ]),
       ]),
       el("nav", { className: "wb-tabs", role: "tablist", ariaLabel: t.title }, viewTabs),
     ]),
@@ -200,9 +266,15 @@ function buildPage() {
   const code = el("div", { className: "view-pane", id: "pane-code", hidden: true }, [
     el("div", { className: "sub-toolbar" }, [
       el("div", { className: "code-subtabs" }, codeTabs),
-      el("div", { className: "sub-toolbar-right" }, [el("span", { className: "code-path", id: "code-path" })]),
+      el("div", { className: "sub-toolbar-right" }, [
+        el("span", { className: "code-path", id: "code-path" }),
+        el("span", { className: "code-status", id: "code-status" }),
+        el("button", { type: "button", className: "primary-btn btn-sm", id: "btn-code-save", textContent: t.save, hidden: true }),
+      ]),
     ]),
     el("pre", { className: "code-box px-sunken", id: "code-box" }, [el("code", { id: "code-content" })]),
+    el("textarea", { className: "code-box code-editor px-sunken", id: "code-editor", spellcheck: false, autocomplete: "off", hidden: true, ariaLabel: t.codeTabs.source }),
+    el("div", { className: "check-result", id: "check-result", hidden: true }),
   ]);
 
   const carousel = el("div", { className: "carousel-bar" }, [
@@ -217,6 +289,11 @@ function buildPage() {
       el("p", { className: "insp-desc", id: "insp-desc" }),
       el("div", { className: "insp-meta px-sunken" }, [el("div", { id: "meta-row-1" }), el("div", { id: "meta-row-2" }), el("div", { id: "meta-row-3" })]),
       el("div", { className: "form-grid" }, [
+        el("div", { className: "form-row compact-row" }, [
+          labelFor("sel-preset", t.preset),
+          el("select", { id: "sel-preset", className: "ctrl-select row-fill" }),
+          el("button", { type: "button", className: "ctrl-btn", id: "btn-save-preset", textContent: t.savePreset }),
+        ]),
         el("div", { className: "form-row" }, [
           labelFor("sel-bg", t.backdrop),
           el("select", { id: "sel-bg", className: "ctrl-select row-fill" }, Object.keys(ZH_BACKDROPS).map((key) => option(key, backdropName(key)))),
@@ -284,6 +361,7 @@ function buildPage() {
       header,
       el("div", { className: "wb-body" }, [el("section", { className: "wb-left px-panel" }, [live, sheet, code, carousel]), inspector]),
     ]),
+    el("dialog", { className: "px-dialog px-panel", id: "dialog" }),
   );
 }
 
@@ -292,6 +370,8 @@ buildPage();
 const stage = new StageRunner($("#stage-canvas"), $("#stage-viewport"), state, {
   onFrame: updateTimeline,
   onError(error) {
+    // An effect that doesn't load draws nothing, which is no error of the stage's: it keeps saying why.
+    if (state.fx?.error) return showLoadError();
     const overlay = $("#stage-error");
     overlay.hidden = !error;
     overlay.textContent = error ? t.stageError(errorText(error)) : "";
@@ -302,18 +382,42 @@ const stage = new StageRunner($("#stage-canvas"), $("#stage-viewport"), state, {
 // ---------------------------------------------------------------------------
 // Choosing an effect and showing its settings.
 
-function selectEffect(fx) {
+function selectEffect(fx, cfg) {
   if (!fx) return;
+  try {
+    showEffect(fx, cfg);
+  } catch (error) {
+    if (fx.source !== "project" || fx.error) throw error;
+    const broken = { ...entry(fx.id, "project", fx.raw, errorText(error)), text: fx.text };
+    state.project = state.project.map((item) => (item === fx ? broken : item));
+    if (state.space === "project") applyFilter();
+    showEffect(broken);
+  }
+}
+
+function showEffect(fx, cfg) {
   state.fx = fx;
-  state.cfg = defaultConfig(fx);
-  void host.request("storage.set", { key: "effect", value: fx.id }).catch(() => {});
+  state.cfg = cfg ?? defaultConfig(fx);
+  lastShown[fx.source] = fx.key;
+  void host.request("storage.set", { key: "effect", value: fx.key }).catch(() => {});
   syncInspector();
   buildExtraOptions();
+  renderPresets();
   setPlaying(true);
   stage.setup(fx, true);
   highlightCarousel();
   if (state.view === "sheet") refreshSheet();
   if (state.view === "code") void refreshCode();
+  updateContext();
+}
+
+/** A project effect that doesn't load says why over the stage, instead of drawing nothing. */
+function showLoadError() {
+  if (!state.fx?.error) return;
+  setPlaying(false);
+  const overlay = $("#stage-error");
+  overlay.hidden = false;
+  overlay.textContent = t.loadError(state.fx.error);
 }
 
 function syncInspector() {
@@ -323,7 +427,14 @@ function syncInspector() {
 
   $("#fx-name").textContent = nameOf(fx);
   $("#fx-cat-badge").textContent = catName(fx.cat);
-  $("#fx-id").textContent = fx.id;
+  $("#fx-id").textContent = fx.path ?? fx.id;
+  const project = fx.source === "project";
+  $("#fx-source").textContent = project ? t.spaces.project : t.builtIn;
+  $("#fx-source").classList.toggle("readonly", !project);
+  $("#btn-copy").hidden = project;
+  $("#btn-rename").hidden = !project;
+  $("#btn-remove").hidden = !project;
+  resetRemove();
   $("#insp-desc").textContent = descOf(fx);
 
   const frames = Math.max(1, Math.round(m.duration * m.fps) + (m.loop ? 0 : 1));
@@ -483,6 +594,7 @@ function applyChange(resetClock = false) {
     if (state.view === "sheet") refreshSheet();
     if (state.view === "code" && state.codeMode !== "source") void refreshCode();
   }, 250);
+  updateContext();
 }
 
 function updateTimeline() {
@@ -582,8 +694,9 @@ function usageCode(fx) {
   };
   return [
     t.usageComment(nameOf(fx), fx.id),
-    `import { createFrame, clearFrame, ${create}, composite } from "pixelfx";`,
-    `import * as ${name} from "pixelfx/fx/${fx.id}";`,
+    fx.source === "project" ? null : t.usageCopyFirst,
+    `import { createFrame, clearFrame, ${create}, composite } from "./pixelfx/core/index.js";`,
+    `import * as ${name} from "./pixelfx/fx/${fx.id}.js";`,
     "",
     `const W = ${Math.max(320, cfg.canvasW)}, H = ${Math.max(180, cfg.canvasH)};`,
     "const frame = createFrame(W, H);",
@@ -597,13 +710,22 @@ function usageCode(fx) {
     "  composite(frame, imgData.data, null);",
     acted ? "  const [sx, sy] = fx.shake;\n  ctx.putImageData(imgData, sx, sy);" : "  ctx.putImageData(imgData, 0, 0);",
     "}",
-  ].join("\n");
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
 }
 
 async function refreshCode() {
   const fx = state.fx;
   const content = $("#code-content");
   $$(".code-subtabs .wb-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.code === state.codeMode));
+  const editing = fx.source === "project" && state.codeMode === "source";
+  $("#code-box").hidden = editing;
+  $("#code-editor").hidden = !editing;
+  $("#btn-code-save").hidden = !editing;
+  $("#code-status").textContent = state.codeMode === "source" && !editing ? t.readOnly : "";
+  showCheck();
+  if (editing) return loadEditor(fx);
   if (state.codeMode === "usage") {
     $("#code-path").textContent = "";
     content.textContent = usageCode(fx);
@@ -656,6 +778,7 @@ function showView(view) {
   if (view === "sheet") refreshSheet();
   else if (view === "code") void refreshCode();
   else stage.setup(state.fx, false);
+  updateContext();
 }
 
 // ---------------------------------------------------------------------------
@@ -668,47 +791,74 @@ const thumbObserver = new IntersectionObserver(
       const canvas = $("canvas", entry.target);
       if (!canvas || canvas.dataset.rendered) continue;
       canvas.dataset.rendered = "1";
-      const fx = LIBRARY.find((item) => item.id === entry.target.dataset.id);
-      if (fx) drawThumbnail(canvas, fx);
+      const fx = spaceList().find((item) => item.key === entry.target.dataset.key);
+      if (!fx || fx.error) continue;
+      try {
+        drawThumbnail(canvas, fx);
+      } catch {
+        entry.target.classList.add("broken");
+      }
     }
   },
   { root: $("#carousel-strip"), rootMargin: "160px" },
 );
 
+/** The effects of the space shown: the built-in ones or the project's. */
+const spaceList = (space = state.space) => (space === "project" ? state.project : LIBRARY);
+
+/** The categories of `list`, pixelfx's in its order, then any others a project has. */
+function categoriesOf(list) {
+  const known = categories.map((c) => c.id).filter((id) => list.some((fx) => fx.cat === id));
+  const others = [...new Set(list.map((fx) => fx.cat))].filter((id) => !known.includes(id)).sort();
+  return [...known, ...others];
+}
+
 function rebuildCategories() {
+  const list = spaceList();
+  const cats = categoriesOf(list);
+  if (state.cat !== "all" && !cats.includes(state.cat)) state.cat = "all";
   $("#sel-category").replaceChildren(
-    option("all", t.allCategories(LIBRARY.length)),
-    ...categories.map((c) => option(c.id, `${catName(c.id)} (${LIBRARY.filter((fx) => fx.cat === c.id).length})`)),
+    option("all", t.allCategories(list.length)),
+    ...cats.map((id) => option(id, `${catName(id)} (${list.filter((fx) => fx.cat === id).length})`)),
   );
   $("#sel-category").value = state.cat;
 }
 
+/** Whether an effect's names, description, category or tags hold `query`, in either language. */
+function matches(fx, query) {
+  if (!query) return true;
+  const zhWords = fx.source === "builtin" ? [ZH_FX[fx.id]?.[0], ZH_FX[fx.id]?.[1]] : [];
+  const words = [fx.id, fx.meta.name, fx.meta.desc, ...zhWords, catName(fx.cat), ZH_CATEGORIES[fx.cat]?.name, ...fx.meta.tags];
+  return words.join(" ").toLowerCase().includes(query.trim().toLowerCase());
+}
+
 function applyFilter() {
-  const query = state.query.trim().toLowerCase();
-  state.filtered = LIBRARY.filter((fx) => {
-    if (state.cat !== "all" && fx.cat !== state.cat) return false;
-    if (!query) return true;
-    // Both languages' names match, so an English search works in Chinese and the other way round.
-    const words = [fx.id, fx.meta.name, fx.meta.desc, ZH_FX[fx.id]?.[0], ZH_FX[fx.id]?.[1], catName(fx.cat), ...fx.meta.tags];
-    return words.join(" ").toLowerCase().includes(query);
-  });
+  state.filtered = spaceList().filter((fx) => (state.cat === "all" || fx.cat === state.cat) && matches(fx, state.query));
   buildCarousel();
 }
 
 function buildCarousel() {
   const strip = $("#carousel-strip");
   thumbObserver.disconnect();
+  const project = state.space === "project";
+  const newCard = project ? el("button", { type: "button", className: "thumb-card new-card", id: "btn-new", textContent: `+ ${t.newEffect}` }) : null;
+  newCard?.addEventListener("click", () => void newEffect());
   if (!state.filtered.length) {
-    strip.replaceChildren(el("div", { className: "extra-empty carousel-empty", textContent: t.noMatches }));
+    const empty = project && !state.project.length ? state.projectNote || t.projectEmpty : t.noMatches;
+    strip.replaceChildren(...[newCard, el("div", { className: "extra-empty carousel-empty", textContent: empty })].filter(Boolean));
     return;
   }
   strip.replaceChildren(
+    ...[newCard].filter(Boolean),
     ...state.filtered.map((fx) => {
-      const card = el("div", { className: "thumb-card", role: "option", tabIndex: 0, title: fx.id }, [
+      const card = el("div", { className: `thumb-card${fx.error ? " broken" : ""}`, role: "option", tabIndex: 0, title: fx.error ? t.loadError(fx.error) : (fx.path ?? fx.id) }, [
         el("canvas", { className: "thumb-stage" }),
-        el("div", { className: "thumb-foot" }, [el("span", { className: "thumb-title", textContent: nameOf(fx) })]),
+        el("div", { className: "thumb-foot" }, [
+          el("span", { className: "thumb-title", textContent: nameOf(fx) }),
+          fx.error ? el("span", { className: "thumb-broken", textContent: t.broken }) : null,
+        ]),
       ]);
-      card.dataset.id = fx.id;
+      card.dataset.key = fx.key;
       card.addEventListener("click", () => selectEffect(fx));
       card.addEventListener("keydown", (event) => {
         if (event.key === "Enter") selectEffect(fx);
@@ -721,8 +871,8 @@ function buildCarousel() {
 }
 
 function highlightCarousel(instant = false) {
-  for (const card of $$(".thumb-card", $("#carousel-strip"))) {
-    const on = card.dataset.id === state.fx?.id;
+  for (const card of $$(".thumb-card[data-key]", $("#carousel-strip"))) {
+    const on = card.dataset.key === state.fx?.key;
     card.classList.toggle("active", on);
     card.setAttribute("aria-selected", String(on));
     if (on) card.scrollIntoView({ behavior: instant ? "instant" : "smooth", inline: "center", block: "nearest" });
@@ -730,8 +880,9 @@ function highlightCarousel(instant = false) {
 }
 
 function step(delta) {
-  const list = state.filtered.length ? state.filtered : LIBRARY;
-  const index = list.findIndex((fx) => fx.id === state.fx?.id);
+  const list = state.filtered.length ? state.filtered : spaceList();
+  if (!list.length) return;
+  const index = list.findIndex((fx) => fx.key === state.fx?.key);
   selectEffect(list[index < 0 ? 0 : (index + delta + list.length) % list.length]);
 }
 
@@ -751,7 +902,7 @@ async function addToLibrary(blob, name) {
   try {
     await host.library.add(blob, { name, prompt: `pixelfx ${state.fx.id}` });
   } catch (error) {
-    if (!state.visible) throw new Error(t.libraryHidden);
+    if (!state.visible) throw uiError(TEXT.en.libraryHidden, t.libraryHidden);
     throw error;
   }
 }
@@ -781,10 +932,20 @@ async function exportFrames(fx, cfg, name, write) {
   for (const entry of entries) if (entry.kind === "file" && leftover(entry.path)) await host.files.delete(entry.path);
 }
 
-async function exportAs(format) {
-  if (state.exporting || !state.fx) return;
+/**
+ * Exports the effect shown with the inspector's settings. Returns the
+ * project files saved and what went to the Library; on failure, throws with
+ * `saved` on the error.
+ */
+async function runExport(format) {
+  if (state.exporting) throw new Error("An export is already running");
+  if (!state.fx) throw new Error("No effect is shown");
+  if (state.fx.error) throw uiError(TEXT.en.loadError(state.fx.error), t.loadError(state.fx.error));
   const big = tooBig({ contact: format === "contact" });
-  if (big) return toast(big, "danger");
+  if (big) {
+    const { frames, w, h } = exportBudget(state.fx, state.cfg, { contact: format === "contact" });
+    throw uiError(TEXT.en.tooBig(frames, w, h), big);
+  }
   const fx = state.fx;
   const cfg = exportConfig();
   const name = fx.id.split("/")[1];
@@ -793,31 +954,780 @@ async function exportAs(format) {
   // Lets the button show it is working before the frames are drawn.
   await new Promise((resolve) => setTimeout(resolve, 20));
   const saved = [];
+  const library = [];
   const write = async (path, contents) => saved.push(await host.files.write(path, contents));
+  const toLibrary = async (blob, file) => {
+    await addToLibrary(blob, file);
+    library.push(file);
+  };
   try {
     if (format === "sheet-both" || format === "sheet-png") {
       const sheet = buildSpriteSheet(fx, cfg, { exportActor: state.sheetActor });
       const png = await canvasToPngBlob(sheet.canvas);
-      if (format === "sheet-png") await addToLibrary(png, `${name}.png`);
+      if (format === "sheet-png") await toLibrary(png, `${name}.png`);
       else {
         await write(`${EXPORT_DIR}/${name}.png`, png);
         await write(`${EXPORT_DIR}/${name}.json`, `${JSON.stringify(sheet.json, null, 2)}\n`);
       }
     } else if (format === "contact") {
-      await addToLibrary(await canvasToPngBlob(buildContactSheetCanvas(fx, cfg)), `${name}-contact.png`);
+      await toLibrary(await canvasToPngBlob(buildContactSheetCanvas(fx, cfg)), `${name}-contact.png`);
     } else if (format === "gif") {
       await write(`${EXPORT_DIR}/${name}.gif`, buildGifBlob(fx, cfg));
     } else if (format === "frames") {
       await exportFrames(fx, cfg, name, write);
-    }
-    // The app announces what reaches the Library itself.
-    if (saved.length) toast(t.savedFiles(saved), "success");
+    } else throw new Error(`Unknown format ${format}`);
+    return { fx, cfg, saved, library };
   } catch (error) {
-    toast(saved.length ? t.exportFailedAfter(errorText(error), saved) : t.exportFailed(errorText(error)), "danger");
+    throw Object.assign(error instanceof Error ? error : new Error(String(error)), { saved });
   } finally {
     state.exporting = false;
     updateExportButton();
   }
+}
+
+async function exportAs(format) {
+  if (state.exporting || !state.fx) return;
+  try {
+    const { saved } = await runExport(format);
+    // The app announces what reaches the Library itself.
+    if (saved.length) toast(t.savedFiles(saved), "success");
+  } catch (error) {
+    const saved = error.saved ?? [];
+    toast(saved.length ? t.exportFailedAfter(localText(error), saved) : t.exportFailed(localText(error)), "danger");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The project's effects: listed from pixelfx/fx/, imported as the project's
+// modules, and loaded again when its files change.
+
+const notFound = (error) => /not found/i.test(errorText(error));
+const pause = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** A file of the plugin's pixelfx copy, as `core/math.js`. */
+async function readLib(path) {
+  const response = await fetch(new URL(`./lib/${path}`, import.meta.url));
+  if (!response.ok) throw new Error(`No ${path}`);
+  return response.text();
+}
+
+async function builtinSource(id) {
+  if (!state.sources.has(id)) state.sources.set(id, await readLib(`fx/${id}.js`));
+  return state.sources.get(id);
+}
+
+let license;
+const licenseText = async () => (license ??= licenseNotice(await readLib("LICENSE")));
+
+/** The project's files under pixelfx/, with whether there were too many to list. */
+async function projectFiles() {
+  try {
+    const { entries, truncated } = await host.files.list(ROOT, { recursive: true });
+    return { paths: new Set(entries.filter((item) => item.kind === "file").map((item) => item.path)), truncated };
+  } catch (error) {
+    if (notFound(error)) return { paths: new Set(), truncated: false };
+    throw error;
+  }
+}
+
+/**
+ * Imports a project effect; one that throws, or isn't an effect, comes back
+ * with why. Each keeps the text it was read as, which says whether the
+ * module is the file as it is now.
+ */
+async function importEffect(id) {
+  const text = await host.files.text(effectPath(id)).catch(() => undefined);
+  const made = (mod, error) => ({ ...entry(id, "project", mod, error), text });
+  try {
+    const mod = await host.modules.import(effectPath(id));
+    if (!mod.meta || typeof mod.meta !== "object") return made(mod, "exports no meta");
+    if (typeof mod.draw !== "function" && typeof mod.create !== "function") return made(mod, "exports neither draw nor create");
+    return made(mod, metaProblem(fullMeta(mod.meta), mod.act));
+  } catch (error) {
+    return made(undefined, errorText(error));
+  }
+}
+
+async function readProject() {
+  let listing;
+  try {
+    listing = await projectFiles();
+  } catch (error) {
+    state.project = [];
+    state.projectNote = t.projectFailed(errorText(error));
+    return refreshSpace();
+  }
+  const ids = [...listing.paths].map(effectIdOf).filter(Boolean).sort();
+  state.project = await Promise.all(ids.map(importEffect));
+  state.files = listing.paths;
+  state.projectNote = listing.truncated ? t.projectFailed(`${ROOT}/ has too many files`) : "";
+  refreshSpace();
+}
+
+// One reading at a time, so the last one started is the one that stays.
+let reading = Promise.resolve();
+function loadProject() {
+  reading = reading.then(readProject, readProject);
+  return reading;
+}
+let projectReady = Promise.resolve();
+
+/** The settings of `old` (by default the effect shown) carried over to `fx`, such as a copy or a new version of it. */
+function carried(fx, old = state.fx) {
+  if (!old || old.error || fx.error) return undefined;
+  const { cfg } = applySettings(defaultConfig(fx), settingsOf(state.cfg, old), fx);
+  return { ...cfg, scaleWithCanvas: state.cfg.scaleWithCanvas, ...(cfg.palette ? { paletteKey: state.cfg.paletteKey } : {}) };
+}
+
+// A renamed effect stays shown under its new name.
+const renamed = new Map();
+
+function updateSpaceTabs() {
+  for (const tab of $$(".space-tab")) {
+    const on = tab.dataset.space === state.space;
+    tab.classList.toggle("active", on);
+    tab.setAttribute("aria-selected", String(on));
+  }
+  $('.space-tab[data-space="project"] .space-count').textContent = state.project.length ? String(state.project.length) : "";
+}
+
+/** Shows the project's effects as they are now, keeping the one shown when it's still there. */
+function refreshSpace() {
+  updateSpaceTabs();
+  if (state.space === "project") {
+    rebuildCategories();
+    applyFilter();
+  }
+  const fx = state.fx;
+  if (fx?.source !== "project") return;
+  const id = renamed.get(fx.id) ?? fx.id;
+  renamed.delete(fx.id);
+  const next = state.project.find((item) => item.id === id);
+  // An effect whose file didn't change keeps playing as it was.
+  if (next && next.id === fx.id && (next.raw === fx.raw || (next.text !== undefined && next.text === fx.text)) && next.error === fx.error) {
+    state.fx = next;
+    highlightCarousel(true);
+  } else if (next) selectEffect(next, carried(next));
+  else openEffect(state.project[0] ?? LIBRARY.find((item) => item.id === fx.id) ?? LIBRARY[0]);
+}
+
+const lastShown = { builtin: undefined, project: undefined };
+
+function setSpace(space, keep = false) {
+  if (state.space === space) return;
+  state.space = space;
+  state.cat = "all";
+  updateSpaceTabs();
+  rebuildCategories();
+  applyFilter();
+  if (keep) return;
+  const fx = spaceList().find((item) => item.key === lastShown[space]) ?? state.filtered[0];
+  if (fx) selectEffect(fx);
+}
+
+/** Shows `fx` in its space, clearing a filter that hides it. */
+function openEffect(fx, cfg) {
+  if (!fx) return;
+  setSpace(fx.source, true);
+  if (!state.filtered.includes(fx)) {
+    state.cat = "all";
+    state.query = "";
+    $("#inp-search").value = "";
+    rebuildCategories();
+    applyFilter();
+  }
+  selectEffect(fx, cfg);
+}
+
+// Files events: the project's modules import as they are now only after one,
+// so a write waits to hear of itself before the effect is loaded again.
+const fileWaiters = new Set();
+let reloadTimer;
+let reloadPending;
+let reloadDone = () => {};
+host.on("files", ({ paths, truncated } = {}) => {
+  for (const waiter of [...fileWaiters]) waiter(paths, truncated);
+  const unnamed = !Array.isArray(paths) || truncated;
+  if (!unnamed && !paths.some((path) => path.startsWith(`${ROOT}/`))) return;
+  if (unnamed || paths.includes(PRESETS_PATH)) void loadPresets();
+  clearTimeout(reloadTimer);
+  reloadPending ??= new Promise((resolve) => (reloadDone = resolve));
+  reloadTimer = setTimeout(() => {
+    const done = reloadDone;
+    reloadPending = undefined;
+    loadProject()
+      .finally(done)
+      .catch(() => {});
+  }, 150);
+});
+
+/** Resolves once the project's effects are loaded as the last files event left them. */
+async function projectSettled() {
+  await projectReady;
+  await reloadPending;
+  await reading;
+}
+
+// Writes, renames and deletes, one at a time, so one never lands on what another is doing.
+let changing = Promise.resolve();
+function change(run) {
+  const result = changing.then(run);
+  changing = result.catch(() => {});
+  return result;
+}
+
+/** Resolves once a files event names one of `paths`, or doesn't say which changed, or after `ms`. */
+function filesHeard(paths, ms = 3000) {
+  return new Promise((resolve) => {
+    const want = new Set(paths);
+    const done = (heard) => {
+      clearTimeout(timer);
+      fileWaiters.delete(listener);
+      resolve(heard);
+    };
+    const listener = (heard, truncated) => {
+      if (!Array.isArray(heard) || truncated || heard.some((path) => want.has(path))) done(true);
+    };
+    const timer = setTimeout(done, ms, false);
+    fileWaiters.add(listener);
+  });
+}
+
+/**
+ * Writes the project effect `id` with `code`, adds the pixelfx files it
+ * imports that the project lacks (never replacing one it has), and loads it
+ * again. With `fresh`, an effect already at that path is an error.
+ */
+function writeEffect(id, code, options) {
+  return change(() => writeNow(id, code, options));
+}
+
+async function writeNow(id, code, { fresh = false, onWritten } = {}) {
+  if (!isEffectId(id)) throw uiError(TEXT.en.badName, t.badName);
+  const listing = await projectFiles();
+  if (listing.truncated) throw new Error(`${ROOT}/ has too many files to check what's already there`);
+  if (fresh && listing.paths.has(effectPath(id))) throw uiError(TEXT.en.nameTaken, t.nameTaken);
+  const plan = await planEffect({ id, source: code, readLib, existing: listing.paths, license: await licenseText() });
+  const written = plan.writes.map((write) => write.path);
+  const heard = filesHeard(written);
+  for (const write of plan.writes) await host.files.write(write.path, write.text);
+  onWritten?.();
+  // Until the app reports the write, an import may give the code from before it.
+  const heardWrite = await heard;
+  await loadProject();
+  return { fx: state.project.find((item) => item.id === id), written, kept: plan.kept, loaded: heardWrite };
+}
+
+/** Copies a built-in effect into the project under its own name, or the first free one after it. */
+async function copyToProject(fx) {
+  const { paths } = await projectFiles();
+  const id = freeEffectId(fx.id, new Set([...paths].map(effectIdOf).filter(Boolean)));
+  const result = await writeEffect(id, await builtinSource(fx.id), { fresh: true });
+  return { ...result, id, path: effectPath(id) };
+}
+
+/** Why a project effect doesn't load: the imports it lacks, which the browser's error doesn't name, or that error. */
+function loadErrors(fx, source) {
+  const missing = fx.source === "project" && state.files ? missingImports(source, fx.id, state.files) : [];
+  return missing.length ? missing.map((spec) => `imports ${spec}, which isn't in the project`) : [`doesn't load: ${fx.error}`];
+}
+
+/** Checks an effect as `source` has it; the check is shown until its file holds other code. */
+function runCheck(fx, source) {
+  const result = fx.raw ? checkEffect(fx.raw, source) : { ok: false, errors: loadErrors(fx, source), warnings: [], stats: {} };
+  state.checks.set(fx.key, { ...result, source });
+  if (state.fx?.key === fx.key) {
+    showCheck();
+    updateContext();
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// The code editor of a project effect, and its check.
+
+function updateCodeStatus() {
+  if (state.fx?.source !== "project" || state.codeMode !== "source") return;
+  $("#code-status").textContent = state.drafts.has(state.fx.key) ? t.unsaved : "";
+}
+
+async function loadEditor(fx) {
+  const editor = $("#code-editor");
+  $("#code-path").textContent = fx.path;
+  updateCodeStatus();
+  const draft = state.drafts.get(fx.key);
+  if (draft !== undefined) {
+    editor.value = draft;
+    editor.readOnly = false;
+    editor.dataset.key = fx.key;
+    return;
+  }
+  if (editor.dataset.key !== fx.key) {
+    editor.value = "";
+    editor.readOnly = true;
+    delete editor.dataset.key;
+  }
+  let text;
+  let readable = true;
+  try {
+    text = await host.files.text(fx.path);
+  } catch (error) {
+    text = `// ${errorText(error)}`;
+    readable = false;
+  }
+  if (state.fx?.key !== fx.key || state.drafts.has(fx.key)) return;
+  // A check of other code, such as before someone else changed the file, says nothing of this.
+  if (readable && state.checks.get(fx.key)?.source !== text && state.checks.delete(fx.key)) {
+    showCheck();
+    updateContext();
+  }
+  editor.value = text;
+  // What can't be read isn't saved over.
+  editor.readOnly = !readable;
+  editor.dataset.key = fx.key;
+}
+
+function showCheck() {
+  const box = $("#check-result");
+  const fx = state.fx;
+  const result = fx && state.checks.get(fx.key);
+  box.hidden = !result || fx.source !== "project" || state.codeMode !== "source";
+  if (box.hidden) return;
+  const { errors, warnings } = result;
+  const tone = errors.length ? "bad" : warnings.length ? "warn" : "ok";
+  box.replaceChildren(
+    el("div", { className: `check-head ${tone}`, textContent: errors.length || warnings.length ? t.checkSummary(errors.length, warnings.length) : t.checkOk }),
+    ...errors.map((message) => el("div", { className: "check-line bad", textContent: message })),
+    ...warnings.map((message) => el("div", { className: "check-line warn", textContent: message })),
+  );
+}
+
+let saving = false;
+async function saveEditor() {
+  const fx = state.fx;
+  const editor = $("#code-editor");
+  if (saving || fx?.source !== "project" || editor.readOnly || editor.dataset.key !== fx.key) return;
+  const code = editor.value;
+  saving = true;
+  $("#btn-code-save").disabled = true;
+  $("#code-status").textContent = t.saving;
+  try {
+    const { fx: loaded, loaded: fresh } = await writeEffect(fx.id, code, {
+      onWritten: () => {
+        if (state.drafts.get(fx.key) === code) state.drafts.delete(fx.key);
+      },
+    });
+    if (!fresh) toast(t.savedNotLoaded);
+    else if (loaded) {
+      $("#code-status").textContent = t.checking;
+      await pause();
+      runCheck(loaded, code);
+    }
+  } catch (error) {
+    toast(t.failed(localText(error)), "danger");
+  } finally {
+    saving = false;
+    $("#btn-code-save").disabled = false;
+    updateCodeStatus();
+  }
+}
+
+$("#code-editor").addEventListener("input", (event) => {
+  if (state.fx?.source !== "project" || event.target.dataset.key !== state.fx.key) return;
+  state.drafts.set(state.fx.key, event.target.value);
+  updateCodeStatus();
+});
+$("#code-editor").addEventListener("keydown", (event) => {
+  const editor = event.target;
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+    event.preventDefault();
+    void saveEditor();
+  } else if (event.key === "Tab" && !event.shiftKey && !editor.readOnly) {
+    event.preventDefault();
+    editor.setRangeText("  ", editor.selectionStart, editor.selectionEnd, "end");
+    editor.dispatchEvent(new Event("input"));
+  }
+});
+$("#btn-code-save").addEventListener("click", () => void saveEditor());
+
+// ---------------------------------------------------------------------------
+// A small form in a dialog, for names.
+
+function ask({ title, confirm, fields, validate }) {
+  const dialog = $("#dialog");
+  return new Promise((resolve) => {
+    let answer = null;
+    const inputs = {};
+    const extra = [];
+    const rows = fields.map((field) => {
+      const id = `dialog-${field.name}`;
+      const input =
+        field.type === "checkbox"
+          ? el("input", { type: "checkbox", id, checked: !!field.value })
+          : el("input", { type: "text", id, className: "ctrl-input", value: field.value ?? "", autocomplete: "off", spellcheck: false, placeholder: field.placeholder ?? "" });
+      if (field.list) {
+        const list = el("datalist", { id: `${id}-list` }, field.list.map((value) => option(value, catName(value))));
+        input.setAttribute("list", list.id);
+        extra.push(list);
+      }
+      inputs[field.name] = input;
+      return el("label", { className: field.type === "checkbox" ? "dialog-check" : "dialog-row", htmlFor: id }, [el("span", { textContent: field.label }), input]);
+    });
+    const error = el("p", { className: "dialog-error", role: "alert" });
+    const cancel = el("button", { type: "button", className: "ctrl-btn", textContent: t.cancel });
+    const form = el("form", { className: "dialog-form" }, [
+      el("h2", { className: "insp-heading", textContent: title }),
+      ...rows,
+      ...extra,
+      error,
+      el("div", { className: "dialog-actions" }, [cancel, el("button", { type: "submit", className: "primary-btn", textContent: confirm })]),
+    ]);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const values = Object.fromEntries(Object.entries(inputs).map(([name, input]) => [name, input.type === "checkbox" ? input.checked : input.value.trim()]));
+      const problem = validate?.(values);
+      if (problem) {
+        error.textContent = problem;
+        return;
+      }
+      answer = values;
+      dialog.close();
+    });
+    cancel.addEventListener("click", () => dialog.close());
+    dialog.addEventListener("close", () => resolve(answer), { once: true });
+    dialog.replaceChildren(form);
+    dialog.showModal();
+    inputs[fields.find((field) => field.type !== "checkbox" && !field.value)?.name ?? fields[0].name].focus();
+  });
+}
+
+const nameProblem = (id, current) => (!isEffectId(id) ? t.badName : id !== current && state.project.some((item) => item.id === id) ? t.nameTaken : "");
+
+async function newEffect() {
+  const values = await ask({
+    title: t.newEffect,
+    confirm: t.create,
+    fields: [
+      { name: "category", label: t.category, value: state.fx?.cat ?? "arcane", list: categoriesOf([...LIBRARY, ...state.project]) },
+      { name: "name", label: t.name, placeholder: t.nameHint },
+      { name: "loop", label: t.loops, type: "checkbox", value: false },
+    ],
+    validate: ({ category, name }) => nameProblem(`${category}/${name}`),
+  });
+  if (!values) return;
+  const id = `${values.category}/${values.name}`;
+  try {
+    const { fx } = await writeEffect(id, effectTemplate(id, values.loop), { fresh: true });
+    if (!fx) return;
+    openEffect(fx);
+    state.codeMode = "source";
+    showView("code");
+  } catch (error) {
+    toast(t.failed(localText(error)), "danger");
+  }
+}
+
+async function renameEffect(fx) {
+  const name = fx.id.split("/")[1];
+  const values = await ask({
+    title: t.rename,
+    confirm: t.rename,
+    fields: [{ name: "name", label: t.name, value: name, placeholder: t.nameHint }],
+    validate: ({ name: next }) => nameProblem(`${fx.cat}/${next}`, fx.id),
+  });
+  if (!values || values.name === name) return;
+  const id = `${fx.cat}/${values.name}`;
+  const to = effectPath(id);
+  try {
+    await change(async () => {
+      const heard = filesHeard([fx.path, to]);
+      await host.files.move(fx.path, to);
+      for (const map of [state.drafts, state.checks]) {
+        if (map.has(fx.key)) map.set(`project:${id}`, map.get(fx.key));
+        map.delete(fx.key);
+      }
+      renamed.set(fx.id, id);
+      const doc = state.presets && renamePresets(state.presets, fx.id, id);
+      if (doc && doc !== state.presets) {
+        await host.files.write(PRESETS_PATH, presetsText(doc));
+        state.presets = doc;
+      }
+      await heard;
+      await loadProject();
+    });
+  } catch (error) {
+    renamed.delete(fx.id);
+    toast(t.failed(localText(error)), "danger");
+  }
+}
+
+let removeTimer;
+function resetRemove() {
+  clearTimeout(removeTimer);
+  const button = $("#btn-remove");
+  button.textContent = t.remove;
+  delete button.dataset.armed;
+}
+
+async function removeEffect(fx) {
+  try {
+    await change(async () => {
+      const heard = filesHeard([fx.path]);
+      await host.files.delete(fx.path);
+      state.drafts.delete(fx.key);
+      state.checks.delete(fx.key);
+      await heard;
+      await loadProject();
+    });
+    toast(t.removed(fx.path), "success");
+  } catch (error) {
+    toast(t.failed(localText(error)), "danger");
+  }
+}
+
+$("#btn-copy").addEventListener("click", async (event) => {
+  const fx = state.fx;
+  if (fx?.source !== "builtin") return;
+  event.currentTarget.disabled = true;
+  try {
+    const result = await copyToProject(fx);
+    toast([t.copied(result.path), result.kept.length ? t.keptFiles(result.kept.length) : ""].filter(Boolean).join(" "), "success");
+    if (result.fx) openEffect(result.fx, carried(result.fx, fx));
+  } catch (error) {
+    toast(t.failed(localText(error)), "danger");
+  } finally {
+    $("#btn-copy").disabled = false;
+  }
+});
+$("#btn-rename").addEventListener("click", () => {
+  if (state.fx?.source === "project") void renameEffect(state.fx);
+});
+$("#btn-remove").addEventListener("click", () => {
+  const button = $("#btn-remove");
+  if (state.fx?.source !== "project") return;
+  if (!button.dataset.armed) {
+    button.dataset.armed = "1";
+    button.textContent = t.confirmRemove;
+    removeTimer = setTimeout(resetRemove, 4000);
+    return;
+  }
+  resetRemove();
+  void removeEffect(state.fx);
+});
+for (const tab of $$(".space-tab")) tab.addEventListener("click", () => setSpace(tab.dataset.space));
+
+// ---------------------------------------------------------------------------
+// Presets: named settings for an effect, in pixelfx/presets.json.
+
+async function readPresets() {
+  let text;
+  try {
+    text = await host.files.text(PRESETS_PATH);
+  } catch (error) {
+    if (notFound(error)) return { version: 1, presets: [] };
+    throw new Error(t.presetsUnreadable(PRESETS_PATH));
+  }
+  try {
+    return parsePresets(text);
+  } catch {
+    throw new Error(t.presetsUnreadable(PRESETS_PATH));
+  }
+}
+
+async function loadPresets() {
+  try {
+    state.presets = await readPresets();
+    state.presetsError = "";
+  } catch (error) {
+    state.presets = undefined;
+    state.presetsError = errorText(error);
+  }
+  renderPresets();
+}
+
+function renderPresets() {
+  const fx = state.fx;
+  const select = $("#sel-preset");
+  const list = state.presets && fx ? presetsFor(state.presets, fx.id, fx.source) : [];
+  select.replaceChildren(option("", t.presetNone), ...list.map((preset, index) => option(String(index), preset.name)));
+  select.disabled = !list.length;
+  const save = $("#btn-save-preset");
+  save.disabled = !fx || !!fx.error || !!state.presetsError;
+  save.title = state.presetsError;
+}
+
+/** Shows the effect shown with `cfg`, as a preset, the agent or Reset set it. */
+function applyConfig(cfg) {
+  state.cfg = cfg;
+  syncInspector();
+  buildExtraOptions();
+  setPlaying(true);
+  stage.setup(state.fx, true);
+  if (state.view === "sheet") refreshSheet();
+  if (state.view === "code") void refreshCode();
+  updateContext();
+}
+
+$("#sel-preset").addEventListener("change", (event) => {
+  const fx = state.fx;
+  if (event.target.value === "") return applyConfig(defaultConfig(fx));
+  const preset = presetsFor(state.presets ?? { presets: [] }, fx.id, fx.source)[Number(event.target.value)];
+  if (preset) applyConfig(applySettings(defaultConfig(fx), preset.settings, fx).cfg);
+});
+
+$("#btn-save-preset").addEventListener("click", async () => {
+  const fx = state.fx;
+  if (!fx || fx.error) return;
+  const values = await ask({
+    title: t.savePreset,
+    confirm: t.save,
+    fields: [{ name: "name", label: t.presetName }],
+    validate: ({ name }) => (name && name.length <= 60 ? "" : t.presetName),
+  });
+  if (!values) return;
+  try {
+    // Read again, so a change made meanwhile isn't lost.
+    const doc = withPreset(await readPresets(), { name: values.name, effect: fx.id, source: fx.source, settings: settingsOf(state.cfg, fx) });
+    await host.files.write(PRESETS_PATH, presetsText(doc));
+    state.presets = doc;
+    renderPresets();
+    const index = presetsFor(doc, fx.id, fx.source).findIndex((preset) => preset.name === values.name);
+    $("#sel-preset").value = String(index);
+    toast(t.presetSaved(values.name), "success");
+  } catch (error) {
+    toast(t.failed(localText(error)), "danger");
+  }
+});
+
+// ---------------------------------------------------------------------------
+// What the agent hears the person has open, in English.
+
+let contextTimer;
+function updateContext() {
+  if (!host.context) return;
+  clearTimeout(contextTimer);
+  contextTimer = setTimeout(() => {
+    const fx = state.fx;
+    if (!fx) return;
+    const check = state.checks.get(fx.key);
+    const lines = [
+      `The Pixel Effects panel shows ${fx.source === "project" ? `the project's effect ${fx.path}` : `the built-in effect ${fx.id}`}: ${fx.meta.name}${fx.meta.desc ? ` (${fx.meta.desc})` : ""}.`,
+      fx.error ? `It doesn't load: ${fx.error}` : null,
+      `View: ${state.view}. Preview settings that differ from the effect's own: ${JSON.stringify(settingsOf(state.cfg, fx))}`,
+      check ? `Last check: ${check.errors.length} errors, ${check.warnings.length} warnings.${[...check.errors, ...check.warnings].slice(0, 10).map((line) => `\n- ${line}`).join("")}` : null,
+      fx.source === "builtin" ? "Built-in effects are read-only; copy_effect puts one in the project to change." : null,
+    ];
+    void host.context.set({ label: `${nameOf(fx)} · ${fx.id}`.slice(0, 120), text: lines.filter(Boolean).join("\n").slice(0, 8000) }).catch(() => {});
+  }, 400);
+}
+
+// ---------------------------------------------------------------------------
+// The agent's tools, which work the panel as the person does.
+
+/** The effect `id`, from `source`, or the project's before the built-in one. */
+function findEffect(id, source) {
+  const inProject = () => state.project.find((fx) => fx.id === id);
+  const builtin = () => LIBRARY.find((fx) => fx.id === id);
+  if (typeof id !== "string") return undefined;
+  return source === "builtin" ? builtin() : source === "project" ? inProject() : (inProject() ?? builtin());
+}
+
+function requireEffect(id, source) {
+  const fx = findEffect(id, source);
+  if (!fx) throw new Error(`No ${source ? `${source} ` : ""}effect ${id}. find_effects lists them.`);
+  return fx;
+}
+
+const summary = (fx) => ({
+  effect: fx.id,
+  source: fx.source,
+  ...(fx.path ? { path: fx.path } : {}),
+  name: fx.meta.name,
+  desc: fx.meta.desc,
+  tags: fx.meta.tags,
+  loop: fx.meta.loop,
+  size: fx.meta.size,
+  duration: fx.meta.duration,
+  ...(fx.raw?.act ? { act: true } : {}),
+  ...(fx.error ? { error: fx.error } : {}),
+});
+
+const sourceOf = (fx) => (fx.source === "project" ? host.files.text(fx.path) : builtinSource(fx.id));
+const shownError = () => (!$("#stage-error").hidden ? $("#stage-error").textContent : undefined);
+
+function handleTools() {
+  if (!host.tools) return;
+  host.tools.handle("find_effects", async ({ query = "", category, source = "all", limit = 30 } = {}) => {
+    await projectSettled();
+    const pool = source === "builtin" ? LIBRARY : source === "project" ? state.project : [...state.project, ...LIBRARY];
+    const found = pool.filter((fx) => (!category || fx.cat === category) && matches(fx, query));
+    return { total: found.length, effects: found.slice(0, limit).map(summary), categories: categoriesOf([...LIBRARY, ...state.project]) };
+  });
+  host.tools.handle("read_effect", async ({ effect, source }) => {
+    await projectSettled();
+    const fx = requireEffect(effect, source);
+    return { ...summary(fx), meta: JSON.parse(JSON.stringify(fx.raw?.meta ?? null)), code: await sourceOf(fx) };
+  });
+  host.tools.handle("copy_effect", async ({ effect }) => {
+    await projectSettled();
+    const fx = requireEffect(effect, "builtin");
+    const result = await copyToProject(fx);
+    if (result.fx) openEffect(result.fx);
+    return { effect: result.id, path: result.path, written: result.written, kept: result.kept };
+  });
+  host.tools.handle("write_effect", async ({ effect, code }) => {
+    await projectSettled();
+    const same = state.fx?.source === "project" && state.fx.id === effect;
+    const { fx, written, kept, loaded } = await writeEffect(effect, code);
+    if (!fx) throw new Error(`Wrote ${written.join(", ")}, but ${effectPath(effect)} isn't listed`);
+    // The agent's code is the file now; Undo brings the person's back, and a Save of their old draft would quietly undo the agent's.
+    const draft = state.drafts.delete(fx.key);
+    if (draft) {
+      toast(t.draftReplaced(fx.path));
+      if (state.fx?.key === fx.key && state.view === "code") void refreshCode();
+    }
+    const dropped = draft ? { note: "The person's unsaved edits to this effect were dropped; they were told." } : {};
+    if (!loaded)
+      return { effect, path: fx.path, written, kept, loaded: false, note: "Saved, but the app hasn't reported the change yet, so it wasn't checked. Call check_effect shortly.", ...(draft ? { draftDropped: true } : {}) };
+    const result = runCheck(fx, code);
+    openEffect(fx, same ? carried(fx) : undefined);
+    return { effect, path: fx.path, written, kept, ...result, ...dropped };
+  });
+  host.tools.handle("check_effect", async ({ effect, source }) => {
+    await projectSettled();
+    let fx = requireEffect(effect, source);
+    let text = await sourceOf(fx);
+    if (fx.source === "project" && text !== fx.text) {
+      // The file changed since it was imported: wait until the app reports it and it loads again.
+      await filesHeard([fx.path]);
+      await loadProject();
+      fx = requireEffect(effect, "project");
+      text = await sourceOf(fx);
+      if (text !== fx.text) throw new Error(`${fx.path} is still changing; check it again in a moment`);
+    }
+    return { effect: fx.id, source: fx.source, ...runCheck(fx, text) };
+  });
+  host.tools.handle("show_effect", async ({ effect, source, view, settings, reset }) => {
+    await projectSettled();
+    const fx = requireEffect(effect, source);
+    if (state.fx?.key !== fx.key) openEffect(fx);
+    const base = reset ? defaultConfig(fx) : state.cfg;
+    const { cfg, ignored } = applySettings(base, settings, fx);
+    applyConfig(cfg);
+    if (view) showView(view);
+    await pause(120);
+    const error = shownError();
+    return { ...summary(fx), view: state.view, settings: settingsOf(state.cfg, fx), ...(ignored.length ? { ignored } : {}), ...(error ? { error } : {}) };
+  });
+  host.tools.handle("export_effect", async ({ effect, source, format }) => {
+    await projectSettled();
+    if (effect) {
+      const fx = requireEffect(effect, source);
+      if (state.fx?.key !== fx.key) openEffect(fx);
+    }
+    const { fx, cfg, saved, library } = await runExport(format);
+    return { effect: fx.id, source: fx.source, format, saved, library, settings: settingsOf(cfg, fx) };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -947,12 +1857,8 @@ $("#sel-actor").addEventListener("change", (event) => {
   applyChange(true);
 });
 $("#btn-reset").addEventListener("click", () => {
-  state.cfg = defaultConfig(state.fx);
-  syncInspector();
-  buildExtraOptions();
-  stage.setup(state.fx, true);
-  if (state.view === "sheet") refreshSheet();
-  if (state.view === "code") void refreshCode();
+  applyConfig(defaultConfig(state.fx));
+  $("#sel-preset").value = "";
   toast(t.resetDone);
 });
 
@@ -1007,26 +1913,25 @@ host.on("visibility", ({ visible }) => {
   state.visible = visible;
 });
 
-/** Opens the effect a command or another page asks for, as `{ effect: "fire/torch" }`. */
+/**
+ * Opens the effect a command or another page asks for, as
+ * `{ effect: "fire/torch" }`, with `source: "builtin"` or `"project"` to say
+ * which copy; the project's comes first.
+ */
 function openState(value) {
-  const id = value && typeof value === "object" ? value.effect : undefined;
-  const fx = typeof id === "string" ? LIBRARY.find((item) => item.id === id) : undefined;
+  const fx = value && typeof value === "object" ? findEffect(value.effect, value.source) : undefined;
   if (!fx) return false;
-  if (!state.filtered.includes(fx)) {
-    state.cat = "all";
-    state.query = "";
-    $("#sel-category").value = "all";
-    $("#inp-search").value = "";
-    applyFilter();
-  }
-  selectEffect(fx);
+  openEffect(fx);
   return true;
 }
-host.on("open", ({ state: value }) => void openState(value));
+host.on("open", ({ state: value }) => void projectReady.then(() => openState(value)));
 
 // ---------------------------------------------------------------------------
 // Start.
 
+handleTools();
+projectReady = loadProject();
+void loadPresets();
 const [theme, lastEffect] = await Promise.all([
   host.request("storage.get", { key: "theme" }).catch(() => undefined),
   host.request("storage.get", { key: "effect" }).catch(() => undefined),
@@ -1036,8 +1941,13 @@ rebuildCategories();
 applyFilter();
 showView("live");
 updateExportButton();
+// The effect shown last, saved as `source:id` (before project effects, as the id alone).
+const [lastSource, lastId] = typeof lastEffect === "string" && lastEffect.includes(":") ? lastEffect.split(":") : ["builtin", lastEffect];
+// The project's effects load first when the one to show may be one of them.
+if (host.opened?.source !== "builtin" && (lastSource === "project" || host.opened?.effect)) await projectReady;
 // An `open` heard while the panel was starting has already chosen the effect.
-if (!openState(host.opened) && !state.fx) selectEffect(LIBRARY.find((fx) => fx.id === lastEffect) ?? LIBRARY.find((fx) => fx.id === "water/geyser") ?? LIBRARY[0]);
+if (!openState(host.opened) && !state.fx)
+  openEffect(findEffect(lastId, lastSource) ?? LIBRARY.find((fx) => fx.id === "water/geyser") ?? LIBRARY[0]);
 
 let lastTick = performance.now();
 function loop(now) {

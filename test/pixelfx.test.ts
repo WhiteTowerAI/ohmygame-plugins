@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, it } from "node:test";
+import { fileURLToPath, pathToFileURL } from "node:url";
 // @ts-expect-error The panel is plain JavaScript.
 import { effects } from "../plugins/pixelfx/panel/lib/fx/index.js";
 // @ts-expect-error The panel is plain JavaScript.
@@ -14,6 +18,32 @@ import { defaultConfig, effectOptions, fullMeta, isScreenFx, optionControl } fro
 import { StageRunner } from "../plugins/pixelfx/panel/stage.js";
 // @ts-expect-error The panel is plain JavaScript.
 import { TEXT } from "../plugins/pixelfx/panel/i18n.js";
+// @ts-expect-error The panel is plain JavaScript.
+import { checkEffect } from "../plugins/pixelfx/panel/check.js";
+import {
+  applySettings,
+  builtinIdOf,
+  dependencies,
+  effectIdOf,
+  effectTemplate,
+  freeEffectId,
+  importsOf,
+  isEffectId,
+  LICENSE_PATH,
+  licenseNotice,
+  metaProblem,
+  missingImports,
+  parsePresets,
+  planEffect,
+  presetsFor,
+  presetsText,
+  renamePresets,
+  resolveImport,
+  settingsOf,
+  VERSION_PATH,
+  withPreset,
+  // @ts-expect-error The panel is plain JavaScript.
+} from "../plugins/pixelfx/panel/project.js";
 
 // The Pixel Effects panel's parts that need no page: what the inspector
 // offers for an effect's options, the sheet layout, export rendering and the
@@ -246,5 +276,238 @@ describe("pixelfx text", () => {
     const { backdrops: _en, ...en } = TEXT.en;
     const { backdrops: _zh, ...zh } = TEXT["zh-CN"];
     assert.deepEqual(shape(zh), shape(en));
+  });
+});
+
+// The project's own effects: what a copy of a built-in effect needs beside it,
+// the check ported from pixelfx's tools/check.mjs, and the presets file.
+
+const LIB = fileURLToPath(new URL("../plugins/pixelfx/panel/lib/", import.meta.url));
+const readLib = (file: string) => readFile(path.join(LIB, file), "utf8");
+const libSource = (id: string) => readLib(`fx/${id}.js`);
+
+/** Writes a plan as the panel does into a scratch project, so its effect can be imported from there. */
+async function writePlan(root: string, writes: { path: string; text: string }[]) {
+  for (const write of writes) {
+    await mkdir(path.dirname(path.join(root, write.path)), { recursive: true });
+    await writeFile(path.join(root, write.path), write.text);
+  }
+}
+
+async function withScratch(run: (root: string) => Promise<void>) {
+  const root = await mkdtemp(path.join(tmpdir(), "pixelfx-project-"));
+  try {
+    await run(root);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+describe("pixelfx project files", () => {
+  it("names effects by category and kebab-case name", () => {
+    assert.equal(isEffectId("fire/torch"), true);
+    assert.equal(isEffectId("my-fx/blue-torch-2"), true);
+    for (const id of ["fire", "fire/Torch", "fire/_lib", "fire/torch/x", "../fire", "fire/torch.js", "fire/-x", ""]) assert.equal(isEffectId(id), false, id);
+    assert.equal(effectIdOf("pixelfx/fx/fire/torch.js"), "fire/torch");
+    for (const file of ["pixelfx/fx/fire/_lib.js", "pixelfx/fx/torch.js", "pixelfx/fx/fire/a/torch.js", "pixelfx/core/index.js", "pixelfx/fx/fire/Torch.js", "other/fx/fire/torch.js"])
+      assert.equal(effectIdOf(file), undefined, file);
+    assert.equal(freeEffectId("fire/torch", new Set()), "fire/torch");
+    assert.equal(freeEffectId("fire/torch", new Set(["fire/torch", "fire/torch-2"])), "fire/torch-3");
+  });
+
+  it("knows the built-in effect a copy came from", () => {
+    const ids = new Set(["fire/torch", "ui/level-up-2"]);
+    assert.equal(builtinIdOf("fire/torch", ids), "fire/torch");
+    assert.equal(builtinIdOf("fire/torch-3", ids), "fire/torch");
+    assert.equal(builtinIdOf("ui/level-up-2", ids), "ui/level-up-2");
+    assert.equal(builtinIdOf("fire/torchlight", ids), undefined);
+    assert.equal(builtinIdOf("mine/torch", ids), undefined);
+  });
+
+  it("refuses meta and acts the panel can't show, and takes every built-in effect", () => {
+    for (const fx of LIBRARY) assert.equal(metaProblem(fx.meta, fx.mod.act), undefined, fx.id);
+    const meta = fullMeta({ name: "x" });
+    assert.match(metaProblem({ ...meta, fps: "30" }), /fps/);
+    assert.match(metaProblem({ ...meta, duration: "2" }), /duration/);
+    assert.match(metaProblem({ ...meta, size: null }), /size/);
+    assert.match(metaProblem({ ...meta, loop: "yes" }), /loop/);
+    assert.match(metaProblem(meta, { poses: [] }), /act.poses/);
+    assert.match(metaProblem(meta, { poses: [[0, null]] }), /act.poses/);
+    assert.match(metaProblem(meta, { poses: [[0, {}]], hits: [{}] }), /act.hits/);
+    assert.equal(metaProblem(meta, { poses: [[0, {}]], hits: [{ t: 0.1 }] }), undefined);
+  });
+
+  it("reads relative imports and resolves them within the folder", () => {
+    const source = `import { a,\n  b } from "../../core/index.js";\nimport { c } from './_lib.js';\nexport { d } from "../fire/fireball.js";\nconst e = await import("./more.js");\nimport "pixelfx";\n// from "nothing"`;
+    assert.deepEqual(importsOf(source), ["../../core/index.js", "./_lib.js", "../fire/fireball.js", "./more.js"]);
+    assert.equal(resolveImport("fx/fire/torch.js", "../../core/index.js"), "core/index.js");
+    assert.equal(resolveImport("fx/moves/x.js", "../fire/fireball.js"), "fx/fire/fireball.js");
+    assert.equal(resolveImport("fx/fire/torch.js", "./_lib.js"), "fx/fire/_lib.js");
+    assert.equal(resolveImport("fx/fire/torch.js", "../../../escape.js"), undefined);
+    // What a project effect imports that the project lacks, which the browser's import error doesn't name.
+    const paths = new Set(["pixelfx/core/index.js", "pixelfx/fx/fire/_lib.js"]);
+    assert.deepEqual(missingImports(source, "fire/x", paths), ["../fire/fireball.js", "./more.js"]);
+    assert.deepEqual(missingImports(source, "mine/x", paths), ["./_lib.js", "../fire/fireball.js", "./more.js"]);
+  });
+
+  it("copies every built-in effect with all it imports, and the core whole", async () => {
+    const core = (await readdir(path.join(LIB, "core"))).map((file) => `core/${file}`).sort();
+    for (const id of Object.keys(effects)) {
+      const at = `fx/${id}.js`;
+      const files = await dependencies(await libSource(id), at, readLib);
+      // Nothing it needs is left behind: each file's imports are in the copy too.
+      for (const [file, text] of [[at, await libSource(id)], ...files] as [string, string][])
+        for (const spec of importsOf(text)) {
+          const dep = resolveImport(file, spec);
+          assert.ok(dep === at || files.has(dep), `${id}: ${file} imports ${spec}, which isn't copied`);
+        }
+      assert.deepEqual([...files.keys()].filter((file) => file.startsWith("core/")).sort(), core, id);
+      const cat = id.split("/")[0];
+      if (/from "\.\/_lib\.js"/.test(await libSource(id))) assert.ok(files.has(`fx/${cat}/_lib.js`), id);
+    }
+    const move = await dependencies(await libSource("moves/fireball-throw"), "fx/moves/fireball-throw.js", readLib);
+    assert.ok([...move.keys()].some((file) => /^fx\/(?!moves\/)[^/]+\/[^_][^/]*\.js$/.test(file)), "a move brings the effects it chains");
+  });
+
+  it("plans the files a project lacks, never replacing one it has", async () => {
+    const license = licenseNotice(await readLib("LICENSE"));
+    assert.match(license, /MIT License/);
+    assert.doesNotMatch(license, /Patch Pixel/);
+    const fresh = await planEffect({ id: "fire/torch", source: await libSource("fire/torch"), readLib, existing: new Set(), license });
+    const written = fresh.writes.map((write: { path: string }) => write.path);
+    assert.equal(written[0], "pixelfx/fx/fire/torch.js");
+    assert.equal(fresh.writes[0].text, await libSource("fire/torch"));
+    assert.ok(written.includes("pixelfx/core/index.js") && written.includes("pixelfx/fx/fire/_lib.js"));
+    assert.ok(written.includes(VERSION_PATH) && written.includes(LICENSE_PATH));
+    assert.deepEqual(fresh.kept, []);
+    // A project that has them keeps its own: a changed core file, its version and its license.
+    const existing = new Set(["pixelfx/core/math.js", VERSION_PATH, LICENSE_PATH, "pixelfx/fx/fire/_lib.js"]);
+    const again = await planEffect({ id: "fire/torch-2", source: await libSource("fire/torch"), readLib, existing, license });
+    const paths = again.writes.map((write: { path: string }) => write.path);
+    for (const kept of existing) assert.equal(paths.includes(kept), false, kept);
+    assert.deepEqual(new Set(again.kept), new Set(["pixelfx/core/math.js", "pixelfx/fx/fire/_lib.js"]));
+    // An import the plugin doesn't have is the project's own business.
+    const own = await planEffect({ id: "mine/x", source: `import { y } from "./helpers.js";`, readLib, existing: new Set(), license });
+    assert.deepEqual(own.writes.map((write: { path: string }) => write.path), ["pixelfx/fx/mine/x.js", LICENSE_PATH]);
+    await assert.rejects(planEffect({ id: "fire/Torch", source: "", readLib, existing: new Set() }), /kebab-case/);
+  });
+
+  it("leaves a folder a game imports as it is, and that passes the check", async () => {
+    await withScratch(async (root) => {
+      const existing = new Set<string>();
+      for (const id of ["moves/fireball-throw", "melee/claw-swipe", "fire/brazier", "ui/crit-number"]) {
+        const plan = await planEffect({ id, source: await libSource(id), readLib, existing, license: "MIT" });
+        await writePlan(root, plan.writes);
+        for (const write of plan.writes) existing.add(write.path);
+      }
+      for (const loop of [false, true]) {
+        const id = `mine/${loop ? "loop" : "burst"}`;
+        const plan = await planEffect({ id, source: effectTemplate(id, loop), readLib, existing, license: "MIT" });
+        await writePlan(root, plan.writes);
+      }
+      for (const id of ["moves/fireball-throw", "melee/claw-swipe", "fire/brazier", "ui/crit-number", "mine/burst", "mine/loop"]) {
+        const file = path.join(root, "pixelfx/fx", `${id}.js`);
+        const mod = await import(pathToFileURL(file).href);
+        const result = checkEffect(mod, await readFile(file, "utf8"));
+        assert.deepEqual(result.errors, [], id);
+        assert.equal(result.ok, true, id);
+      }
+    });
+  });
+});
+
+describe("pixelfx check", () => {
+  const good = { name: "Spark", desc: "A spark that flies out and fades.", tags: ["test"], size: [32, 32], origin: [16, 16], duration: 0.5, fps: 30 };
+  const dot = (p: any, t: number) => {
+    if (t < 0.4) p.px(0, 0, 0xffffffff);
+  };
+
+  it("passes a clean effect and states its frames", () => {
+    const result = checkEffect({ meta: good, draw: dot }, "");
+    assert.deepEqual(result.errors, []);
+    assert.deepEqual(result.warnings, []);
+    assert.equal(result.stats.frames, 15);
+  });
+
+  it("names what's wrong", () => {
+    const errors = (mod: unknown, source = "") => checkEffect(mod, source).errors.join("\n");
+    assert.match(errors({}), /exports no meta/);
+    assert.match(errors({ meta: good }), /neither draw nor create/);
+    assert.match(errors({ meta: { ...good, desc: "short" }, draw: dot }), /meta.desc/);
+    assert.match(errors({ meta: { ...good, size: [4, 600] }, draw: dot }), /meta.size/);
+    assert.match(errors({ meta: { ...good, bg: "pink" }, draw: dot }), /meta.bg/);
+    assert.match(errors({ meta: { ...good, options: { x: 1 } }, draw: dot }), /reserved/);
+    assert.match(errors({ meta: good, draw: dot }, "const r = Math.random();"), /Math.random/);
+    assert.match(errors({ meta: good, draw: dot }, "const now = Date.now();"), /clock/);
+    assert.match(errors({ meta: good, draw() {} }), /draws nothing/);
+    assert.match(errors({ meta: good, draw() { throw new Error("boom"); } }), /boom/);
+    let calls = 0;
+    assert.match(errors({ meta: good, draw: (p: any) => p.px(calls++ % 5, 0, 0xffffffff) }), /not deterministic/);
+  });
+
+  it("draws at 120 fps at most however many frames meta asks for", () => {
+    const result = checkEffect({ meta: { ...good, fps: 1e6 }, draw: dot }, "");
+    assert.deepEqual(result.errors, []);
+    assert.equal(result.stats.frames, 60);
+    assert.match(checkEffect({ meta: { ...good, fps: "30" }, draw: dot }, "").errors.join(), /meta.fps/);
+  });
+
+  it("warns about spills and one-shots that don't end empty", () => {
+    const warnings = checkEffect({ meta: good, draw: (p: any) => (p.px(0, 0, 0xffffffff), p.px(30, 0, 0xffffffff)) }, "").warnings.join("\n");
+    assert.match(warnings, /outside the 32x32 canvas/);
+    assert.match(warnings, /still drawn at t = duration/);
+  });
+
+  it("checks a sample of the built-in effects clean", async () => {
+    for (const id of ["fire/torch", "fire/brazier", "ui/crit-number", "melee/claw-swipe", "moves/fireball-throw", "weather/rain"]) {
+      const result = checkEffect((effects as Record<string, unknown>)[id], await libSource(id));
+      assert.deepEqual(result.errors, [], id);
+      assert.deepEqual(result.warnings, [], id);
+    }
+  });
+});
+
+describe("pixelfx presets and settings", () => {
+  const fx = byId("fire/torch");
+
+  it("keeps the settings that differ from the effect's own and puts them back", () => {
+    const base = defaultConfig(fx);
+    assert.deepEqual(settingsOf(base, fx), { bg: base.bg });
+    const { cfg, ignored } = applySettings(
+      base,
+      { seed: 7, palette: ["#112233", "#AABBCC"], fps: 12, size: [64, 64], flip: true, bg: "sky", options: { nope: 1 }, colour: "red" },
+      fx,
+    );
+    assert.deepEqual(ignored, ["options.nope", "colour"]);
+    const settings = settingsOf(cfg, fx);
+    assert.deepEqual(settings, { seed: 7, bg: "sky", palette: ["#112233", "#aabbcc"], fps: 12, size: [64, 64], flip: true });
+    assert.deepEqual(settingsOf(applySettings(defaultConfig(fx), settings, fx).cfg, fx), settings);
+    assert.equal(applySettings(cfg, { palette: null }, fx).cfg.palette, null);
+    assert.deepEqual(applySettings(base, { fps: 0, size: [8, 8], palette: ["red"], seed: 1.5 }, fx).ignored, ["fps", "size", "palette", "seed"]);
+  });
+
+  it("reads, adds and replaces presets, and refuses a file that isn't one", () => {
+    assert.throws(() => parsePresets("{"), SyntaxError);
+    assert.throws(() => parsePresets('{"presets": {}}'), /no "presets" list/);
+    let doc = parsePresets('{"version": 1, "presets": [{"name": "x", "effect": "fire/torch", "source": "builtin", "settings": {}}, {"odd": true}], "mine": 1}');
+    doc = withPreset(doc, { name: " Blue ", effect: "fire/torch", source: "builtin", settings: { seed: 2 } });
+    doc = withPreset(doc, { name: "Blue", effect: "fire/torch", source: "builtin", settings: { seed: 3 } });
+    doc = withPreset(doc, { name: "Blue", effect: "fire/torch", source: "project", settings: {} });
+    assert.deepEqual(
+      presetsFor(doc, "fire/torch", "builtin").map((preset: any) => [preset.name, preset.settings.seed]),
+      [["x", undefined], ["Blue", 3]],
+    );
+    assert.equal(presetsFor(doc, "fire/torch", "project").length, 1);
+    // What the panel doesn't know stays as it was.
+    assert.equal(doc.mine, 1);
+    assert.deepEqual(doc.presets[1], { odd: true });
+    assert.deepEqual(parsePresets(presetsText(doc)), doc);
+    assert.throws(() => withPreset(doc, { name: " ", effect: "fire/torch", source: "builtin", settings: {} }), /1 to 60/);
+    // A renamed project effect takes its presets along; the built-in one's stay.
+    const renamed = renamePresets(doc, "fire/torch", "fire/blue-torch");
+    assert.equal(presetsFor(renamed, "fire/blue-torch", "project").length, 1);
+    assert.equal(presetsFor(renamed, "fire/torch", "project").length, 0);
+    assert.equal(presetsFor(renamed, "fire/torch", "builtin").length, 2);
+    assert.equal(renamePresets(doc, "fire/none", "fire/other"), doc);
   });
 });
