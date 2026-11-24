@@ -75,7 +75,8 @@ const errorText = (error) => (error instanceof Error ? error.message : String(er
 
 /** An effect as the panel shows it: `raw` is its module as it is, `mod` the same with the gallery's meta defaults. */
 function entry(id, source, raw, error) {
-  const meta = fullMeta(raw?.meta && typeof raw.meta === "object" ? raw.meta : { name: id.split("/")[1] });
+  const name = typeof raw?.meta?.name === "string" && raw.meta.name ? raw.meta.name : id.split("/")[1];
+  const meta = fullMeta(error ? { name } : raw.meta);
   const mod = error ? { meta, draw() {} } : { ...raw, meta };
   return { key: `${source}:${id}`, id, cat: id.split("/")[0], source, ...(source === "project" ? { path: effectPath(id) } : {}), raw, mod, meta, ...(error ? { error } : {}) };
 }
@@ -946,7 +947,7 @@ async function runExport(format) {
     } else if (format === "frames") {
       await exportFrames(fx, cfg, name, write);
     } else throw new Error(`Unknown format ${format}`);
-    return { saved, library };
+    return { fx, cfg, saved, library };
   } catch (error) {
     throw Object.assign(error instanceof Error ? error : new Error(String(error)), { saved });
   } finally {
@@ -1000,13 +1001,26 @@ async function projectFiles() {
   }
 }
 
+const point = (value) => Array.isArray(value) && value.length === 2 && value.every(Number.isFinite);
+
+/** What in an effect's meta the panel can't play it with, or undefined. The check says more. */
+function metaProblem(meta) {
+  if (!point(meta.size) || meta.size.some((v) => v < 1)) return "meta.size must be [w, h]";
+  if (!point(meta.origin)) return "meta.origin must be [x, y]";
+  if (!(meta.duration > 0)) return "meta.duration must be above 0";
+  if (!(meta.fps > 0)) return "meta.fps must be above 0";
+  if (!meta.options || typeof meta.options !== "object" || !Array.isArray(meta.tags)) return "meta.options must be an object and meta.tags a list";
+  return undefined;
+}
+
 /** Imports a project effect; one that throws, or isn't an effect, comes back with why. */
 async function importEffect(id) {
   try {
     const mod = await host.modules.import(effectPath(id));
     if (!mod.meta || typeof mod.meta !== "object") return entry(id, "project", mod, "exports no meta");
     if (typeof mod.draw !== "function" && typeof mod.create !== "function") return entry(id, "project", mod, "exports neither draw nor create");
-    return entry(id, "project", mod);
+    const problem = metaProblem(fullMeta(mod.meta));
+    return entry(id, "project", mod, problem);
   } catch (error) {
     return entry(id, "project", undefined, errorText(error));
   }
@@ -1106,28 +1120,50 @@ function openEffect(fx, cfg) {
 // so a write waits to hear of itself before the effect is loaded again.
 const fileWaiters = new Set();
 let reloadTimer;
+let reloadPending;
+let reloadDone = () => {};
 host.on("files", ({ paths, truncated } = {}) => {
   for (const waiter of [...fileWaiters]) waiter(paths, truncated);
   const unnamed = !Array.isArray(paths) || truncated;
   if (!unnamed && !paths.some((path) => path.startsWith(`${ROOT}/`))) return;
   if (unnamed || paths.includes(PRESETS_PATH)) void loadPresets();
   clearTimeout(reloadTimer);
-  reloadTimer = setTimeout(() => void loadProject(), 150);
+  reloadPending ??= new Promise((resolve) => (reloadDone = resolve));
+  reloadTimer = setTimeout(() => {
+    const done = reloadDone;
+    reloadPending = undefined;
+    void loadProject().then(done);
+  }, 150);
 });
+
+/** Resolves once the project's effects are loaded as the last files event left them. */
+async function projectSettled() {
+  await projectReady;
+  await reloadPending;
+  await reading;
+}
+
+// Writes, renames and deletes, one at a time, so one never lands on what another is doing.
+let changing = Promise.resolve();
+function change(run) {
+  const result = changing.then(run);
+  changing = result.catch(() => {});
+  return result;
+}
 
 /** Resolves once a files event names one of `paths`, or doesn't say which changed, or after `ms`. */
 function filesHeard(paths, ms = 3000) {
   return new Promise((resolve) => {
     const want = new Set(paths);
-    const done = () => {
+    const done = (heard) => {
       clearTimeout(timer);
       fileWaiters.delete(listener);
-      resolve();
+      resolve(heard);
     };
     const listener = (heard, truncated) => {
-      if (!Array.isArray(heard) || truncated || heard.some((path) => want.has(path))) done();
+      if (!Array.isArray(heard) || truncated || heard.some((path) => want.has(path))) done(true);
     };
-    const timer = setTimeout(done, ms);
+    const timer = setTimeout(done, ms, false);
     fileWaiters.add(listener);
   });
 }
@@ -1137,7 +1173,11 @@ function filesHeard(paths, ms = 3000) {
  * imports that the project lacks (never replacing one it has), and loads it
  * again. With `fresh`, an effect already at that path is an error.
  */
-async function writeEffect(id, code, { fresh = false, onWritten } = {}) {
+function writeEffect(id, code, options) {
+  return change(() => writeNow(id, code, options));
+}
+
+async function writeNow(id, code, { fresh = false, onWritten } = {}) {
   if (!isEffectId(id)) throw new Error(t.badName);
   const listing = await projectFiles();
   if (listing.truncated) throw new Error(`${ROOT}/ has too many files to check what's already there`);
@@ -1147,9 +1187,10 @@ async function writeEffect(id, code, { fresh = false, onWritten } = {}) {
   const heard = filesHeard(written);
   for (const write of plan.writes) await host.files.write(write.path, write.text);
   onWritten?.();
-  await heard;
+  // Until the app reports the write, an import may give the code from before it.
+  const heardWrite = await heard;
   await loadProject();
-  return { fx: state.project.find((item) => item.id === id), written, kept: plan.kept };
+  return { fx: state.project.find((item) => item.id === id), written, kept: plan.kept, loaded: heardWrite };
 }
 
 /** Copies a built-in effect into the project under its own name, or the first free one after it. */
@@ -1168,7 +1209,7 @@ function loadErrors(fx, source) {
 
 /** Checks an effect as `source` has it; the check is shown until its file holds other code. */
 function runCheck(fx, source) {
-  const result = fx.error ? { ok: false, errors: loadErrors(fx, source), warnings: [], stats: {} } : checkEffect(fx.raw, source);
+  const result = fx.raw ? checkEffect(fx.raw, source) : { ok: false, errors: loadErrors(fx, source), warnings: [], stats: {} };
   state.checks.set(fx.key, { ...result, source });
   if (state.fx?.key === fx.key) {
     showCheck();
@@ -1193,7 +1234,13 @@ async function loadEditor(fx) {
   if (draft !== undefined) {
     editor.value = draft;
     editor.readOnly = false;
+    editor.dataset.key = fx.key;
     return;
+  }
+  if (editor.dataset.key !== fx.key) {
+    editor.value = "";
+    editor.readOnly = true;
+    delete editor.dataset.key;
   }
   let text;
   let readable = true;
@@ -1212,6 +1259,7 @@ async function loadEditor(fx) {
   editor.value = text;
   // What can't be read isn't saved over.
   editor.readOnly = !readable;
+  editor.dataset.key = fx.key;
 }
 
 function showCheck() {
@@ -1233,18 +1281,19 @@ let saving = false;
 async function saveEditor() {
   const fx = state.fx;
   const editor = $("#code-editor");
-  if (saving || fx?.source !== "project" || editor.readOnly) return;
+  if (saving || fx?.source !== "project" || editor.readOnly || editor.dataset.key !== fx.key) return;
   const code = editor.value;
   saving = true;
   $("#btn-code-save").disabled = true;
   $("#code-status").textContent = t.saving;
   try {
-    const { fx: loaded } = await writeEffect(fx.id, code, {
+    const { fx: loaded, loaded: fresh } = await writeEffect(fx.id, code, {
       onWritten: () => {
         if (state.drafts.get(fx.key) === code) state.drafts.delete(fx.key);
       },
     });
-    if (loaded) {
+    if (!fresh) toast(t.savedNotLoaded);
+    else if (loaded) {
       $("#code-status").textContent = t.checking;
       await pause();
       runCheck(loaded, code);
@@ -1259,7 +1308,7 @@ async function saveEditor() {
 }
 
 $("#code-editor").addEventListener("input", (event) => {
-  if (state.fx?.source !== "project") return;
+  if (state.fx?.source !== "project" || event.target.dataset.key !== state.fx.key) return;
   state.drafts.set(state.fx.key, event.target.value);
   updateCodeStatus();
 });
@@ -1365,15 +1414,17 @@ async function renameEffect(fx) {
   const id = `${fx.cat}/${values.name}`;
   const to = effectPath(id);
   try {
-    const heard = filesHeard([fx.path, to]);
-    await host.files.move(fx.path, to);
+    await change(async () => {
+      const heard = filesHeard([fx.path, to]);
+      await host.files.move(fx.path, to);
     for (const map of [state.drafts, state.checks]) {
       if (map.has(fx.key)) map.set(`project:${id}`, map.get(fx.key));
       map.delete(fx.key);
     }
-    renamed.set(fx.id, id);
-    await heard;
-    await loadProject();
+      renamed.set(fx.id, id);
+      await heard;
+      await loadProject();
+    });
   } catch (error) {
     renamed.delete(fx.id);
     toast(t.failed(errorText(error)), "danger");
@@ -1390,12 +1441,14 @@ function resetRemove() {
 
 async function removeEffect(fx) {
   try {
-    const heard = filesHeard([fx.path]);
-    await host.files.delete(fx.path);
-    state.drafts.delete(fx.key);
-    state.checks.delete(fx.key);
-    await heard;
-    await loadProject();
+    await change(async () => {
+      const heard = filesHeard([fx.path]);
+      await host.files.delete(fx.path);
+      state.drafts.delete(fx.key);
+      state.checks.delete(fx.key);
+      await heard;
+      await loadProject();
+    });
     toast(t.removed(fx.path), "success");
   } catch (error) {
     toast(t.failed(errorText(error)), "danger");
@@ -1437,10 +1490,16 @@ for (const tab of $$(".space-tab")) tab.addEventListener("click", () => setSpace
 // Presets: named settings for an effect, in pixelfx/presets.json.
 
 async function readPresets() {
+  let text;
   try {
-    return parsePresets(await host.files.text(PRESETS_PATH));
+    text = await host.files.text(PRESETS_PATH);
   } catch (error) {
     if (notFound(error)) return { version: 1, presets: [] };
+    throw new Error(t.presetsUnreadable(PRESETS_PATH));
+  }
+  try {
+    return parsePresets(text);
+  } catch {
     throw new Error(t.presetsUnreadable(PRESETS_PATH));
   }
 }
@@ -1568,39 +1627,40 @@ const shownError = () => (!$("#stage-error").hidden ? $("#stage-error").textCont
 function handleTools() {
   if (!host.tools) return;
   host.tools.handle("find_effects", async ({ query = "", category, source = "all", limit = 30 } = {}) => {
-    await projectReady;
+    await projectSettled();
     const pool = source === "builtin" ? LIBRARY : source === "project" ? state.project : [...state.project, ...LIBRARY];
     const found = pool.filter((fx) => (!category || fx.cat === category) && matches(fx, query));
     return { total: found.length, effects: found.slice(0, limit).map(summary), categories: categoriesOf([...LIBRARY, ...state.project]) };
   });
   host.tools.handle("read_effect", async ({ effect, source }) => {
-    await projectReady;
+    await projectSettled();
     const fx = requireEffect(effect, source);
     return { ...summary(fx), meta: JSON.parse(JSON.stringify(fx.raw?.meta ?? null)), code: await sourceOf(fx) };
   });
   host.tools.handle("copy_effect", async ({ effect }) => {
-    await projectReady;
+    await projectSettled();
     const fx = requireEffect(effect, "builtin");
     const result = await copyToProject(fx);
     if (result.fx) openEffect(result.fx);
     return { effect: result.id, path: result.path, written: result.written, kept: result.kept };
   });
   host.tools.handle("write_effect", async ({ effect, code }) => {
-    await projectReady;
-    const { fx, written, kept } = await writeEffect(effect, code);
+    await projectSettled();
+    const { fx, written, kept, loaded } = await writeEffect(effect, code);
     if (!fx) throw new Error(`Wrote ${written.join(", ")}, but ${effectPath(effect)} isn't listed`);
+    if (!loaded)
+      return { effect, path: fx.path, written, kept, loaded: false, note: "Saved, but the app hasn't reported the change yet, so it wasn't checked. Call check_effect shortly." };
     const result = runCheck(fx, code);
     openEffect(fx, carried(fx));
     return { effect, path: fx.path, written, kept, ...result };
   });
   host.tools.handle("check_effect", async ({ effect, source }) => {
-    await projectReady;
-    await reading;
+    await projectSettled();
     const fx = requireEffect(effect, source);
     return { effect: fx.id, source: fx.source, ...runCheck(fx, await sourceOf(fx)) };
   });
   host.tools.handle("show_effect", async ({ effect, source, view, settings, reset }) => {
-    await projectReady;
+    await projectSettled();
     const fx = requireEffect(effect, source);
     if (state.fx?.key !== fx.key) openEffect(fx);
     const base = reset ? defaultConfig(fx) : state.cfg;
@@ -1612,13 +1672,13 @@ function handleTools() {
     return { ...summary(fx), view: state.view, settings: settingsOf(state.cfg, fx), ...(ignored.length ? { ignored } : {}), ...(error ? { error } : {}) };
   });
   host.tools.handle("export_effect", async ({ effect, source, format }) => {
-    await projectReady;
+    await projectSettled();
     if (effect) {
       const fx = requireEffect(effect, source);
       if (state.fx?.key !== fx.key) openEffect(fx);
     }
-    const { saved, library } = await runExport(format);
-    return { effect: state.fx.id, source: state.fx.source, format, saved, library, settings: settingsOf(state.cfg, state.fx) };
+    const { fx, cfg, saved, library } = await runExport(format);
+    return { effect: fx.id, source: fx.source, format, saved, library, settings: settingsOf(cfg, fx) };
   });
 }
 

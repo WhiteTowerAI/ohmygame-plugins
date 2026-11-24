@@ -77,7 +77,8 @@ without the panel, a Library source and a Canvas node.
 
 - The built-in effects are read-only; copy one to change it.
 - After a save, the panel loads the effect again once the app reports the
-  file changed, which it waits up to 3 seconds for.
+  file changed. It waits up to 3 seconds to check it; a report that comes
+  later, such as while an agent works, plays the new code unchecked.
 - The check runs in the panel and holds it while it runs: about a quarter of
   a second for most effects, several seconds for the biggest ones.
 - An export holds all its frames at once, so it stops at 64 million pixels

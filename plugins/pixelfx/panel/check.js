@@ -107,7 +107,7 @@ function checkMeta(meta, source, errs, notes) {
     errs.push("meta.size must be [w, h], whole pixels 8..480");
   if (!Array.isArray(meta.origin) || meta.origin.length !== 2) errs.push("meta.origin must be [x, y]");
   if (!(meta.duration > 0 && meta.duration <= 12)) errs.push("meta.duration must be 0..12 s");
-  if (!(meta.fps > 0 && meta.fps <= 120)) errs.push("meta.fps must be 1..120");
+  if (!(meta.fps > 0)) errs.push("meta.fps must be above 0");
   if (!BACKDROPS.includes(meta.bg)) errs.push(`meta.bg must be one of ${BACKDROPS.join(", ")}`);
   const taken = Object.keys(meta.options ?? {}).filter((k) => RESERVED.includes(k));
   if (taken.length) errs.push(`option ${taken.join(", ")} is reserved for placement and glow: rename it`);
