@@ -20,15 +20,17 @@ import { actFrameStep, actStepper, flippedActBounds, flippedOrigin } from "./tim
 export class StageRunner {
   /**
    * `state` is the panel's: `cfg`, `playing` and `speed`. `onFrame` hears
-   * each frame drawn, `onError` why one couldn't be, or undefined once one is.
+   * each frame drawn, `onError` why one couldn't be, or undefined once one
+   * is, and `onLoop` each time playing starts the effect again.
    */
-  constructor(canvas, viewport, state, { onFrame, onError }) {
+  constructor(canvas, viewport, state, { onFrame, onError, onLoop = () => {} }) {
     this.canvas = canvas;
     this.viewport = viewport;
     this.ctx = canvas.getContext("2d");
     this.state = state;
     this.onFrame = onFrame;
     this.onError = onError;
+    this.onLoop = onLoop;
     this.fx = null;
     this.W = 360;
     this.H = 220;
@@ -189,10 +191,12 @@ export class StageRunner {
       while (this.acc >= interval) {
         this.acc -= interval;
         if (this.frameIdx >= this.totalFrames - 1) {
-          if (this.fx.meta.loop) return this.restart();
           // A one-shot effect rests on its last frame a moment before it plays again.
-          this.wait += interval;
-          if (this.wait >= 0.42) return this.restart();
+          if (!this.fx.meta.loop) this.wait += interval;
+          if (this.fx.meta.loop || this.wait >= 0.42) {
+            this.restart();
+            return this.onLoop();
+          }
         } else {
           this.step(dtSim);
           this.frameIdx++;

@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "effect": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+/[a-z0-9-]+$",
+      "description": "Effect id, category/name; built-in or the project's."
+    }
+  },
+  "required": [
+    "effect"
+  ],
+  "additionalProperties": false
+}

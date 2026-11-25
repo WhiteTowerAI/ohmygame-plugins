@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "properties": {
+    "effect": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+/[a-z0-9-]+$",
+      "description": "Effect id, category/name; built-in or the project's."
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "What the sound is, in English; made from the effect's name, description, length and hits when left out."
+    },
+    "durationSeconds": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 30,
+      "description": "Its length; the effect's as shown when left out."
+    }
+  },
+  "required": [
+    "effect"
+  ],
+  "additionalProperties": false
+}

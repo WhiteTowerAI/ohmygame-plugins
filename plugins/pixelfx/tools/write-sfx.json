@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "properties": {
+    "effect": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+/[a-z0-9-]+$",
+      "description": "Effect id, category/name; built-in or the project's."
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200000,
+      "description": "The whole script: imports from \"../../sfx-core/index.js\" and exports variants, { key: { label, desc, samples, targetDb?, texture?, cues? } }."
+    },
+    "select": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "The variant to choose in the panel; the first when left out."
+    }
+  },
+  "required": [
+    "effect",
+    "code"
+  ],
+  "additionalProperties": false
+}

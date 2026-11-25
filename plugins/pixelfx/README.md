@@ -1,7 +1,7 @@
 # Pixel Effects
 
-Browse 244 pixel art effects, make your own in the project and export sprite
-sheets.
+Browse 244 pixel art effects, make your own in the project, give them sound
+and export sprite sheets.
 
 Official OhMyGame plugin `ohmygame/pixelfx`, an optional Beta for OhMyGame
 plugin API **2.38+**, ported from [pixelfx](https://github.com/rrenovation/pixelfx)
@@ -25,9 +25,10 @@ built-in effects and the project's own, each drawn by code frame by frame:
   you like as a preset in `pixelfx/presets.json`;
 - see it as a transparent sprite sheet, or read its source, a usage example
   and the sheet's JSON;
+- give it sound, play it alone or with the effect, and add it to the Library;
 - export it: a transparent sprite sheet or a contact sheet goes to the
-  Library, and a sprite sheet with Aseprite JSON, a GIF or single frames are
-  saved to `pixelfx/exports/` in the project.
+  Library, and a sprite sheet with Aseprite JSON (and its sound), a GIF or
+  single frames are saved to `pixelfx/exports/` in the project.
 
 ### The project's effects
 
@@ -49,6 +50,35 @@ import { createFrame, clearFrame, createFx, composite } from "./pixelfx/core/ind
 import * as torch from "./pixelfx/fx/fire/torch.js";
 ```
 
+### Sound
+
+An effect's sound is a script in the project,
+`pixelfx/sfx/<category>/<name>.js`, made with pixelfx's sound engine, which
+the panel copies to `pixelfx/sfx-core/` the first time, beside its version.
+The script exports a few `variants`; the panel renders each to a 22,050 Hz
+WAV file in `pixelfx/sfx/<category>/<name>/`, with `sfx.json` listing them
+with their length, loudness, waveform and cues. **Render** renders the
+script again after it changes. A built-in effect's sound is the project's too.
+Renaming an effect takes its sound along; deleting one deletes its sound,
+unless a built-in effect of the same name still plays it.
+
+**Make with model** asks the audio model set up in OhMyGame's Settings for a
+sound, from a description the panel writes from the effect and the person
+can change. It may cost them; the sound is kept as a variant and in the
+Library.
+
+**Play with effect** plays the chosen variant each time the effect starts,
+at the stage's speed. A sprite sheet saved with its JSON takes the chosen
+sound along and names it in `meta.pixelfx.sound`.
+
+### The assistant
+
+**AI** opens the panel's assistant: the person's language model, run by the
+app with the panel's tools, as in pixelfx's AI drawer. It knows the effect
+shown and its settings, shows each tool it uses and what came of it, and can
+be stopped. The app keeps the conversation for each project, and its history
+undoes each change the assistant made. **New chat** clears it.
+
 ### The agent
 
 The panel answers tools the agent uses as `ohmygame__pixelfx__<tool>`, and the
@@ -63,15 +93,18 @@ person sees each one work in it:
 | `check_effect` | checks an effect |
 | `show_effect` | shows an effect with preview settings, for `panel_screenshot` |
 | `export_effect` | exports what's shown to the Library or `pixelfx/exports/` |
+| `read_sfx` | an effect's sound script and variants, and its length and hits |
+| `write_sfx` | writes an effect's sound script and renders it |
+| `make_sfx_with_model` | makes a sound with the person's audio model, when they ask |
 
-The panel also tells the agent which effect is open and how it's set, and the
-**pixelfx** Skill has the effect contract and the write, check, look and fix
-loop.
+The panel also tells the agent which effect is open, how it's set and what
+sound it has, and the **pixelfx** Skill has the effect and sound contracts
+and the write, check, look and fix loop.
 
 ## Coming next
 
-The panel's assistant, sound effects, render and check tools for the agent
-without the panel, a Library source and a Canvas node.
+Render and check tools for the agent without the panel, a Library source and
+a Canvas node.
 
 ## Limits
 
@@ -85,4 +118,10 @@ without the panel, a Library source and a Canvas node.
   across them (for example 1024×1024 at 30 fps for 2 seconds), and its sprite
   sheet or contact sheet must fit in a canvas. GIFs play at 50 fps at most.
 - Settings aren't kept when you change effects or close the panel, besides
-  presets; the colour theme and the last effect are.
+  presets; the colour theme, the last effect and whether the assistant is open
+  are.
+- Sound renders in the panel, a variant at a time, up to 8 variants of 12
+  seconds each. Play with effect follows the stage's speed and length, not
+  each frame.
+- The assistant needs a language model and a model-made sound an audio
+  model, both set up in Settings. Neither works in a Plugin Builder preview.

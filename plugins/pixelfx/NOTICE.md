@@ -20,10 +20,15 @@ license in `panel/lib/LICENSE`.
   `panel/style.css` are adapted from pixelfx's `gallery/export-utils.js`,
   `gallery/app.js` and `gallery/style.css`, `panel/check.js` from its
   `tools/check.mjs`, the new effect template in `panel/project.js` from its
-  `tools/new.mjs`, and `skills/pixelfx/SKILL.md` from its Skill and workspace
-  rules, all under the same MIT license.
+  `tools/new.mjs`, `panel/sfx-core.js` from the sound engine in its
+  `gallery/browser-backend.js` (without its Ogg encoder and reference
+  libraries), the drawer in `panel/agent.js` and its system prompt from its
+  `gallery/index.html`, `gallery/app.js` and `gallery/browser-backend.js`, and
+  `skills/pixelfx/SKILL.md` from its Skills and workspace rules, all under the
+  same MIT license.
 - The panel copies `panel/lib/core/` and effects from `panel/lib/fx/` into a
-  project's `pixelfx/` folder unchanged, headers included, with pixelfx's MIT
+  project's `pixelfx/` folder unchanged, headers included, and
+  `panel/sfx-core.js` as `pixelfx/sfx-core/index.js`, with pixelfx's MIT
   license and these credits in `pixelfx/LICENSE-pixelfx.md`.
 
 The Patch Pixel font in pixelfx's `gallery/fonts` is not under its MIT license

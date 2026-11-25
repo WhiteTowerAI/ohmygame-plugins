@@ -19,6 +19,21 @@ export function actLength(mod) {
   return { from, end, seconds: end - from + actStops(mod) };
 }
 
+/** When each of an act's hits lands, in seconds from its first pose as it plays, the hit-stops before it included. */
+export function actHitTimes(mod) {
+  const { from } = actLength(mod);
+  const longest = new Map();
+  for (const hit of mod.act?.hits ?? []) longest.set(hit.t, Math.max(longest.get(hit.t) ?? 0, hit.stop ?? 0));
+  let stopped = 0;
+  return [...longest.keys()]
+    .sort((a, b) => a - b)
+    .map((t) => {
+      const at = t - from + stopped;
+      stopped += longest.get(t);
+      return at;
+    });
+}
+
 /** The time between frames for `frames` frames of an act, the last landing on its end unless it loops. */
 export function actFrameStep(mod, frames) {
   const { seconds } = actLength(mod);
