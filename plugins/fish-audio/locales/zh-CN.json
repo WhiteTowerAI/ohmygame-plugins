@@ -1,0 +1,8 @@
+{
+  "plugin.name": "Fish Audio",
+  "plugin.description": "使用 Fish Audio 和选定音色生成角色配音。",
+  "plugin.longDescription": "连接 Fish Audio 官方 API 的可选 Beta 插件。使用 S2.1 Pro 或 S2.1 Pro Free 生成单人配音，选择工作区或公共音色，并将 MP3 或 WAV 保存到 OhMyGame。请求使用你的 Fish Audio 账号，可用性与额度由所选模型及账号决定。首版不包含创建音色、多人对话或实时播放。",
+  "provider.name": "Fish Audio",
+  "config.key.title": "API 密钥",
+  "config.key.description": "在 Fish Audio 控制台创建密钥。密钥保存在 OhMyGame 本地凭据存储中。"
+}

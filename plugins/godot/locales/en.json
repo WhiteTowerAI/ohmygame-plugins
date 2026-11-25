@@ -10,5 +10,8 @@
   "example.1": "Create a playable 3D scene in Godot.",
   "example.2": "Inspect the current Godot project and suggest the next implementation step.",
   "example.3": "Build a player controller for the current Godot scene.",
-  "mcp.title": "Godot MCP"
+  "mcp.title": "Godot MCP",
+  "command.status": "Godot status",
+  "command.installTemplates": "Install web export templates",
+  "command.installTemplates.description": "Downloads only the web templates for the Godot version above from Godot's official release."
 }

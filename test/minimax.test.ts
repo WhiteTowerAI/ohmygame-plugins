@@ -6,6 +6,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { it, type TestContext } from "node:test";
 import type { PluginServices as Services } from "../app/src/daemon/plugin-services.js";
+import type { AudioGenerationRequest, AudioModelCatalog } from "../app/src/shared/audio.js";
 import type { PluginMediaProviders as Media } from "../app/src/daemon/plugin-media-providers.js";
 
 const loadApp = (name: string) =>
@@ -47,16 +48,20 @@ async function setup(t: TestContext, reply?: Reply) {
     { PluginServices },
     { PluginMediaProviders },
     { mediaTaskJournal, GenerationShutdown },
+    { ProviderAudio },
   ] = await Promise.all([
     loadApp("plugin-services"),
     loadApp("plugin-media-providers"),
     loadApp("media-task-journal"),
+    loadApp("audio-generation"),
   ]);
   const root = await mkdtemp(path.join(tmpdir(), "ohmygame-minimax-"));
   const services: Services = new PluginServices({
     directory: path.join(root, "store"),
   });
+  const instances: Media[] = [];
   t.after(async () => {
+    for (const media of instances) await media.close();
     await services.close();
     await rm(root, { recursive: true, force: true });
   });
@@ -79,7 +84,12 @@ async function setup(t: TestContext, reply?: Reply) {
       return new Response(MP4, { headers: { "content-type": "video/mp4" } });
     return done();
   };
-  const media: Media = new PluginMediaProviders(services, fetcher);
+  const createMedia = (): Media => {
+    const media = new PluginMediaProviders(services, fetcher, undefined, undefined, root);
+    instances.push(media);
+    return media;
+  };
+  const media = createMedia();
   await services.configure("ohmygame/minimax", {
     cnApiKey: "cn-test-key",
     globalApiKey: "global-test-key",
@@ -97,8 +107,10 @@ async function setup(t: TestContext, reply?: Reply) {
     media,
     providers,
     requests,
-    restart: (): Media => new PluginMediaProviders(services, fetcher),
-    journal: () => mediaTaskJournal(path.join(root, "tasks"), "job-1"),
+    restart: createMedia,
+    audio: new ProviderAudio(() => media.audioAdapters(() => true)),
+    audioFor: (instance: Media) => new ProviderAudio(() => instance.audioAdapters(() => true)),
+    journal: (id = "job-1") => mediaTaskJournal(path.join(root, "tasks"), id),
     GenerationShutdown,
   };
 }
@@ -470,4 +482,98 @@ it("keeps checking the same job through queued, running and malformed replies", 
     s.requests.some((r) => r.url.endsWith("wrong.mp4")),
     false,
   );
+});
+
+
+function speechWav(channels = 1) {
+  const bytes = Buffer.alloc(44 + 3200 * channels);
+  bytes.write("RIFF"); bytes.writeUInt32LE(bytes.length - 8, 4); bytes.write("WAVEfmt ", 8); bytes.writeUInt32LE(16, 16);
+  bytes.writeUInt16LE(1, 20); bytes.writeUInt16LE(channels, 22); bytes.writeUInt32LE(16000, 24); bytes.writeUInt32LE(32000 * channels, 28); bytes.writeUInt16LE(2 * channels, 32); bytes.writeUInt16LE(16, 34); bytes.write("data", 36); bytes.writeUInt32LE(bytes.length - 44, 40);
+  return bytes;
+}
+const speechInput = (region = "cn", model = "speech-2.8-hd"): AudioGenerationRequest => ({
+  model: { provider: `plugin.ohmygame.minimax.${region}`, id: model },
+  prompt: "Hello 世界", voiceId: "English_Graceful_Lady", output: { format: "wav", sampleRate: 16000, channels: 1 },
+});
+const speechReply = (audio = speechWav().toString("hex")) => json({ data: { audio, status: 2 }, base_resp: { status_code: 0, status_msg: "success" }, trace_id: "speech-trace", extra_info: { usage_characters: 8, audio_length: 100 } });
+
+it("adds regional speech without changing video IDs or sending keys to another region", async t => {
+  const s = await setup(t, req => req.url.endsWith("/v1/t2a_v2") ? speechReply() : undefined);
+  const catalog: AudioModelCatalog = await s.audio.catalog();
+  assert.equal(catalog.models.length, 4);
+  assert.ok(catalog.models.every(model => model.capabilities.maxTextCharacters === 9999));
+  for (const [region, model] of [["cn", "speech-2.8-hd"], ["global", "speech-2.8-turbo"]]) {
+    const result = await s.audio.generate({ ...speechInput(region, model), speed: 50, pitch: -2, volume: 25 }, undefined, await s.journal(region));
+    assert.ok(Buffer.from(result.bytes).equals(speechWav()));
+    assert.equal(result.metadata.usageCharacters, 8);
+    assert.equal(result.metadata.providerRequestId, "speech-trace");
+    const sent = s.requests.at(-1)!;
+    assert.equal(sent.url, `https://api.minimax.${region === "cn" ? "cn" : "io"}/v1/t2a_v2`);
+    assert.equal(sent.headers.get("authorization"), `Bearer ${region}-test-key`);
+    assert.deepEqual(sent.body, { model, text: "Hello 世界", stream: false, output_format: "hex", language_boost: "auto", voice_setting: { voice_id: "English_Graceful_Lady", speed: 1.5, pitch: -2, vol: 1.25 }, audio_setting: { format: "wav", sample_rate: 16000, channel: 1 } });
+  }
+  assert.deepEqual(s.providers[0]!.models.map(model => model.id), ["MiniMax-H3", "MiniMax-H3-Max"]);
+});
+
+it("recovers confirmed speech without resubmission and refuses changed credentials or requests", async t => {
+  const s = await setup(t, () => speechReply());
+  await s.audio.generate(speechInput(), undefined, await s.journal());
+  const next = s.audioFor(s.restart());
+  assert.ok(Buffer.from((await next.generate(speechInput(), undefined, await s.journal())).bytes).equals(speechWav()));
+  assert.equal(s.requests.length, 1);
+  await assert.rejects(next.generate({ ...speechInput(), prompt: "changed" }, undefined, await s.journal()), /request changed/);
+  await s.services.configure("ohmygame/minimax", { cnApiKey: "another-account" });
+  await assert.rejects(next.generate(speechInput(), undefined, await s.journal()), /key or the request changed/);
+  assert.equal(s.requests.length, 1);
+  const receipt = await readFile(path.join(s.root, "tasks/job-1.json"), "utf8");
+  assert.ok(receipt.length < 4096);
+  assert.ok(!receipt.includes("cn-test-key"));
+});
+
+it("keeps business failures, malformed hex and lost speech responses from becoming new paid calls", async t => {
+  for (const failure of ["lost", "quota", "odd", "invalid", "incomplete"] as const) {
+    const s = await setup(t, () => {
+      if (failure === "lost") throw new Error("lost");
+      if (failure === "quota") return json({ base_resp: { status_code: 1008, status_msg: "quota cn-test-key" }, data: null });
+      if (failure === "incomplete") return json({ base_resp: { status_code: 0 }, data: { audio: speechWav().toString("hex"), status: 1 } });
+      return speechReply(failure === "odd" ? "001" : "01zz");
+    });
+    const error = await s.audio.generate(speechInput(), undefined, await s.journal()).catch((cause: unknown) => cause);
+    assert.ok(error instanceof Error);
+    assert.ok(!error.message.includes("cn-test-key"));
+    if (failure === "quota") assert.match(error.message, /quota \[key\]/);
+    await assert.rejects(s.audioFor(s.restart()).generate(speechInput(), undefined, await s.journal()));
+    assert.equal(s.requests.length, 1);
+  }
+});
+
+it("rejects unsupported speech input before submission and accepts explicit stereo", async t => {
+  const s = await setup(t, () => speechReply(speechWav(2).toString("hex")));
+  for (const bad of [{ prompt: "x".repeat(10000) }, { voiceId: undefined }, { speed: 101 }, { output: { format: "wav", sampleRate: 48000 } }, { output: { format: "ogg_opus" } }]) {
+    await assert.rejects(s.audio.generate({ ...speechInput(), ...bad } as AudioGenerationRequest));
+  }
+  assert.equal(s.requests.length, 0);
+  const result = await s.audio.generate({ ...speechInput(), output: { format: "wav", sampleRate: 16000, channels: 2 } }, undefined, await s.journal());
+  assert.ok(Buffer.from(result.bytes).equals(speechWav(2)));
+  assert.equal((s.requests[0]!.body!.audio_setting as { channel: number }).channel, 2);
+});
+
+it("searches reviewed system presets without making a POST voice lookup", async t => {
+  const s = await setup(t);
+  const all = await s.audio.voices("plugin.ohmygame.minimax.cn", {});
+  assert.equal(all.voices.length, 6);
+  const search = await s.audio.voices("plugin.ohmygame.minimax.global", { search: "机械" });
+  assert.equal(search.voices[0]!.id, "Robot_Armor");
+  assert.equal(search.nextPageToken, undefined);
+  await assert.rejects(s.audio.voices("plugin.ohmygame.minimax.cn", { pageToken: "next" }), /no next page/);
+  assert.equal(s.requests.length, 0);
+});
+
+
+it("returns MP3 bytes and maps the slow/quiet speech boundaries", async t => {
+  const bytes = Buffer.concat(Array.from({ length: 10 }, () => { const frame = Buffer.alloc(417); frame.set([0xff, 0xfb, 0x90, 0xc0]); return frame; }));
+  const s = await setup(t, () => speechReply(bytes.toString("hex")));
+  const result = await s.audio.generate({ ...speechInput(), output: { format: "mp3", sampleRate: 44100 }, speed: -50, volume: -50, pitch: 12 }, undefined, await s.journal());
+  assert.ok(Buffer.from(result.bytes).equals(bytes));
+  assert.deepEqual(s.requests[0]!.body!.voice_setting, { voice_id: "English_Graceful_Lady", speed: 0.5, vol: 0.5, pitch: 12 });
 });

@@ -1,0 +1,28 @@
+{
+  "name": "@ohmygame/gpt-sovits",
+  "version": "0.1.0",
+  "description": "Use a reference voice on your existing local GPT-SoVITS server.",
+  "keywords": [
+    "ohmygame-plugin",
+    "model-provider",
+    "gpt-sovits",
+    "speech"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/gpt-sovits"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "media",
+    "LICENSE",
+    "NOTICE.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

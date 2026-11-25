@@ -1,0 +1,9 @@
+{
+  "displayName": "Level Editor",
+  "description": "Edit levels as Tiled JSON maps in a panel: tiles, layers, collisions and spawn points.",
+  "longDescription": "A Levels panel that opens the project's Tiled maps (.tmj) and edits them in place: paint tiles from the map's tilesets, fill areas, draw collision rectangles and place spawn points with custom properties, and arrange layers. It writes Tiled's own JSON format and keeps every field it doesn't change, so the same file opens in Tiled, Phaser, Cocos and Godot importers. Infinite and Zstandard-compressed maps open read-only.",
+  "example.1": "Make a first level map in levels/ with my tileset, then load it in the game with collisions from its collision layer.",
+  "example.2": "Read the spawn points in levels/level-1.tmj and spawn the player and enemies there.",
+  "keyword.level": "level",
+  "panel.title": "Levels"
+}

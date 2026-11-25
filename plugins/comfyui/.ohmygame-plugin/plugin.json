@@ -1,0 +1,77 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/comfyui",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.31.0"
+  },
+  "displayName": "ComfyUI",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "categories": ["provider"],
+  "beta": true,
+  "capabilities": {
+    "network": ["127.0.0.1:8188"]
+  },
+  "configuration": {
+    "workflow": {
+      "type": "json",
+      "title": "%config.workflow.title%",
+      "description": "%config.workflow.description%",
+      "required": true
+    },
+    "promptNode": {
+      "type": "text",
+      "title": "%config.promptNode.title%",
+      "description": "%config.promptNode.description%",
+      "required": true
+    },
+    "promptInput": {
+      "type": "text",
+      "title": "%config.promptInput.title%",
+      "description": "%config.promptInput.description%",
+      "default": "text",
+      "required": true
+    },
+    "outputNode": {
+      "type": "text",
+      "title": "%config.outputNode.title%",
+      "description": "%config.outputNode.description%",
+      "required": true
+    }
+  },
+  "contributes": {
+    "providers": [
+      {
+        "id": "comfyui",
+        "title": "ComfyUI",
+        "icon": "./assets/icon.svg",
+        "media": {
+          "adapter": "./media/adapter.js",
+          "image": {
+            "recoverable": true,
+            "maxMinutes": 120,
+            "configuration": [
+              "workflow",
+              "promptNode",
+              "promptInput",
+              "outputNode"
+            ],
+            "models": [
+              {
+                "id": "workflow",
+                "title": "%model.workflow%",
+                "resolutions": [],
+                "aspectRatios": [],
+                "supportsResolution": false,
+                "supportsAspectRatio": false,
+                "maxReferenceImages": 0
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

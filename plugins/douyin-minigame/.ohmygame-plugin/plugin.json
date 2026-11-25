@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/douyin-minigame",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "engines": {
     "ohmygame-api": "^2.0.0"
   },
@@ -15,6 +15,7 @@
   "beta": true,
   "icon": "./assets/icon.png",
   "categories": ["engine", "publishing"],
+  "activation": "project",
   "appliesTo": [
     "general"
   ],

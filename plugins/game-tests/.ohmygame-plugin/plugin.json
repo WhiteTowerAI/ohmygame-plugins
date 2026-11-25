@@ -1,0 +1,95 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/game-tests",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.37.0"
+  },
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "longDescription": "%longDescription%",
+  "examples": ["%example.1%", "%example.2%"],
+  "beta": true,
+  "icon": "./assets/icon.svg",
+  "categories": ["testing"],
+  "appliesTo": ["web-game", "general"],
+  "entrypoints": {
+    "native": "./dist/index.mjs"
+  },
+  "ui": {
+    "major": 1
+  },
+  "capabilities": {
+    "native": true,
+    "game": true,
+    "composer": true,
+    "project.files": "read",
+    "processes": ["npm", "pnpm", "yarn", "bun"]
+  },
+  "contributes": {
+    "instructions": "This project can keep game tests in tests/game/, run by the game_test tool in real game windows, and the Automated tests panel shows them with the project's unit tests. Follow the game-tests skill when writing them, and write each test's name in the language the person uses with you, since the Automated tests panel shows it to them. After changing a game that has tests in tests/game/, run game_test and fix what fails; when the game is wrong, fix the game, not the test, and say what was wrong. When you have checked a feature with game_use and the person may want it kept working, offer to save the steps as a game test. Give elements a test needs a data-testid, and give the game a window.__OHMYGAME_PLAYTEST__.snapshot() when a test checks its state.",
+    "skills": "./skills/",
+    "tools": [
+      {
+        "name": "game_test",
+        "description": "List or run this game's saved tests in tests/game/. Each runs in fresh game windows, one per player, step by step, and reports which passed and, for the first failure, the step, what was wrong and the game's recent console messages. The person sees the same results, with the frame where each failed, in the Automated tests panel. The game-tests skill gives the file format and what to test first.",
+        "input": "./schemas/game-test.json",
+        "timeoutSeconds": 3600
+      }
+    ],
+    "panels": [
+      {
+        "id": "tests",
+        "title": "%panel.title%",
+        "icon": "./assets/icon.svg",
+        "area": "right",
+        "opens": "onRequest",
+        "entry": "./panel/index.html",
+        "when": "project.type == 'web-game' || project.type == 'general'"
+      }
+    ],
+    "commands": [
+      {
+        "id": "open",
+        "title": "%command.open%",
+        "run": { "openPanel": "tests" },
+        "slots": [{ "slot": "game.more", "when": "project.type == 'web-game' || project.type == 'general'" }]
+      },
+      {
+        "id": "state",
+        "title": "%command.state%",
+        "run": { "native": "state", "changesFiles": false }
+      },
+      {
+        "id": "run",
+        "title": "%command.run%",
+        "run": { "native": "run", "changesFiles": false, "timeoutSeconds": 3600, "input": "./schemas/run.json" }
+      },
+      {
+        "id": "cancel",
+        "title": "%command.cancel%",
+        "run": { "native": "cancel", "changesFiles": false }
+      },
+      {
+        "id": "detail",
+        "title": "%command.detail%",
+        "run": { "native": "detail", "changesFiles": false, "input": "./schemas/detail.json" }
+      },
+      {
+        "id": "capture",
+        "title": "%command.capture%",
+        "run": { "native": "capture", "changesFiles": false, "input": "./schemas/capture.json" }
+      },
+      {
+        "id": "unit-run",
+        "title": "%command.unitRun%",
+        "run": { "native": "unitRun", "changesFiles": false, "timeoutSeconds": 900 }
+      },
+      {
+        "id": "unit-cancel",
+        "title": "%command.unitCancel%",
+        "run": { "native": "unitCancel", "changesFiles": false }
+      }
+    ]
+  }
+}

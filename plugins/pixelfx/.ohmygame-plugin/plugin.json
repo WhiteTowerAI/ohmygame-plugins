@@ -1,0 +1,139 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/pixelfx",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.38.0"
+  },
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "longDescription": "%longDescription%",
+  "examples": [
+    "%example.1%",
+    "%example.2%"
+  ],
+  "beta": true,
+  "icon": "./assets/icon.svg",
+  "categories": ["art"],
+  "keywords": ["%keyword.effects%", "pixel art", "VFX", "sprite sheet"],
+  "appliesTo": [
+    "general",
+    "web-game",
+    "godot-game",
+    "ohmygame/godot:godot-game"
+  ],
+  "activation": "project",
+  "projectFiles": ["./pixelfx/"],
+  "capabilities": {
+    "native": true,
+    "project.files": "write",
+    "library": true,
+    "composer": true,
+    "models": true,
+    "media": true
+  },
+  "contributes": {
+    "panels": [
+      {
+        "id": "studio",
+        "title": "%panel.title%",
+        "icon": "./assets/icon.svg",
+        "area": "center",
+        "entry": "./panel/index.html"
+      }
+    ],
+    "tools": [
+      {
+        "name": "find_effects",
+        "description": "Lists pixel art effects, built-in and the project's, matching words, a category or where they are. Look here before writing a new effect.",
+        "input": "./tools/find-effects.json",
+        "panel": "studio"
+      },
+      {
+        "name": "read_effect",
+        "description": "Returns an effect's source code and meta.",
+        "input": "./tools/read-effect.json",
+        "panel": "studio"
+      },
+      {
+        "name": "copy_effect",
+        "description": "Copies a built-in effect into the project as pixelfx/fx/<category>/<name>.js, with the pixelfx core and helpers it imports, and shows it. Returns its id and the files written.",
+        "input": "./tools/copy-effect.json",
+        "panel": "studio",
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "write_effect",
+        "description": "Writes a project effect's code, adds the core files it imports when missing, then checks it. Returns errors and warnings; fix errors, then look with panel_screenshot.",
+        "input": "./tools/write-effect.json",
+        "panel": "studio",
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "check_effect",
+        "description": "Checks an effect: meta, pixels outside the canvas, loop seams, one-shots that don't end empty, seeded randomness, palettes and frame time.",
+        "input": "./tools/check-effect.json",
+        "panel": "studio",
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "show_effect",
+        "description": "Shows an effect in the Pixel Effects panel with preview settings, so panel_screenshot can see it. Returns the settings in use.",
+        "input": "./tools/show-effect.json",
+        "panel": "studio"
+      },
+      {
+        "name": "export_effect",
+        "description": "Exports the effect shown, with its preview settings, as a sprite sheet, contact sheet, GIF or PNG frames. Returns where it went.",
+        "input": "./tools/export-effect.json",
+        "panel": "studio",
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "render_effect",
+        "description": "Checks an effect, then renders it with its default settings to a transparent sprite sheet and Aseprite JSON in pixelfx/exports/, replacing an earlier export of the same name. A project effect's code runs on this computer, as the game's does. Works without the Pixel Effects panel; use export_effect for what the panel shows.",
+        "input": "./tools/render-effect.json",
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "read_sfx",
+        "description": "Returns an effect's sound: its script in pixelfx/sfx/ if any, the variants rendered or made by a model, and the effect's length and an act's hits as it plays, to line a sound up with.",
+        "input": "./tools/read-sfx.json",
+        "panel": "studio"
+      },
+      {
+        "name": "write_sfx",
+        "description": "Writes an effect's sound script, pixelfx/sfx/<category>/<name>.js, adds the sound engine it imports when missing, and renders each of its variants to a WAV file. Returns the variants, or why the script failed.",
+        "input": "./tools/write-sfx.json",
+        "panel": "studio",
+        "timeoutSeconds": 120
+      },
+      {
+        "name": "make_sfx_with_model",
+        "description": "Makes a sound for an effect with the person's audio model and keeps it as one of its variants. It costs the person money: use it only when they ask for a model-made sound.",
+        "input": "./tools/make-sfx-with-model.json",
+        "panel": "studio",
+        "timeoutSeconds": 300
+      }
+    ],
+    "skills": "./skills/",
+    "assetSources": [
+      {
+        "id": "effects",
+        "title": "%source.title%",
+        "description": "%source.description%",
+        "media": ["image"],
+        "search": "searchEffects",
+        "fetch": "fetchEffect",
+        "timeoutSeconds": 120,
+        "cacheSeconds": 86400
+      }
+    ]
+  },
+  "ui": {
+    "projectModules": ["./pixelfx/"]
+  },
+  "entrypoints": {
+    "native": "./native/index.mjs"
+  }
+}

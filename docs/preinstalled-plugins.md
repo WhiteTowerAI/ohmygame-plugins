@@ -1,6 +1,10 @@
 # Preinstalled-plugin migration
 
 This is stage 9 of [OhMyGame #809](https://github.com/WhiteTowerAI/ohmygame/issues/809).
+
+Official plugins are now released on GitHub, not npm (see the [README](../README.md#official-plugins)).
+The npm steps below record how the first migration was done; the app's lock moves to the
+signed GitHub releases in [OhMyGame #1065](https://github.com/WhiteTowerAI/ohmygame/issues/1065) (PR G).
 The first increment packages all 12 existing bundled plugins in this repository.
 The app loader is implemented in [app #823](https://github.com/WhiteTowerAI/ohmygame/pull/823).
 These 12 packages are enabled for first publication; the app cutover follows only
@@ -30,7 +34,7 @@ script is needed for these packaging checks.
 ## Cutover sequence
 
 1. The 12 packages are released for the reviewed app cutover. Feishu and Computer
-   Use retain their independent publication holds. Do not add these packages
+   Use are separate optional Beta releases for desktop Beta 5.8 or newer. Do not add these packages
    over bundled copies in an everyday app profile.
 2. Add npm support to the app's prepared-plugin lock and loader. Pin exact
    versions and SHA-512 tarball integrity; validate the package and manifest ID

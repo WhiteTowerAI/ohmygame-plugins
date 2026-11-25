@@ -1,0 +1,29 @@
+{
+  "name": "@ohmygame/pixel-sprites",
+  "version": "0.1.1",
+  "description": "Search 1.4 million AI-generated 16×16 pixel art sprites from the Library.",
+  "keywords": [
+    "ohmygame-plugin",
+    "library",
+    "pixel-art",
+    "sprites",
+    "16x16"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/pixel-sprites"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "native",
+    "LICENSE",
+    "NOTICE.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

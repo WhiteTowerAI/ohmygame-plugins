@@ -1,0 +1,28 @@
+{
+  "name": "@ohmygame/game-tests",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Saved tests that play your web game in real windows, multiplayer included, and check its rules, flows and screens after every change.",
+  "keywords": [
+    "ohmygame-plugin",
+    "testing"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/game-tests"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "dist",
+    "locales",
+    "panel",
+    "schemas",
+    "skills"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

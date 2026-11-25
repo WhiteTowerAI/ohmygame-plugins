@@ -1,0 +1,14 @@
+{
+  "plugin.name": "GPT-SoVITS",
+  "plugin.description": "Speech from a reference voice on your local GPT-SoVITS server.",
+  "plugin.longDescription": "Connect an existing GPT-SoVITS api_v2.py server at 127.0.0.1:9880. Configure a reference audio path, its exact transcript and language, then generate WAV speech with the server’s loaded model. This plugin does not install models, upload files or change the server’s weights. Each job keeps its reference settings. Saved results can be recovered; a response lost before it was saved cannot be queried from the server.",
+  "model.name": "GPT-SoVITS",
+  "config.referencePath.title": "Reference audio path",
+  "config.referencePath.description": "Absolute path on the GPT-SoVITS server, for example /Users/me/voices/reference.wav. The file is not uploaded.",
+  "config.referenceText.title": "Reference transcript",
+  "config.referenceText.description": "The words spoken in the reference audio. Required for compatibility with V3/V4/V5.",
+  "config.referenceLanguage.title": "Reference language",
+  "config.referenceLanguage.description": "Language spoken in the reference audio: zh (Chinese), en (English) or ja (Japanese).",
+  "config.textLanguage.title": "Default text language",
+  "config.textLanguage.description": "auto detects the text language; explicit request languages override this setting."
+}

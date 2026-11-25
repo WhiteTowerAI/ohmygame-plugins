@@ -2,9 +2,9 @@
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/fal",
   "beta": true,
-  "version": "0.2.1",
+  "version": "0.4.0",
   "engines": {
-    "ohmygame-api": "^2.5.0"
+    "ohmygame-api": "^2.27.0"
   },
   "displayName": "%plugin.name%",
   "description": "%plugin.description%",
@@ -61,7 +61,11 @@
                 ],
                 "maxReferenceImages": 0
               }
-            ]
+            ],
+            "backgroundRemoval": {
+              "id": "fal-ai/birefnet",
+              "title": "BiRefNet"
+            }
           },
           "video": {
             "discoverModels": true,
@@ -186,6 +190,19 @@
                 ],
                 "minDurationSeconds": 1,
                 "maxDurationSeconds": 47
+              },
+              {
+                "id": "stable-audio-25",
+                "title": "Stable Audio 2.5",
+                "kinds": [
+                  "sound-effect",
+                  "music"
+                ],
+                "formats": [
+                  "wav"
+                ],
+                "minDurationSeconds": 1,
+                "maxDurationSeconds": 190
               }
             ]
           },

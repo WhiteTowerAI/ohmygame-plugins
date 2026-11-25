@@ -1,0 +1,29 @@
+{
+  "name": "@ohmygame/level-editor",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Edit levels as Tiled JSON maps in a panel: tiles, layers, collisions and spawn points.",
+  "keywords": [
+    "ohmygame-plugin",
+    "tiled",
+    "tilemap",
+    "level-editor"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/level-editor"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "panel",
+    "skills",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

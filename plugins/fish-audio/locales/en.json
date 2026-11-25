@@ -1,0 +1,8 @@
+{
+  "plugin.name": "Fish Audio",
+  "plugin.description": "Generate character speech with Fish Audio and your chosen voices.",
+  "plugin.longDescription": "An optional Beta connection to the official Fish Audio API. Generate single-speaker speech with S2.1 Pro or S2.1 Pro Free, choose your workspace or public voices, and save MP3 or WAV audio in OhMyGame. Requests use your Fish Audio account. Availability and quotas depend on the selected model and account. Voice creation, multi-speaker dialogue and live playback are not included.",
+  "provider.name": "Fish Audio",
+  "config.key.title": "API key",
+  "config.key.description": "Create a key in the Fish Audio dashboard. It stays in OhMyGame’s local credential store."
+}

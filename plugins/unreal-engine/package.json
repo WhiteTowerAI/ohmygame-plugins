@@ -1,6 +1,6 @@
 {
   "name": "@ohmygame/unreal-engine",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "type": "module",
   "description": "Inspect scenes and edit actors through Unreal MCP.",
   "keywords": [

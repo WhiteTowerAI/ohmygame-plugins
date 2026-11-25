@@ -1,0 +1,13 @@
+{
+  "plugin.description": "Generate images with a saved workflow on your local ComfyUI server.",
+  "plugin.longDescription": "Connects to ComfyUI at 127.0.0.1:8188. Import a workflow exported in API format, choose its prompt input and SaveImage output, then select Saved workflow in the canvas. Keeps checkpoints, seeds, dimensions and other settings as exported. Returns the first image of the selected output. Stopping or closing OhMyGame leaves the server job running; Retry resumes it. Requires an existing ComfyUI installation and its models and custom nodes.",
+  "model.workflow": "Saved workflow",
+  "config.workflow.title": "API workflow",
+  "config.workflow.description": "Export your working ComfyUI workflow in API format, then import its JSON file here. Do not include credentials. Settings are saved per generation for recovery.",
+  "config.promptNode.title": "Prompt node ID",
+  "config.promptNode.description": "The node containing your positive prompt, for example 6. Find its ID in the API JSON. Negative prompts stay unchanged.",
+  "config.promptInput.title": "Prompt input",
+  "config.promptInput.description": "The string input to replace on that node, usually text. Linked inputs are not replaced.",
+  "config.outputNode.title": "Output node ID",
+  "config.outputNode.description": "The SaveImage node to read, for example 9. Its first image is imported. Other workflow outputs still run on the server."
+}

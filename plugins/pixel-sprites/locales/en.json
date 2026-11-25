@@ -1,0 +1,21 @@
+{
+  "plugin.name": "Pixel sprites",
+  "plugin.description": "Search 1.4 million AI-generated 16×16 pixel art sprites from the Library.",
+  "plugin.longDescription": "Adds a Pixel sprites tab to the Library: 1.4 million 16×16 sprites with transparent backgrounds, such as weapons, potions, food, monsters and furniture, searched by meaning (\"red dragon\" finds red dragons). The sprites are AI-generated (Krea 2 Turbo with a pixel art LoRA) and released under CC0 by the Pixel Art Atlas dataset to the extent its author can waive rights; Krea's license has its own terms for commercial use. The first search downloads about 12 MB of search data.",
+  "source.title": "Pixel sprites",
+  "source.description": "AI-generated 16×16 pixel art from the Pixel Art Atlas dataset, CC0 as far as its author can waive rights; check Krea's license before commercial use. Search in English, or common Chinese game words.",
+  "config.scale.title": "Size when added",
+  "config.scale.description": "An added sprite is 16×16, or scaled up 4 or 8 times with each pixel kept sharp.",
+  "collection.all": "All",
+  "collection.weapon": "Weapons",
+  "collection.armor": "Armor",
+  "collection.potion": "Potions",
+  "collection.food": "Food",
+  "collection.magic": "Magic",
+  "collection.monster": "Monsters",
+  "collection.character": "Characters",
+  "collection.animal": "Animals",
+  "collection.plant": "Plants",
+  "collection.tool": "Tools",
+  "collection.furniture": "Furniture"
+}

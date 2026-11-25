@@ -2,7 +2,7 @@
   "name": "ohmygame-plugins",
   "private": true,
   "type": "module",
-  "description": "Builds the index of OhMyGame plugins published on npm, and holds the official plugins.",
+  "description": "Builds the index of OhMyGame plugins released on GitHub, mirrors and signs them, and holds the official plugins.",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=22.12.0"
@@ -12,8 +12,9 @@
     "test": "tsx --conditions=ohmygame-source --test test/*.test.ts && npm run test:taptap",
     "typecheck": "tsc --noEmit",
     "build:feishu": "node scripts/build-feishu.mjs",
-    "pretest": "npm run build:feishu && npm run build:computer-use",
+    "pretest": "npm run build:feishu && npm run build:computer-use && npm run build:game-tests",
     "build:computer-use": "node scripts/build-computer-use.mjs",
+    "build:game-tests": "node scripts/build-game-tests.mjs",
     "test:taptap": "vitest run"
   },
   "dependencies": {

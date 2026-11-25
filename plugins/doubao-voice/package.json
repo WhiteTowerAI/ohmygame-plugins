@@ -1,0 +1,26 @@
+{
+  "name": "@ohmygame/doubao-voice",
+  "version": "0.1.1",
+  "description": "Doubao speech synthesis and Seed Audio generation for OhMyGame.",
+  "keywords": [
+    "ohmygame-plugin",
+    "model-provider",
+    "doubao",
+    "audio"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/doubao-voice"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "media"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

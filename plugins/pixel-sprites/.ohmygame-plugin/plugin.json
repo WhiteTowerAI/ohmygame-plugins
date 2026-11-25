@@ -1,0 +1,104 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/pixel-sprites",
+  "version": "0.1.1",
+  "engines": {
+    "ohmygame-api": "^2.5.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "links": {
+    "homepage": "https://huggingface.co/spaces/cfahlgren1/pixel-search"
+  },
+  "categories": [
+    "art"
+  ],
+  "beta": true,
+  "entrypoints": {
+    "native": "./native/index.mjs"
+  },
+  "capabilities": {
+    "native": true
+  },
+  "configuration": {
+    "scale": {
+      "type": "select",
+      "title": "%config.scale.title%",
+      "description": "%config.scale.description%",
+      "options": [
+        "1",
+        "4",
+        "8"
+      ],
+      "default": "1"
+    }
+  },
+  "contributes": {
+    "assetSources": [
+      {
+        "id": "sprites",
+        "title": "%source.title%",
+        "description": "%source.description%",
+        "media": [
+          "image"
+        ],
+        "search": "search",
+        "fetch": "fetch",
+        "timeoutSeconds": 180,
+        "cacheSeconds": 86400,
+        "collections": [
+          {
+            "id": "all",
+            "title": "%collection.all%"
+          },
+          {
+            "id": "weapon",
+            "title": "%collection.weapon%"
+          },
+          {
+            "id": "armor",
+            "title": "%collection.armor%"
+          },
+          {
+            "id": "potion",
+            "title": "%collection.potion%"
+          },
+          {
+            "id": "food",
+            "title": "%collection.food%"
+          },
+          {
+            "id": "magic",
+            "title": "%collection.magic%"
+          },
+          {
+            "id": "monster",
+            "title": "%collection.monster%"
+          },
+          {
+            "id": "character",
+            "title": "%collection.character%"
+          },
+          {
+            "id": "animal",
+            "title": "%collection.animal%"
+          },
+          {
+            "id": "plant",
+            "title": "%collection.plant%"
+          },
+          {
+            "id": "tool",
+            "title": "%collection.tool%"
+          },
+          {
+            "id": "furniture",
+            "title": "%collection.furniture%"
+          }
+        ]
+      }
+    ]
+  }
+}

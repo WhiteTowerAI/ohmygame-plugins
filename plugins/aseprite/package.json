@@ -1,6 +1,6 @@
 {
   "name": "@ohmygame/aseprite",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Create pixel art and export animation sheets with metadata.",
   "keywords": [

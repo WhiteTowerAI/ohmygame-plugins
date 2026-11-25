@@ -1,0 +1,8 @@
+{
+  "plugin.name": "ElevenLabs",
+  "plugin.description": "Generate speech, sound effects and music, and transcribe audio.",
+  "plugin.longDescription": "Optional Beta for your ElevenLabs API account. Includes account voice search and previews, speech, sound effects, music and Scribe transcription. Generated audio uses recoverable paid-step receipts. Requires OhMyGame API 2.21; existing built-in settings are not migrated by installing this plugin.",
+  "provider.name": "ElevenLabs (plugin)",
+  "config.key.title": "ElevenLabs API key",
+  "config.key.description": "Create an API key in your ElevenLabs account. Voice browsing needs read access; speech, sound effects, music and transcription need their respective access. Generation uses your account credits."
+}

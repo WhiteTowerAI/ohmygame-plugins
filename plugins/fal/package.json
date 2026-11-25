@@ -1,6 +1,6 @@
 {
   "name": "@ohmygame/fal",
-  "version": "0.2.1",
+  "version": "0.4.0",
   "description": "fal.ai's image, video, audio and 3D models, with your own API key.",
   "keywords": [
     "ohmygame-plugin",
@@ -26,7 +26,7 @@
     "pack": "ohmygame-plugin pack"
   },
   "devDependencies": {
-    "@ohmygame/plugin-cli": "^2.5.0"
+    "@ohmygame/plugin-cli": "^2.27.0"
   },
   "publishConfig": {
     "access": "public"

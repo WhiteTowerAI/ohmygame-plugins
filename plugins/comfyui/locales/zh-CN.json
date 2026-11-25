@@ -1,0 +1,13 @@
+{
+  "plugin.description": "通过本机 ComfyUI 中保存的工作流生成图片。",
+  "plugin.longDescription": "连接 127.0.0.1:8188 上的 ComfyUI。导入 API 格式工作流，指定提示词输入和 SaveImage 输出节点，再在画布选择「已保存的工作流」。保留导出的模型、种子、尺寸和其他设置，导入指定输出的第一张图片。停止或关闭 OhMyGame 后，服务端任务继续运行；使用原任务的「重试」恢复。需要自行安装 ComfyUI、模型和自定义节点。",
+  "model.workflow": "已保存的工作流",
+  "config.workflow.title": "API 工作流",
+  "config.workflow.description": "将已能正常运行的 ComfyUI 工作流导出为 API 格式，在此导入 JSON 文件。请勿包含密钥。每次生成会保存当时的配置用于恢复。",
+  "config.promptNode.title": "提示词节点 ID",
+  "config.promptNode.description": "正向提示词所在的节点，例如 6，可在 API JSON 中查看。负向提示词保持不变。",
+  "config.promptInput.title": "提示词输入名",
+  "config.promptInput.description": "替换该节点的字符串输入，通常为 text。不替换连接到其他节点的输入。",
+  "config.outputNode.title": "输出节点 ID",
+  "config.outputNode.description": "要读取的 SaveImage 节点，例如 9。导入它的第一张图片；工作流中的其他输出仍会在服务端运行。"
+}

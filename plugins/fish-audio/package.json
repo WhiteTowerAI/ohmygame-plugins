@@ -1,0 +1,26 @@
+{
+  "name": "@ohmygame/fish-audio",
+  "version": "0.1.0",
+  "description": "Fish Audio speech generation and voice selection for OhMyGame.",
+  "keywords": [
+    "ohmygame-plugin",
+    "model-provider",
+    "fish-audio",
+    "audio"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/fish-audio"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "media"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

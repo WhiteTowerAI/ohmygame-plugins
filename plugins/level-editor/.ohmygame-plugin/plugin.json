@@ -1,0 +1,42 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/level-editor",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.34.0"
+  },
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "longDescription": "%longDescription%",
+  "examples": [
+    "%example.1%",
+    "%example.2%"
+  ],
+  "beta": true,
+  "icon": "./assets/icon.svg",
+  "categories": ["design"],
+  "keywords": ["%keyword.level%", "Tiled", "tilemap"],
+  "appliesTo": [
+    "general",
+    "web-game",
+    "godot-game",
+    "ohmygame/godot:godot-game"
+  ],
+  "activation": "project",
+  "ui": { "major": 1 },
+  "capabilities": {
+    "project.files": "write"
+  },
+  "contributes": {
+    "skills": "./skills/",
+    "panels": [
+      {
+        "id": "levels",
+        "title": "%panel.title%",
+        "icon": "./assets/icon.svg",
+        "area": "center",
+        "entry": "./panel/index.html"
+      }
+    ]
+  }
+}

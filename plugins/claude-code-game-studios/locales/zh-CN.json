@@ -1,0 +1,7 @@
+{
+  "displayName": "Claude Code Game Studios",
+  "description": "把 Claude Code 变成游戏工作室的项目模板：49 个 agent、78 个 skill 和完整的工作流程。",
+  "longDescription": "Donchitos 的 Claude Code Game Studios（MIT 许可），做成项目模板。在首页用它新建项目，然后在 Claude Code 里运行 /start：模板的 agent、skill、hooks 和规则都在项目的 .claude 文件夹里，和克隆原仓库一样。它是为 Claude Code 做的；其他 agent 能读它的文档，但用不了它的子 agent 和 hooks。这个插件更新后只影响新建的项目；已有项目请按 UPGRADING.md 升级。",
+  "template.title": "Claude Code Game Studios",
+  "template.description": "Claude Code 的游戏工作室，带 agent、skill 和设计文档。需要 Claude Code。"
+}

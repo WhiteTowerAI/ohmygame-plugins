@@ -75,12 +75,14 @@ async function setup(t: TestContext, reply?: Reply) {
     if (r.url.endsWith("/files"))
       return json({ file_token: `file-${requests.length}` });
     if (r.method === "POST") return json({ task_id: "generated" });
-    if (r.url.startsWith("https://cdn.tripo3d.ai/"))
+    if (["cdn.tripo3d.ai", "openapi-dl.data.tripo3d.com"].includes(new URL(r.url).hostname)) {
+      assert.equal(r.headers.has("authorization"), false);
       return new Response(new Uint8Array(GLB));
+    }
     return json({
       task_id: "generated",
       status: "success",
-      output: { model_url: "https://cdn.tripo3d.ai/model.glb" },
+      output: { model_url: "https://openapi-dl.data.tripo3d.com/model.glb" },
     });
   };
   const create = (): Media => {

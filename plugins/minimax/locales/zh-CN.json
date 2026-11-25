@@ -1,7 +1,7 @@
 {
-  "plugin.name": "MiniMax 视频",
-  "plugin.description": "使用自己的 API 密钥，通过 MiniMax H3 和 H3 Max 生成视频。",
-  "plugin.longDescription": "提供独立的中国区和国际区视频服务，支持文字、首尾帧和最多九张参考图。停止只结束本地等待，远端任务可能继续运行并计费。支持迁移的应用版本可将原有 MiniMax 设置迁入本插件。",
+  "plugin.name": "MiniMax",
+  "plugin.description": "使用自己的 MiniMax 账号生成视频和角色配音。",
+  "plugin.longDescription": "提供独立的中国区和国际区视频服务，支持文字、首尾帧和最多九张参考图。停止只结束本地等待，远端任务可能继续运行并计费。支持迁移的应用版本可将原有 MiniMax 设置迁入本插件。新增 Speech 2.8 HD/Turbo 单人配音、六个系统音色预设、语速/音高/音量和 MP3/WAV。中国区与国际区仍使用独立密钥。暂不包含账号音色列表、克隆音色或音乐生成。",
   "provider.cn": "MiniMax 中国区（插件）",
   "provider.global": "MiniMax 国际区（插件）",
   "config.cn.title": "中国区 API 密钥",

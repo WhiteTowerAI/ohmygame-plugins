@@ -1,0 +1,10 @@
+{
+  "plugin.name": "Doubao Voice",
+  "plugin.description": "Generate speech, sound effects and music with Doubao.",
+  "plugin.longDescription": "Optional Beta for your Volcengine Doubao Speech account. Includes Speech Synthesis 2.0 and Seed Audio 1.0, saved default voices, cloned voices and recoverable paid audio receipts. Requires OhMyGame API 2.25. Installing does not migrate or disconnect built-in services.",
+  "provider.name": "Doubao Voice (plugin)",
+  "config.key.title": "Doubao Speech API key",
+  "config.key.description": "Use an API key authorized for the speech services you need in the Volcengine console. Generation uses your account quota.",
+  "config.voice.title": "Default Speaker ID",
+  "config.voice.description": "Optional default for text-to-speech. Choose a voice on the canvas or paste its Speaker ID here. Seed Audio reference voices are chosen separately."
+}

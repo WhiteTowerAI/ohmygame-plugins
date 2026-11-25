@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "runId": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "captureId": { "type": "string", "minLength": 1, "maxLength": 100 }
+  },
+  "required": ["runId", "captureId"],
+  "additionalProperties": false
+}

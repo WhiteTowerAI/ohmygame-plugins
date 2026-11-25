@@ -1,11 +1,15 @@
-# MiniMax Video
+# MiniMax Video and Speech (Beta)
 
 Optional MiniMax H3 and H3 Max video provider for OhMyGame, with independent China
 and Global API keys. Includes text-to-video, first/last frames and up to nine
 reference images. The provider and plugin details use the MiniMax logo.
 
-This is an optional beta plugin. It needs OhMyGame API 2.8 with durable retry ownership
-([app #848](https://github.com/WhiteTowerAI/ohmygame/pull/848)).
+Version 0.2.0 adds Speech 2.8 HD/Turbo with six reviewed system voice presets,
+speed, pitch, volume and MP3/WAV output. Both regions reuse their existing keys.
+
+This is an optional beta plugin. It needs OhMyGame API 2.26 for nested speech
+response decoding ([app #908](https://github.com/WhiteTowerAI/ohmygame/pull/908));
+video task recovery uses the existing durable retry ownership.
 Install it from the plugin catalog in a compatible app. It is not preinstalled.
 Apps with MiniMax migration support can move existing keys, switches, global and
 project defaults, and saved canvas selections to this plugin. Migration requires
@@ -26,7 +30,7 @@ starting a new generation. Plugin jobs retain the recovery behavior below.
 
 ## Local testing / 本地测试
 
-1. Use an app with OhMyGame API 2.8. In Plugins, install this `plugins/minimax`
+1. Use an app with OhMyGame API 2.26. In Plugins, install this `plugins/minimax`
    folder, review its three network hosts, then enable it for every project.
    在配套应用分支中，打开插件页，安装本目录并启用；检查图标和中英文说明。
 2. Set either **China API key** from [platform.minimax.cn](https://platform.minimax.cn/)
@@ -62,7 +66,54 @@ regional secret lookup and durable journals with mocked HTTP. They cover request
 roles and ratios, restart, ambiguous submission, transient checks, rejected CDN
 hosts and downloads without keys. They make no live or paid vendor requests.
 
-## Protocol and release notes
+## Speech / 配音
+
+Create an Audio node, choose Speech and the MiniMax China/Global Speech 2.8 HD or
+Turbo model, then choose a voice and enter the actual words to speak. The picker
+provides six reviewed Chinese, Cantonese, English and Japanese system presets,
+with local name/ID search. It is not your complete account voice list. Agent audio
+requests can also supply an existing voice ID accepted by the host (letters,
+numbers, `_` and `-`); IDs containing spaces or parentheses are not yet supported.
+
+在音频节点选择“语音”和 MiniMax 对应区域模型，选择音色后输入台词。首版提供六个
+经过文档核对的系统音色，不等于完整账号音色库。音色与音频参数保存在节点中。
+
+The official account voice-list endpoint uses POST. The host's voice-query API
+allows only reads via GET/HEAD; this release does not weaken that boundary or
+claim to load private/cloned voices. Voice creation/cloning, mixing, subtitles,
+streaming playback, music and sound effects are outside this increment.
+
+Speech accepts fewer than 10,000 characters per request, speed 0.5–2×, pitch
+−12…12 and the app's volume range −50…100 (mapped to gain 0.5–2×). MP3/WAV accept
+8/16/22.05/24/32/44.1 kHz and mono/stereo; unspecified output uses 32 kHz mono.
+The host decodes MiniMax's nested hexadecimal response outside the plugin sandbox,
+checks the business status and keeps the confirmed file for recovery. A lost or
+invalid response cannot silently become another billable request. This is complete
+file generation, not live playback. Speech quota/model-access depends on your
+account and is separate from previously accepted video testing.
+
+Additional local acceptance / 新增本地验收：
+
+1. Update using an API 2.26 app. Confirm the Beta badge/logo, existing region keys,
+   global/project switches and saved video model choices are preserved.
+2. In each region you use, generate a short Chinese/English line with HD/Turbo.
+   Check the selected voice, speed/pitch/volume, playback and Library/canvas asset.
+3. Try MP3 44.1 kHz and WAV 16 kHz, mono/stereo. Save/reopen and confirm selections.
+4. Quit during synthesis. A confirmed response should recover; an uncertain
+   response should be reported without automatically submitting another request.
+5. Existing H3/H3 Max video nodes should still generate/query their original jobs.
+   Migration from built-in settings still requires the app's reviewed npm package
+   list; this new release alone does not authorize a new migration target.
+
+Official speech contracts checked 2026-11-15:
+[Global TTS](https://platform.minimax.io/docs/api-reference/speech-t2a-http),
+[China TTS](https://platform.minimax.cn/docs/api-reference/speech-t2a-http),
+[Global voices](https://platform.minimax.io/docs/faq/system-voice-id),
+[China voices](https://platform.minimax.cn/docs/faq/system-voice-id),
+[account voice query](https://platform.minimax.io/docs/api-reference/voice-management-get).
+Automated checks use synthetic audio and mocked HTTP, not live quality/availability.
+
+## Video protocol and release notes
 
 The sandbox cannot read keys or local files. The app adds the selected region's
 Bearer key to API requests and downloads outputs without it. Allowed hosts are

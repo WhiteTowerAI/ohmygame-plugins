@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "file": { "type": "string", "minLength": 1, "maxLength": 200 }
+  },
+  "required": ["file"],
+  "additionalProperties": false
+}

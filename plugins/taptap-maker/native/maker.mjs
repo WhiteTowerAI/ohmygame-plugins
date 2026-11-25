@@ -148,39 +148,46 @@ async function initialize(context, selection, record) {
     projectId: selection[0] === "--app-id" ? selection[1] : undefined,
   });
   let saving = Promise.resolve();
-  await maker(
-    directory,
-    [
-      "init",
-      ...selection,
-      "--target-dir",
-      workspace,
-      "--skip-mcp-install",
-      "--skip-confirm",
-      "--json",
-    ],
-    {
-      signal,
-      onLine: (line) => {
-        let event;
-        try {
-          event = JSON.parse(line);
-        } catch {
-          return;
-        }
-        if (event.step === "app" && typeof event.data?.app_id === "string") {
-          // Keep the new identity before checkout: retries must never create twice.
-          saving = saving.then(() =>
-            saveInitialization(record.filename, {
-              projectId: event.data.app_id,
-            }),
-          );
-          progress("Initializing the Maker workspace…");
-        }
+  try {
+    await maker(
+      directory,
+      [
+        "init",
+        ...selection,
+        "--target-dir",
+        workspace,
+        "--skip-mcp-install",
+        "--skip-confirm",
+        "--json",
+      ],
+      {
+        signal,
+        onLine: (line) => {
+          let event;
+          try {
+            event = JSON.parse(line);
+          } catch {
+            return;
+          }
+          if (event.step === "app" && typeof event.data?.app_id === "string") {
+            // Keep the new identity before checkout: retries must never create twice.
+            saving = saving.then(() =>
+              saveInitialization(record.filename, {
+                projectId: event.data.app_id,
+              }),
+            );
+            // Observe rejection immediately while the CLI is still running; the
+            // finally block awaits the same promise and propagates any save error.
+            void saving.catch(() => {});
+            progress("Initializing the Maker workspace…");
+          }
+        },
       },
-    },
-  );
-  await saving;
+    );
+  } finally {
+    // A failed CLI must not let retry or cleanup overtake its identity write.
+    await saving;
+  }
   const project = await binding(workspace);
   if (!project)
     throw new Error("Maker initialization did not bind the workspace");

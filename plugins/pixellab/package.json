@@ -1,0 +1,28 @@
+{
+  "name": "@ohmygame/pixellab",
+  "version": "0.2.1",
+  "description": "PixelLab pixel art, characters, animations, tilesets and effects.",
+  "keywords": [
+    "ohmygame-plugin",
+    "model-provider",
+    "pixellab",
+    "pixel-art",
+    "image"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/pixellab"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "media",
+    "skills"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

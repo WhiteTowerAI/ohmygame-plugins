@@ -1,7 +1,6 @@
 {
   "name": "@ohmygame/computer-use",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.1",
   "type": "module",
   "description": "Optional desktop control with revocable per-app consent on macOS.",
   "keywords": [

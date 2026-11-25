@@ -1,9 +1,9 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/unreal-engine",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "engines": {
-    "ohmygame-api": "^2.0.0"
+    "ohmygame-api": "^2.35.0"
   },
   "displayName": "%displayName%",
   "description": "%description%",
@@ -17,6 +17,7 @@
   "categories": [
     "engine"
   ],
+  "activation": { "files": ["*.uproject"] },
   "appliesTo": [
     "general"
   ],
@@ -35,12 +36,22 @@
     }
   },
   "contributes": {
+    "commands": [
+      {
+        "id": "play-in-unreal",
+        "title": "%command.start%",
+        "run": { "prompt": "Open this project's .uproject in the Unreal Editor that matches its EngineAssociation, start Play In Editor, confirm that frames advance, and tell me what the game shows and any errors in the Output Log. Don't change files.", "skill": "unreal-game" },
+        "slots": [{ "slot": "game.start" }]
+      }
+    ],
     "skills": "./skills/",
     "mcpServers": [
       {
         "id": "unreal",
         "title": "%mcp.title%",
         "url": "${config.endpoint}",
+        "setup": "%mcp.setup%",
+        "docs": "https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-mcp-in-unreal-editor",
         "tools": [
           "list_toolsets",
           "describe_toolset",

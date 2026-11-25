@@ -1,0 +1,14 @@
+{
+  "plugin.name": "GPT-SoVITS",
+  "plugin.description": "连接本机 GPT-SoVITS，使用参考音色生成配音。",
+  "plugin.longDescription": "连接已运行在 127.0.0.1:9880 的 GPT-SoVITS api_v2.py 服务。填写参考音频路径、准确文本和语言，使用服务当前加载的模型生成 WAV 配音。插件不安装模型、不上传文件、不切换服务端权重。每个任务保存自己的参考配置；已保存的结果可以恢复，保存前丢失的响应无法向服务查询。",
+  "model.name": "GPT-SoVITS",
+  "config.referencePath.title": "参考音频路径",
+  "config.referencePath.description": "GPT-SoVITS 服务上的绝对路径，例如 /Users/me/voices/reference.wav；不会上传文件。",
+  "config.referenceText.title": "参考音频文本",
+  "config.referenceText.description": "参考音频中实际说出的内容。为兼容 V3/V4/V5，必须填写。",
+  "config.referenceLanguage.title": "参考音频语言",
+  "config.referenceLanguage.description": "参考音频所说的语言：zh（中文）、en（英文）或 ja（日文）。",
+  "config.textLanguage.title": "默认配音语言",
+  "config.textLanguage.description": "auto 自动识别待配音文本的语言；请求中明确指定的语言优先。"
+}

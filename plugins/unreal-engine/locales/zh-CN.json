@@ -6,5 +6,7 @@
   "example.2": "在测试关卡中添加一个命名的立方体 Actor，保存并报告验证结果。",
   "config.endpoint": "本地 Unreal MCP 地址",
   "config.endpoint.description": "所选 Unreal Editor 的实验性 MCP 服务在本机的地址（127.0.0.1 或 localhost，端口不限）。测试前先在该 Editor 中启动服务。",
-  "mcp.title": "Unreal MCP"
+  "mcp.title": "Unreal MCP",
+  "mcp.setup": "在 Unreal Editor（5.8 或更新版本）中，通过「编辑 > 插件」启用 Model Context Protocol 插件并重启。然后在 Editor 控制台运行 ModelContextProtocol.StartServer，或在它的项目设置里打开 Auto Start Server。服务默认监听 http://127.0.0.1:8000/mcp，换了端口就在上方填相同的地址。它没有身份验证，只接受本机连接。",
+  "command.start": "在 Unreal 中运行"
 }

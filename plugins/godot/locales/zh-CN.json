@@ -10,5 +10,8 @@
   "example.1": "在 Godot 中创建一个可玩的 3D 场景。",
   "example.2": "检查当前 Godot 项目并建议下一步实现。",
   "example.3": "为当前 Godot 场景制作角色控制器。",
-  "mcp.title": "Godot MCP"
+  "mcp.title": "Godot MCP",
+  "command.status": "Godot 状态",
+  "command.installTemplates": "安装 Web 导出模板",
+  "command.installTemplates.description": "从 Godot 官方发布中只下载上方 Godot 版本的 Web 模板。"
 }

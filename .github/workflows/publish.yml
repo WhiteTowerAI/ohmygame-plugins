@@ -1,9 +1,9 @@
 name: Publish plugins
 
-# Publishes each official plugin in plugins/ whose version isn't on npm yet,
-# with provenance, so the index shows its source as verified. npm trusted
-# publishing (this workflow, on each package) needs no token; NPM_TOKEN is only
-# for a package's first version, before it has a trusted publisher.
+# Releases each official plugin in plugins/ whose version has no GitHub
+# release yet: tag `<folder>-v<version>` on this commit, with the package as
+# its `.zip` asset (src/pack-release.ts). The index job lists, mirrors and
+# signs it on its next run.
 
 on:
   push:
@@ -12,8 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  id-token: write
+  contents: write
 
 env:
   OHMYGAME_REF: ${{ vars.OHMYGAME_REF || 'dev' }}
@@ -28,41 +27,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      # Packs and judges each plugin as the index will, so npm never gets one it would refuse.
+      # Packs and judges each plugin as the index will, so none is released that it would refuse.
       - run: npm test
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - name: Build the checked app's plugin CLI
-        working-directory: app
-        run: bun run plugin-packages:build
-      - name: Publish what's new
+      - name: Release what's new
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # `ohmygame-plugin check` from the app the tests judged with (OHMYGAME_REF), not the
-          # published CLI, so a plugin on a plugin API that isn't released yet is checked by its rules.
-          # One package npm refuses (such as one without its trusted publisher yet) doesn't hold back the others.
+          # One that fails doesn't hold back the others.
           failed=()
           for dir in plugins/*/; do
+            folder=$(basename "$dir")
             if [ "$(node -p "require('./${dir}package.json').private === true")" = "true" ]; then
-              echo "$dir is held from publication (private package)"
+              echo "$folder is held from release (private package)"
               continue
             fi
-            name=$(node -p "require('./${dir}package.json').name")
-            version=$(node -p "require('./${dir}package.json').version")
-            if [ "$(npm view "$name@$version" version 2>/dev/null)" = "$version" ]; then
-              echo "$name@$version is already published"
+            version=$(node -p "require('./${dir}.ohmygame-plugin/plugin.json').version")
+            tag="${folder}-v${version}"
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "$tag is already released"
               continue
             fi
-            if ! (cd "$dir" && node "$GITHUB_WORKSPACE/app/packages/plugin-cli/dist/cli.mjs" check && npm publish --provenance); then
-              echo "::error::$name@$version wasn't published"
-              failed+=("$name@$version")
+            archive="$RUNNER_TEMP/${folder}-${version}.zip"
+            if ! (npx tsx --conditions=ohmygame-source src/pack-release.ts "$dir" "$archive" --app app \
+              && gh release create "$tag" "$archive" --target "$GITHUB_SHA" --latest=false \
+                --title "ohmygame/${folder} ${version}" --notes "ohmygame/${folder} ${version}"); then
+              echo "::error::$tag wasn't released"
+              failed+=("$tag")
             fi
           done
           if [ ${#failed[@]} -gt 0 ]; then
-            echo "Not published: ${failed[*]}"
+            echo "Not released: ${failed[*]}"
             exit 1
           fi

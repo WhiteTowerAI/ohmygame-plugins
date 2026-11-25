@@ -1,0 +1,9 @@
+{
+  "displayName": "关卡编辑器",
+  "description": "在面板里把关卡编辑成 Tiled JSON 地图：图块、图层、碰撞和出生点。",
+  "longDescription": "“关卡”面板打开项目里的 Tiled 地图（.tmj）并直接编辑：用地图的图块集绘制和填充图块，画碰撞矩形，放置带自定义属性的出生点，整理图层。它写入 Tiled 自己的 JSON 格式，保留所有没有改动的字段，同一个文件可以在 Tiled、Phaser、Cocos 和 Godot 导入器里打开。无限地图和使用 Zstandard 压缩的地图只能查看。",
+  "example.1": "用我的图块集在 levels/ 里做第一张关卡地图，再在游戏里加载它，用它的 collision 层做碰撞。",
+  "example.2": "读取 levels/level-1.tmj 里的出生点，把玩家和敌人生成在那里。",
+  "keyword.level": "关卡",
+  "panel.title": "关卡"
+}

@@ -1,0 +1,8 @@
+{
+  "plugin.name": "ElevenLabs",
+  "plugin.description": "生成语音、音效和音乐，并将音频转为文字。",
+  "plugin.longDescription": "连接你的 ElevenLabs API 账户的可选 Beta 插件。支持账户音色搜索与试听、语音、音效、音乐和 Scribe 转录。生成音频会记录付费请求以便恢复。需要 OhMyGame API 2.21；安装插件不会迁移原有内置设置。",
+  "provider.name": "ElevenLabs（插件）",
+  "config.key.title": "ElevenLabs API 密钥",
+  "config.key.description": "在 ElevenLabs 账户中创建 API 密钥。浏览音色需要读取权限；语音、音效、音乐和转录需要对应权限。生成会使用你的账户额度。"
+}

@@ -6,5 +6,7 @@
   "example.2": "Add a named cube actor to a test level, save it, and report the verification evidence.",
   "config.endpoint": "Local Unreal MCP URL",
   "config.endpoint.description": "The URL of the selected Unreal Editor's experimental MCP server on this computer (127.0.0.1 or localhost, any port). Start the server in that Editor before testing.",
-  "mcp.title": "Unreal MCP"
+  "mcp.title": "Unreal MCP",
+  "mcp.setup": "In the Unreal Editor (5.8 or later), enable the Model Context Protocol plugin under Edit > Plugins and restart. Then run ModelContextProtocol.StartServer in the Editor console, or turn on Auto Start Server in its project settings. The server listens on http://127.0.0.1:8000/mcp unless you give it another port; set the same URL above. It has no authentication, so it accepts connections from this computer only.",
+  "command.start": "Play in Unreal"
 }

@@ -1,0 +1,116 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/fish-audio",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.25.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.png",
+  "categories": [
+    "provider"
+  ],
+  "beta": true,
+  "capabilities": {
+    "network": [
+      "api.fish.audio"
+    ]
+  },
+  "configuration": {
+    "apiKey": {
+      "type": "secret",
+      "title": "%config.key.title%",
+      "description": "%config.key.description%"
+    }
+  },
+  "contributes": {
+    "providers": [
+      {
+        "id": "fish-audio",
+        "title": "%provider.name%",
+        "icon": "./assets/icon.png",
+        "apiKey": "apiKey",
+        "media": {
+          "adapter": "./media/adapter.js",
+          "auth": {
+            "header": "Authorization",
+            "scheme": "Bearer"
+          },
+          "audio": {
+            "listVoices": true,
+            "models": [
+              {
+                "id": "s2.1-pro",
+                "title": "S2.1 Pro",
+                "kinds": [
+                  "speech"
+                ],
+                "readsText": true,
+                "speaker": true,
+                "formats": [
+                  "mp3",
+                  "wav"
+                ],
+                "sampleRatesByFormat": {
+                  "mp3": [
+                    32000,
+                    44100
+                  ],
+                  "wav": [
+                    8000,
+                    16000,
+                    24000,
+                    32000,
+                    44100
+                  ]
+                },
+                "channels": [
+                  1
+                ],
+                "speedRange": [
+                  -50,
+                  100
+                ]
+              },
+              {
+                "id": "s2.1-pro-free",
+                "title": "S2.1 Pro Free",
+                "kinds": [
+                  "speech"
+                ],
+                "readsText": true,
+                "speaker": true,
+                "formats": [
+                  "mp3",
+                  "wav"
+                ],
+                "sampleRatesByFormat": {
+                  "mp3": [
+                    32000,
+                    44100
+                  ],
+                  "wav": [
+                    8000,
+                    16000,
+                    24000,
+                    32000,
+                    44100
+                  ]
+                },
+                "channels": [
+                  1
+                ],
+                "speedRange": [
+                  -50,
+                  100
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,475 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/pixellab",
+  "version": "0.2.1",
+  "engines": {
+    "ohmygame-api": "^2.34.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "categories": ["art"],
+  "beta": true,
+  "capabilities": {
+    "network": ["api.pixellab.ai", "cdn.pixellab.ai", "supabase.pixellab.ai", "backblaze.pixellab.ai"]
+  },
+  "configuration": {
+    "apiKey": {
+      "type": "secret",
+      "title": "%config.apiKey.title%",
+      "description": "%config.apiKey.description%"
+    }
+  },
+  "contributes": {
+    "providers": [
+      {
+        "id": "pixellab",
+        "title": "%provider.pixellab%",
+        "icon": "./assets/icon.svg",
+        "apiKey": "apiKey",
+        "media": {
+          "adapter": "./media/adapter.js",
+          "image": {
+            "recoverable": true,
+            "maxMinutes": 30,
+            "models": [
+              {
+                "id": "pixen",
+                "title": "%model.pixen%",
+                "resolutions": ["512"],
+                "aspectRatios": ["1:1"],
+                "maxReferenceImages": 0
+              },
+              {
+                "id": "pixflux",
+                "title": "%model.pixflux%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "aspectRatios": ["1:1", "4:3", "3:4", "16:9", "9:16"],
+                "maxReferenceImages": 0
+              },
+              {
+                "id": "bitforge",
+                "title": "%model.bitforge%",
+                "description": "%model.bitforge.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "aspectRatios": ["1:1", "4:3", "3:4", "16:9", "9:16"],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 200
+              },
+              {
+                "id": "image-pro",
+                "title": "%model.imagePro%",
+                "description": "%model.imagePro.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "aspectRatios": ["1:1", "4:3", "3:4", "16:9", "9:16"],
+                "maxReferenceImages": 4,
+                "maxReferenceImageDimension": 512
+              },
+              {
+                "id": "style-pro",
+                "title": "%model.stylePro%",
+                "description": "%model.stylePro.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 4,
+                "maxReferenceImageDimension": 256
+              },
+              {
+                "id": "image-pro-flash",
+                "title": "%model.imageProFlash%",
+                "description": "%model.imageProFlash.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 256
+              },
+              {
+                "id": "ui",
+                "title": "%model.ui%",
+                "description": "%model.ui.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "aspectRatios": ["1:1", "4:3", "3:4", "16:9", "9:16"],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 512
+              },
+              {
+                "id": "to-pixel-art",
+                "title": "%model.toPixelArt%",
+                "description": "%model.toPixelArt.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 2048,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "to-pixel-art-pro-flash",
+                "title": "%model.toPixelArtProFlash%",
+                "description": "%model.toPixelArtProFlash.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 2048,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "resize-2x",
+                "title": "%model.resize%",
+                "description": "%model.resize.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 100,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "remove-background",
+                "title": "%model.removeBackground%",
+                "description": "%model.removeBackground.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 400,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "normal-map",
+                "title": "%model.normalMap%",
+                "description": "%model.normalMap.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 512,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "edit",
+                "title": "%model.edit%",
+                "description": "%model.edit.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 400
+              },
+              {
+                "id": "edit-pro",
+                "title": "%model.editPro%",
+                "description": "%model.editPro.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 512
+              },
+              {
+                "id": "edit-pro-flash",
+                "title": "%model.editProFlash%",
+                "description": "%model.editProFlash.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 256
+              },
+              {
+                "id": "character",
+                "title": "%model.character%",
+                "resolutions": ["512"],
+                "aspectRatios": ["1:1"],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 256,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "character-4",
+                "title": "%model.character4%",
+                "description": "%model.character4.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 128,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "character-8",
+                "title": "%model.character8%",
+                "description": "%model.character8.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 128,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "character-pro",
+                "title": "%model.characterPro%",
+                "description": "%model.characterPro.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 168
+              },
+              {
+                "id": "character-pro-flash",
+                "title": "%model.characterProFlash%",
+                "description": "%model.characterProFlash.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 128,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "character-state",
+                "title": "%model.characterState%",
+                "description": "%model.characterState.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 256
+              },
+              {
+                "id": "skeleton-animation",
+                "title": "%model.animation%",
+                "resolutions": ["512"],
+                "aspectRatios": ["1:1"],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 256
+              },
+              {
+                "id": "frame-animation",
+                "title": "%model.frameAnimation%",
+                "resolutions": ["512"],
+                "aspectRatios": ["1:1"],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 256,
+                "animationFrames": true
+              },
+              {
+                "id": "pixminimax-animation",
+                "title": "%model.pixminimaxAnimation%",
+                "description": "%model.pixminimaxAnimation.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 256,
+                "animationFrames": true
+              },
+              {
+                "id": "animation-pro",
+                "title": "%model.animationPro%",
+                "description": "%model.animationPro.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 256,
+                "animationFrames": true
+              },
+              {
+                "id": "interpolation",
+                "title": "%model.interpolation%",
+                "description": "%model.interpolation.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 2,
+                "maxReferenceImages": 2,
+                "maxReferenceImageDimension": 128,
+                "animationFrames": true
+              },
+              {
+                "id": "rotate",
+                "title": "%model.rotate%",
+                "description": "%model.rotate.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 200,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "rotations-8",
+                "title": "%model.rotations8%",
+                "description": "%model.rotations8.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 256,
+                "promptOptionalWithReference": true,
+                "animationFrames": true
+              },
+              {
+                "id": "rotations-8-pro",
+                "title": "%model.rotations8Pro%",
+                "description": "%model.rotations8Pro.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 168,
+                "promptOptionalWithReference": true,
+                "animationFrames": true
+              },
+              {
+                "id": "object",
+                "title": "%model.object%",
+                "description": "%model.object.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 256
+              },
+              {
+                "id": "object-pro",
+                "title": "%model.objectPro%",
+                "description": "%model.objectPro.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 0
+              },
+              {
+                "id": "object-8",
+                "title": "%model.object8%",
+                "description": "%model.object8.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 168,
+                "promptOptionalWithReference": true
+              },
+              {
+                "id": "object-animation",
+                "title": "%model.objectAnimation%",
+                "description": "%model.objectAnimation.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "minReferenceImages": 1,
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 128
+              },
+              {
+                "id": "tileset",
+                "title": "%model.tileset%",
+                "description": "%model.tileset.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 0
+              },
+              {
+                "id": "tileset-sidescroller",
+                "title": "%model.tilesetSidescroller%",
+                "description": "%model.tilesetSidescroller.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 0
+              },
+              {
+                "id": "isometric-tile",
+                "title": "%model.isometricTile%",
+                "description": "%model.isometricTile.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 0
+              },
+              {
+                "id": "tiles-pro",
+                "title": "%model.tilesPro%",
+                "description": "%model.tilesPro.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 0
+              },
+              {
+                "id": "vfx",
+                "title": "%model.vfx%",
+                "description": "%model.vfx.description%",
+                "supportsResolution": false,
+                "resolutions": [],
+                "supportsAspectRatio": false,
+                "aspectRatios": [],
+                "maxReferenceImages": 1,
+                "maxReferenceImageDimension": 512
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "skills": "./skills/"
+  }
+}

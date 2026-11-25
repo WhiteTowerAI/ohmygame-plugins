@@ -1,0 +1,32 @@
+{
+  "name": "@ohmygame/pixelfx",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Browse 244 pixel art effects, make your own in the project and export sprite sheets.",
+  "keywords": [
+    "ohmygame-plugin",
+    "pixel-art",
+    "vfx",
+    "sprite-sheet"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/pixelfx"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "native",
+    "panel",
+    "skills",
+    "tools",
+    "LICENSE",
+    "NOTICE.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

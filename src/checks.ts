@@ -1,48 +1,24 @@
-// The checks one published version must pass to enter the index. The
-// tarball is read in memory under the app's archive limits; only regular
-// files with safe paths are kept, written to a private temporary folder and
-// checked there by the app's own package check (`app/`, a checkout of
-// WhiteTowerAI/ohmygame), so the index accepts what the app would install.
-// Its icon and screenshots are checked as the app checks them and handed back
-// by their contents' hash, for the index to keep beside it. Nothing from a
-// package is run.
+// The checks one release must pass to enter the index. Its archive is
+// unpacked by the app's own code under the app's limits, as installing it
+// would (`app/`, a checkout of WhiteTowerAI/ohmygame), into a private
+// temporary folder, and checked there by the app's package check, so the
+// index accepts what the app would install. Its icon and screenshots are
+// checked as the app checks them and handed back by their contents' hash, for
+// the index to keep beside it. Nothing from a package is run.
 
-import { createHash, verify, type KeyObject } from "node:crypto";
+import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { Readable, Transform } from "node:stream";
-import { pipeline } from "node:stream/promises";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { createGunzip } from "node:zlib";
-import { Header, Parser, type ReadEntry } from "tar";
-
-const PACKAGE_NAME = /^@([a-z0-9]+(?:-[a-z0-9]+)*)\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
-
-/**
- * The plugins a package may hold, by the app's rule: its scope is what npm vouches
- * for, so it's the publisher, and an `ohmygame-plugin-` prefix can be left out of
- * the plugin's name. An unscoped package holds none.
- */
-export function pluginIdsFor(name: string): string[] {
-  const match = PACKAGE_NAME.exec(name);
-  if (!match) return [];
-  const [, scope, rest] = match as unknown as [string, string, string];
-  return [...new Set([`${scope}/${rest}`, `${scope}/${rest.replace(/^ohmygame-plugin-(?=.)/, "")}`])];
-}
+import { publisherIssue } from "./github.ts";
 const LOCALES = ["en", "zh-CN"] as const;
 /** What model providers make, in the app's order (`PROVIDER_KINDS` in OhMyGame's `src/shared/plugins.ts`). */
 const PROVIDER_KINDS = ["language", "image", "video", "audio", "3d"] as const;
 
-/** The npm registry's signature over one version, as its packument gives it. */
-export interface RegistrySignature {
-  keyid: string;
-  sig: string;
-}
-
-/** What the package's contents say, which never changes for one integrity. */
+/** What the package's contents say, which never changes for one archive. */
 export interface Verdict {
   plugin?: {
     id: string;
@@ -72,22 +48,18 @@ export interface Verdict {
   rejected?: string[];
 }
 
-/** What the index says about one published version. */
+/** What the index says about one release. */
 export interface IndexedVersion extends Verdict {
-  package: string;
+  /** `owner/repo`, as GitHub spells it. */
+  repository: string;
+  tag: string;
+  commit: string;
   version: string;
-  tarball: string;
-  /** The tarball's `sha512-` integrity, which the app checks a download against. */
-  integrity: string;
-  /** The registry's signatures over `name@version:integrity`, which the app verifies with npm's keys. */
-  signatures: RegistrySignature[];
-  /** The npm account that published it. */
-  publisher?: string;
-  /** Where its provenance attestation is, when it has one. */
-  provenance?: string;
   publishedAt?: string;
-  /** npm's `dist.unpackedSize`. */
-  unpackedSize?: number;
+  /** The market's signed record, for a version that can be installed. */
+  release?: import("./signing.ts").SignedRelease;
+  /** The same archive on GitHub, for a release that attaches it. */
+  github?: string;
 }
 
 interface AppEntry {
@@ -124,6 +96,13 @@ export interface AppChecks {
   categories: readonly string[];
   archiveMaxBytes: number;
   archiveMaxEntries: number;
+  /** The app's ZIP extraction, which installing a release uses. */
+  extractArchive(archive: string, destination: string, options: {
+    maxEntries: number;
+    maxBytes: number;
+    include?: (relative: string) => boolean;
+    error: (reason: string) => Error;
+  }): Promise<void>;
   /** Which app code judged: its commit, so a verdict is redone when the checks change. */
   version: string;
 }
@@ -131,7 +110,7 @@ export interface AppChecks {
 /** Loads the checks from an OhMyGame checkout. */
 export async function loadAppChecks(appRoot: string): Promise<AppChecks> {
   const load = (file: string) => import(pathToFileURL(path.resolve(appRoot, file)).href);
-  const [manifest, plugins, index, projectPlugins, icons, iconTypes, images] = await Promise.all([
+  const [manifest, plugins, index, projectPlugins, icons, iconTypes, images, archives] = await Promise.all([
     load("src/shared/plugin-manifest.ts"),
     load("src/shared/plugins.ts"),
     load("src/daemon/plugin-index.ts"),
@@ -139,6 +118,7 @@ export async function loadAppChecks(appRoot: string): Promise<AppChecks> {
     load("src/daemon/plugin-icons.ts"),
     load("src/shared/plugin-icons.ts"),
     load("src/daemon/image-format.ts"),
+    load("src/daemon/archive-extraction.ts"),
   ]);
   const commit = await promisify(execFile)("git", ["-C", appRoot, "rev-parse", "HEAD"])
     .then(({ stdout }) => stdout.trim())
@@ -154,170 +134,10 @@ export async function loadAppChecks(appRoot: string): Promise<AppChecks> {
     categories: manifest.PLUGIN_CATEGORIES,
     archiveMaxBytes: plugins.PLUGIN_ARCHIVE_MAX_BYTES,
     archiveMaxEntries: plugins.PLUGIN_ARCHIVE_MAX_ENTRIES,
+    extractArchive: archives.extractArchive,
     // Without a commit no verdict is reused.
     version: commit ?? `unknown-${Date.now()}`,
   };
-}
-
-/** npm's registry keys, by keyid; a key verifies only what was published before it expired. */
-export type RegistryKeys = Map<string, { key: KeyObject; expires?: number }>;
-
-/** Why the registry's signatures don't vouch for a version, or undefined when one does. */
-export function signatureIssue(
-  name: string,
-  version: string,
-  integrity: string,
-  signatures: readonly RegistrySignature[],
-  keys: RegistryKeys,
-  publishedAt?: string,
-): string | undefined {
-  if (!signatures.length) return "no npm registry signature";
-  const message = Buffer.from(`${name}@${version}:${integrity}`);
-  const at = publishedAt ? Date.parse(publishedAt) : Date.now();
-  for (const { keyid, sig } of signatures) {
-    const key = keys.get(keyid);
-    if (!key || (key.expires !== undefined && at > key.expires)) continue;
-    if (verify("sha256", message, key.key, Buffer.from(sig, "base64"))) return undefined;
-  }
-  return "npm registry signature doesn't verify";
-}
-
-/** Why the tarball's bytes don't match its `sha512-` integrity, or undefined when they do. */
-export function integrityIssue(bytes: Buffer, integrity: string): string | undefined {
-  const sha512 = integrity.split(/\s+/).find((item) => item.startsWith("sha512-"));
-  if (!sha512) return "no sha512 integrity";
-  return createHash("sha512").update(bytes).digest("base64") === sha512.slice("sha512-".length)
-    ? undefined
-    : "integrity doesn't match the tarball";
-}
-
-/** A tarball the app couldn't install, and why. */
-export class TarballError extends Error {}
-
-const FILE_TYPES = new Set(["File", "OldFile", "ContiguousFile"]);
-/** Below what any file system takes, and the app's own folder depth. */
-const MAX_PATH_BYTES = 1024;
-const MAX_NAME_BYTES = 255;
-const MAX_DEPTH = 20;
-/** Room beyond the files themselves for tar headers and metadata records. */
-const METADATA_ALLOWANCE = 8 * 1024 * 1024;
-
-/**
- * The package's files (paths inside `package/`), read from a gzipped
- * tarball in memory. Every entry must be a file or folder under `package/`
- * whose path has no `.`/`..` segment, backslash or root, and no two may
- * name the same path, by case too; entries and bytes stay within the limits.
- * The whole decompressed stream, metadata records included, stays within
- * the file limit plus a small allowance, and parsing stops at the first
- * problem.
- */
-export async function readTarball(bytes: Buffer, limits: { maxEntries: number; maxBytes: number }): Promise<Map<string, Buffer>> {
-  const files = new Map<string, Buffer>();
-  const taken = new Map<string, "file" | "folder">();
-  let entries = 0;
-  let total = 0;
-  let failure: TarballError | undefined;
-  const fail = (error: TarballError) => {
-    failure ??= error;
-    parser.abort(failure);
-  };
-  const parser: Parser = new Parser({
-    strict: true,
-    // Already decompressed below, within the budget; nothing may decompress again.
-    brotli: false,
-    zstd: false,
-    onReadEntry: (entry: ReadEntry) => {
-      try {
-        if (failure) throw failure;
-        if (++entries > limits.maxEntries) throw new TarballError("has too many files");
-        const relative = packagePath(entry.path);
-        if (entry.type === "Directory") {
-          if (relative) claim(taken, relative, "folder");
-          entry.resume();
-          return;
-        }
-        if (!relative) throw new TarballError("package is a file, not a folder");
-        if (!FILE_TYPES.has(entry.type)) throw new TarballError(`${entry.path} is a ${entry.type}, not a file or folder`);
-        claim(taken, relative, "file");
-        if (entry.size > limits.maxBytes || (total += entry.size) > limits.maxBytes) throw new TarballError("is larger than the app allows unpacked");
-        const chunks: Buffer[] = [];
-        let received = 0;
-        entry.on("data", (chunk: Buffer) => {
-          received += chunk.length;
-          if (received > entry.size) fail(new TarballError(`${entry.path} is longer than its header says`));
-          else chunks.push(chunk);
-        });
-        entry.on("end", () => files.set(relative, Buffer.concat(chunks)));
-      } catch (error) {
-        entry.resume();
-        fail(error instanceof TarballError ? error : new TarballError(String(error)));
-      }
-    },
-  });
-  const budget = limits.maxBytes + METADATA_ALLOWANCE;
-  let decompressed = 0;
-  let head: Buffer | undefined = Buffer.alloc(0);
-  const bounded = new Transform({
-    transform(chunk: Buffer, _encoding, done) {
-      decompressed += chunk.length;
-      if (decompressed > budget) return done(failure ??= new TarballError("is larger than the app allows unpacked"));
-      if (!head) return done(null, chunk);
-      // The first block must be a tar header, so a tarball compressed twice
-      // can't decompress again in the parser, outside the budget.
-      head = Buffer.concat([head, chunk]);
-      if (head.length < 512) return done();
-      const first = head;
-      head = undefined;
-      if (!startsWithTarHeader(first)) return done(failure ??= new TarballError("is not a tar archive inside one gzip layer"));
-      done(null, first);
-    },
-    flush(done) {
-      if (head?.length) return done(failure ??= new TarballError("is not a tar archive inside one gzip layer"));
-      done();
-    },
-  });
-  try {
-    await pipeline(Readable.from([bytes]), createGunzip(), bounded, parser);
-  } catch (error) {
-    throw failure ?? new TarballError(`can't be read as a gzipped tarball (${(error as Error).message})`);
-  }
-  if (failure) throw failure;
-  return files;
-}
-
-function startsWithTarHeader(bytes: Buffer): boolean {
-  if (bytes[0] === 0x1f && bytes[1] === 0x8b) return false;
-  try {
-    return new Header(bytes.subarray(0, 512)).cksumValid;
-  } catch {
-    return false;
-  }
-}
-
-/** The path inside `package/` (empty for `package/` itself), refusing anything that could land elsewhere. */
-function packagePath(name: string): string {
-  if (Buffer.byteLength(name) > MAX_PATH_BYTES) throw new TarballError("has a path that is too long");
-  if (!name || name.includes("\\") || name.startsWith("/") || /^[A-Za-z]:/.test(name)) throw new TarballError(`${name} is not a safe path`);
-  const segments = name.split("/").filter(Boolean);
-  if (segments.some((part) => part === "." || part === "..") || segments[0] !== "package")
-    throw new TarballError(`${name} is not a safe path inside package/`);
-  if (segments.length > MAX_DEPTH + 1) throw new TarballError("has folders that nest too deeply");
-  if (segments.some((part) => Buffer.byteLength(part) > MAX_NAME_BYTES)) throw new TarballError("has a file name that is too long");
-  return segments.slice(1).join("/");
-}
-
-/** Records a path, refusing one already taken (by case too) or a file where a folder is. */
-function claim(taken: Map<string, "file" | "folder">, relative: string, kind: "file" | "folder"): void {
-  const segments = relative.toLowerCase().split("/");
-  for (let index = 1; index < segments.length; index++) {
-    const parent = segments.slice(0, index).join("/");
-    if (taken.get(parent) === "file") throw new TarballError(`${relative} is inside a file`);
-    taken.set(parent, "folder");
-  }
-  const key = segments.join("/");
-  const before = taken.get(key);
-  if (before === "file" || (before === "folder" && kind === "file")) throw new TarballError(`${relative} is in the tarball twice`);
-  taken.set(key, kind);
 }
 
 /** Where the index keeps an image: named by its contents, so it never changes. */
@@ -330,22 +150,81 @@ export type SaveImage = (path: string, bytes: Buffer) => Promise<void>;
 
 const SCREENSHOT_EXTENSIONS: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
 
+/** An archive the app couldn't install, and why. */
+export class ArchiveError extends Error {}
+
 /**
- * Checks one version's tarball with the app's package check, and that the
- * package agrees with it. Its icon and screenshots go to `save`.
+ * Unpacks a release's archive into `folder` as the app's `installRelease`
+ * does, and returns the package's folder: the top of the archive, or the one
+ * folder it was zipped with. A manifest folder anywhere else is refused.
  */
-export async function judgeTarball(app: AppChecks, name: string, version: string, bytes: Buffer, save: SaveImage = async () => {}): Promise<Verdict> {
-  let files: Map<string, Buffer>;
+export async function unpackArchive(app: AppChecks, archive: string, folder: string): Promise<string> {
+  let wrapped = false;
+  await app.extractArchive(archive, folder, {
+    maxEntries: app.archiveMaxEntries,
+    maxBytes: app.archiveMaxBytes,
+    include: (relative) => {
+      const parts = relative.split("/").filter(Boolean);
+      parts.forEach((part, index) => {
+        if (part !== ".ohmygame-plugin" || index === 0) return;
+        if (index === 1 && !parts[0]!.startsWith(".")) {
+          wrapped = true;
+          return;
+        }
+        throw new ArchiveError(`has a manifest folder outside its package: ${relative}`);
+      });
+      return true;
+    },
+    error: (reason) => new ArchiveError(`is unusable (${reason})`),
+  });
+  const items = await readdir(folder);
+  const root = items.length === 1 && !items[0]!.startsWith(".") && (await stat(path.join(folder, items[0]!))).isDirectory()
+    ? path.join(folder, items[0]!)
+    : folder;
+  if (wrapped && root === folder) throw new ArchiveError("has a manifest folder outside its package");
+  return root;
+}
+
+/** What a release says it is: who publishes it, its version, and, in a repository of several, its name. */
+export interface Expected {
+  owner: string;
+  version: string;
+  name?: string;
+}
+
+/**
+ * Checks one release's archive with the app's package check, and that the
+ * package agrees with its release. Its icon and screenshots go to `save`.
+ */
+export async function judgeArchive(app: AppChecks, bytes: Buffer, expected: Expected, save: SaveImage = async () => {}): Promise<Verdict> {
+  const folder = await mkdtemp(path.join(tmpdir(), "ohmygame-plugin-check-"));
   try {
-    files = await readTarball(bytes, { maxEntries: app.archiveMaxEntries, maxBytes: app.archiveMaxBytes });
-  } catch (error) {
-    if (error instanceof TarballError) return { rejected: [`the tarball ${error.message}`] };
-    throw error;
+    const archive = path.join(folder, "archive.zip");
+    await writeFile(archive, bytes, { mode: 0o600 });
+    const staging = path.join(folder, "package");
+    await mkdir(staging, { mode: 0o700 });
+    let root: string;
+    try {
+      root = await unpackArchive(app, archive, staging);
+    } catch (error) {
+      // A file system call failing here (no space, too many files) is this runner's, not the archive's.
+      if ((error as NodeJS.ErrnoException).syscall) throw error;
+      // Anything else unpacking it throws, such as corrupt compressed data, comes from the archive too.
+      return { rejected: [error instanceof ArchiveError ? `the archive ${error.message}` : `the archive can't be unpacked: ${(error as Error).message}`] };
+    }
+    return await judgePackage(app, root, expected, save);
+  } finally {
+    await rm(folder, { recursive: true, force: true });
   }
+}
+
+/** Checks an unpacked package; see `judgeArchive`. */
+export async function judgePackage(app: AppChecks, root: string, expected: Expected, save: SaveImage = async () => {}): Promise<Verdict> {
+  const read = (file: string) => readFile(path.join(root, ...file.split("/"))).catch(() => undefined);
   const rejected: string[] = [];
   let scripts: Record<string, unknown> = {};
   try {
-    const pkg = files.get("package.json");
+    const pkg = await read("package.json");
     scripts = pkg ? (JSON.parse(pkg.toString("utf8")).scripts ?? {}) : {};
   } catch {
     rejected.push("package.json is not JSON");
@@ -354,101 +233,90 @@ export async function judgeTarball(app: AppChecks, name: string, version: string
   for (const script of ["preinstall", "install", "postinstall"])
     if (scripts[script]) rejected.push(`has a ${script} script, which the app never runs`);
 
-  const folder = await mkdtemp(path.join(tmpdir(), "ohmygame-plugin-check-"));
+  let result: Awaited<ReturnType<AppChecks["indexPluginPackage"]>>;
+  // Whatever goes wrong from here on comes from the package's own files.
   try {
-    const root = path.join(folder, "package");
-    await mkdir(root, { mode: 0o700 });
-    let result: Awaited<ReturnType<AppChecks["indexPluginPackage"]>>;
-    // Whatever goes wrong from here on comes from the package's own files.
-    try {
-      for (const [file, content] of files) {
-        const target = path.join(root, ...file.split("/"));
-        await mkdir(path.dirname(target), { recursive: true });
-        await writeFile(target, content, { flag: "wx" });
-      }
-      result = await app.indexPluginPackage(root);
-    } catch (error) {
-      return { rejected: [...rejected, `the package can't be checked: ${(error as Error).message}`] };
-    }
-    if (!result.ok) return { rejected: [...rejected, ...result.issues.map((issue) => `${issue.path || "package"} ${issue.message}`)] };
-    const { entry } = result;
-    const manifest = entry.manifest;
-    const allowed = pluginIdsFor(name);
-    if (!allowed.length) rejected.push("package name must be @<publisher>/<name> or @<publisher>/ohmygame-plugin-<name>");
-    else if (!allowed.includes(manifest.id)) rejected.push(`package ${name} can't hold plugin ${manifest.id}`);
-    if (manifest.version !== version) rejected.push(`plugin.json says version ${manifest.version}, the package ${version}`);
-    const apiIssue = app.pluginApiIssue(manifest);
-    if (apiIssue) rejected.push(apiIssue);
-    if (rejected.length) return { rejected };
-    const text = (value: string) => Object.fromEntries(LOCALES.map((locale) => [locale, app.localizePluginString(entry, value, locale)]));
-    const displayName = text(manifest.displayName);
-    const description = text(manifest.description);
-    // A `%key%` must name a string the locale file itself holds, not, say, `%toString%`.
-    for (const [field, values] of Object.entries({ displayName, description }))
-      for (const [locale, value] of Object.entries(values))
-        if (typeof value !== "string" || !value.trim()) rejected.push(`${field} isn't text in ${locale}`);
-    if (rejected.length) return { rejected };
-    // Optional text is left out in a locale it isn't text in.
-    const optional = (value: string | undefined) => {
-      const values = value === undefined ? {} : Object.fromEntries(Object.entries(text(value)).filter(([, item]) => typeof item === "string" && item.trim()));
-      return Object.keys(values).length ? values : undefined;
-    };
-    // The package check found both in the package; one the app wouldn't show is left out.
-    const kept = async (file: string, valid: (bytes: Buffer) => Promise<string | undefined>) => {
-      const bytes = files.get(file.slice(2));
-      const extension = bytes && await valid(bytes);
-      if (!bytes || !extension) return undefined;
-      const at = imagePath(bytes, extension);
-      await save(at, bytes);
-      return at;
-    };
-    const icon = manifest.icon && await kept(manifest.icon, async (bytes) => {
-      const extension = manifest.icon!.slice(manifest.icon!.lastIndexOf(".") + 1).toLowerCase();
-      const mediaType = app.iconMediaTypes[extension];
-      return mediaType && await app.validateIcon(bytes, mediaType).then(() => extension, () => undefined);
-    });
-    const screenshots = [];
-    for (const shot of manifest.screenshots ?? []) {
-      const at = await kept(shot.path, async (bytes) => SCREENSHOT_EXTENSIONS[app.sniffImage(bytes) ?? ""]);
-      const caption = optional(shot.caption);
-      if (at) screenshots.push({ path: at, ...(caption ? { caption } : {}) });
-    }
-    const longDescription = optional(manifest.longDescription);
-    // An app older than plugin API 2.5.0 leaves keywords out of the manifest it reads.
-    const keywords = (manifest.keywords ?? []).map(optional).filter((value) => value !== undefined);
-    const titles = (list: unknown) => (Array.isArray(list) ? list : []).flatMap((item) =>
-      item && typeof item === "object" && typeof (item as { title?: unknown }).title === "string" ? [(item as { title: string }).title] : []);
-    const names = [...titles(manifest.contributes?.providers), ...titles(manifest.contributes?.agents)]
-      .map(optional).filter((value) => value !== undefined).slice(0, 100);
-    // Read off what each provider implements, so a listing can't claim what it doesn't make.
-    // An app older than plugin API 2.5.0 leaves `media` out of the manifest it reads.
-    const providers = (Array.isArray(manifest.contributes?.providers) ? manifest.contributes.providers : []) as { api?: unknown; media?: Record<string, unknown> }[];
-    const providerKinds = PROVIDER_KINDS.filter((kind) => providers.some((provider) =>
-      kind === "language" ? typeof provider?.api === "string" : Boolean(provider?.media?.[kind])));
-    return {
-      plugin: {
-        id: manifest.id,
-        displayName,
-        description,
-        ...(longDescription ? { longDescription } : {}),
-        ...(manifest.categories?.length ? { categories: manifest.categories } : {}),
-        ...(keywords.length ? { keywords } : {}),
-        ...(names.length ? { names } : {}),
-        ...(providerKinds.length ? { providerKinds } : {}),
-        ...(manifest.appliesTo?.length ? { appliesTo: manifest.appliesTo } : {}),
-        ...(manifest.beta ? { beta: true as const } : {}),
-        ...(icon ? { icon } : {}),
-        ...(screenshots.length ? { screenshots } : {}),
-        grants: app.capabilityGrants(manifest),
-        adds: Object.fromEntries(
-          Object.entries(manifest.contributes ?? {})
-            .filter(([, value]) => Array.isArray(value))
-            .map(([key, value]) => [key, (value as unknown[]).length])
-            .concat(entry.skills.length ? [["skills", entry.skills.length]] : []),
-        ),
-      },
-    };
-  } finally {
-    await rm(folder, { recursive: true, force: true });
+    result = await app.indexPluginPackage(root);
+  } catch (error) {
+    return { rejected: [...rejected, `the package can't be checked: ${(error as Error).message}`] };
   }
+  if (!result.ok) return { rejected: [...rejected, ...result.issues.map((issue) => `${issue.path || "package"} ${issue.message}`)] };
+  const { entry } = result;
+  const manifest = entry.manifest;
+  const publisher = publisherIssue(expected.owner, manifest.id);
+  if (publisher) rejected.push(publisher);
+  if (expected.name !== undefined && manifest.id.split("/")[1] !== expected.name)
+    rejected.push(`the tag names ${expected.name}, plugin.json ${manifest.id}`);
+  if (manifest.version !== expected.version) rejected.push(`plugin.json says version ${manifest.version}, the tag ${expected.version}`);
+  const apiIssue = app.pluginApiIssue(manifest);
+  if (apiIssue) rejected.push(apiIssue);
+  if (rejected.length) return { rejected };
+  const text = (value: string) => Object.fromEntries(LOCALES.map((locale) => [locale, app.localizePluginString(entry, value, locale)]));
+  const displayName = text(manifest.displayName);
+  const description = text(manifest.description);
+  // A `%key%` must name a string the locale file itself holds, not, say, `%toString%`.
+  for (const [field, values] of Object.entries({ displayName, description }))
+    for (const [locale, value] of Object.entries(values))
+      if (typeof value !== "string" || !value.trim()) rejected.push(`${field} isn't text in ${locale}`);
+  if (rejected.length) return { rejected };
+  // Optional text is left out in a locale it isn't text in.
+  const optional = (value: string | undefined) => {
+    const values = value === undefined ? {} : Object.fromEntries(Object.entries(text(value)).filter(([, item]) => typeof item === "string" && item.trim()));
+    return Object.keys(values).length ? values : undefined;
+  };
+  // The package check found both in the package; one the app wouldn't show is left out.
+  const kept = async (file: string, valid: (bytes: Buffer) => Promise<string | undefined>) => {
+    const bytes = await read(file.slice(2));
+    const extension = bytes && await valid(bytes);
+    if (!bytes || !extension) return undefined;
+    const at = imagePath(bytes, extension);
+    await save(at, bytes);
+    return at;
+  };
+  const icon = manifest.icon && await kept(manifest.icon, async (bytes) => {
+    const extension = manifest.icon!.slice(manifest.icon!.lastIndexOf(".") + 1).toLowerCase();
+    const mediaType = app.iconMediaTypes[extension];
+    return mediaType && await app.validateIcon(bytes, mediaType).then(() => extension, () => undefined);
+  });
+  const screenshots = [];
+  for (const shot of manifest.screenshots ?? []) {
+    const at = await kept(shot.path, async (bytes) => SCREENSHOT_EXTENSIONS[app.sniffImage(bytes) ?? ""]);
+    const caption = optional(shot.caption);
+    if (at) screenshots.push({ path: at, ...(caption ? { caption } : {}) });
+  }
+  const longDescription = optional(manifest.longDescription);
+  // An app older than plugin API 2.5.0 leaves keywords out of the manifest it reads.
+  const keywords = (manifest.keywords ?? []).map(optional).filter((value) => value !== undefined);
+  const titles = (list: unknown) => (Array.isArray(list) ? list : []).flatMap((item) =>
+    item && typeof item === "object" && typeof (item as { title?: unknown }).title === "string" ? [(item as { title: string }).title] : []);
+  const names = [...titles(manifest.contributes?.providers), ...titles(manifest.contributes?.agents)]
+    .map(optional).filter((value) => value !== undefined).slice(0, 100);
+  // Read off what each provider implements, so a listing can't claim what it doesn't make.
+  // An app older than plugin API 2.5.0 leaves `media` out of the manifest it reads.
+  const providers = (Array.isArray(manifest.contributes?.providers) ? manifest.contributes.providers : []) as { api?: unknown; media?: Record<string, unknown> }[];
+  const providerKinds = PROVIDER_KINDS.filter((kind) => providers.some((provider) =>
+    kind === "language" ? typeof provider?.api === "string" : Boolean(provider?.media?.[kind])));
+  return {
+    plugin: {
+      id: manifest.id,
+      displayName,
+      description,
+      ...(longDescription ? { longDescription } : {}),
+      ...(manifest.categories?.length ? { categories: manifest.categories } : {}),
+      ...(keywords.length ? { keywords } : {}),
+      ...(names.length ? { names } : {}),
+      ...(providerKinds.length ? { providerKinds } : {}),
+      ...(manifest.appliesTo?.length ? { appliesTo: manifest.appliesTo } : {}),
+      ...(manifest.beta ? { beta: true as const } : {}),
+      ...(icon ? { icon } : {}),
+      ...(screenshots.length ? { screenshots } : {}),
+      grants: app.capabilityGrants(manifest),
+      adds: Object.fromEntries(
+        Object.entries(manifest.contributes ?? {})
+          .filter(([, value]) => Array.isArray(value))
+          .map(([key, value]) => [key, (value as unknown[]).length])
+          .concat(entry.skills.length ? [["skills", entry.skills.length]] : []),
+      ),
+    },
+  };
 }

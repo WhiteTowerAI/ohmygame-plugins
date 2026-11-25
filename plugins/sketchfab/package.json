@@ -1,0 +1,30 @@
+{
+  "name": "@ohmygame/sketchfab",
+  "version": "0.1.0",
+  "description": "Search Sketchfab from the Library: downloadable 3D models under CC0, CC BY and CC BY-SA.",
+  "keywords": [
+    "ohmygame-plugin",
+    "library",
+    "sketchfab",
+    "3d-models",
+    "glb",
+    "creative-commons"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/sketchfab"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "native",
+    "LICENSE",
+    "NOTICE.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

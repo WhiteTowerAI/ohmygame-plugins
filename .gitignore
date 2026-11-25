@@ -5,4 +5,5 @@ node_modules/
 cache.json
 /plugins/feishu/dist/
 /plugins/computer-use/dist/
+/plugins/game-tests/dist/
 /.runtime/

@@ -488,7 +488,7 @@ it("resumes text refinement after shutdown without a second preview or refine", 
   );
 });
 
-it("lists actions and credits without paid requests and rejects malformed vendor data", async (t) => {
+it("lists actions and credits without paid requests, rejecting malformed balances and leaving out undeclared previews", async (t) => {
   let invalid = false;
   const s = await setup(t, (r) => {
     if (r.url.endsWith("/balance"))
@@ -502,7 +502,7 @@ it("lists actions and credits without paid requests and rejects malformed vendor
           sub_category: "Walk",
           preview_url: invalid
             ? "https://evil.example/preview.mp4"
-            : "https://assets.meshy.ai/walk.mp4",
+            : "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Walking_Woman.gif",
         },
       ]);
   });
@@ -516,12 +516,15 @@ it("lists actions and credits without paid requests and rejects malformed vendor
       name: "Walk",
       category: "Walking",
       subCategory: "Walk",
-      previewUrl: "https://assets.meshy.ai/walk.mp4",
+      previewUrl: "https://cdn.meshy.ai/webapp-assets/feature-demo/animation/preview/biped/Walking_Woman.gif",
     },
   ]);
   invalid = true;
   await assert.rejects(s.media.balance3D(s.provider.id));
-  await assert.rejects(s.media.animationActions(s.provider.processing!));
+  // A preview on a host the plugin doesn't declare is left out; the action stays.
+  assert.deepEqual(await s.media.animationActions(s.provider.processing!), [
+    { id: 4, name: "Walk", category: "Walking", subCategory: "Walk" },
+  ]);
   assert.equal(
     s.requests.every((r) => r.method === "GET"),
     true,

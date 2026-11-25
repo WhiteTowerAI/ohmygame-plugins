@@ -15,9 +15,12 @@ runs:
       with:
         node-version: 24
         cache: npm
-    # Only the source and its dependencies are needed; nothing of the app runs.
+    # Skip app lifecycle scripts, then install the binary used by GIF composition tests.
     - shell: bash
       working-directory: app
       run: bun install --frozen-lockfile --ignore-scripts
+    - shell: bash
+      working-directory: app
+      run: npm rebuild ffmpeg-static
     - shell: bash
       run: npm ci

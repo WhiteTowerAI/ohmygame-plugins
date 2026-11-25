@@ -2,7 +2,8 @@ name: Index
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    # Off the hour and half hour, when GitHub delays or drops the most scheduled runs.
+    - cron: "17,47 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -21,24 +22,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      # Versions already judged, with the icons and screenshots they list; losing
-      # them only means downloading those versions again.
+      # Releases already judged, with the icons, screenshots and archives they keep;
+      # losing them only means downloading those releases again.
       - uses: actions/cache/restore@v4
         with:
           path: |
             cache.json
             images
+            archives
           key: index-cache-${{ github.run_id }}
           restore-keys: index-cache-
-      - run: npm run build -- --app app --out out --cache cache.json --images images
+      - run: npm run build -- --app app --out out --cache cache.json --images images --archives archives --mirror "$PLUGIN_MIRROR_URL"
         env:
-          # Only for reading public repositories' star counts.
+          # Only for reading public repositories and releases, at the higher rate limit.
           GITHUB_TOKEN: ${{ github.token }}
+          PLUGIN_MIRROR_URL: ${{ vars.PLUGIN_MIRROR_URL || 'https://plugins.ohmygame.ai/plugins' }}
+          PLUGIN_RELEASE_KEY: ${{ secrets.PLUGIN_RELEASE_KEY }}
+          PLUGIN_RELEASE_KEY_ID: ${{ vars.PLUGIN_RELEASE_KEY_ID }}
       - uses: actions/cache/save@v4
         with:
           path: |
             cache.json
             images
+            archives
           key: index-cache-${{ github.run_id }}
       - uses: actions/upload-artifact@v4
         with:
@@ -65,15 +71,22 @@ jobs:
           esac
           endpoint="https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"
           latest=$(node -p 'require("./out/index.json").latest')
-          # Images and the content file first, cached for good (their names are their hashes), then the pointer.
-          # Images already there are left as they are, and none is deleted: an app may still hold an older index.
-          aws s3 sync out/assets "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/assets" \
+          # The mirror's archives, images and the content file first, cached for good (their names
+          # carry their hashes), then the pointer, so no index names an archive that isn't there.
+          # What's already there is left as it is, and nothing is deleted: an app may still hold an
+          # older index. The npm index (v1) beside v2/ stays at its last version for older apps.
+          if [ -d archives/packages ]; then
+            aws s3 sync archives/packages "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/packages" \
+              --endpoint-url "$endpoint" --size-only --content-type application/zip \
+              --cache-control "public, max-age=31536000, immutable"
+          fi
+          aws s3 sync out/assets "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/v2/assets" \
             --endpoint-url "$endpoint" --size-only \
             --cache-control "public, max-age=31536000, immutable"
-          aws s3 cp "out/$latest" "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/$latest" \
+          aws s3 cp "out/$latest" "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/v2/$latest" \
             --endpoint-url "$endpoint" --content-type application/json \
             --cache-control "public, max-age=31536000, immutable"
           # Every running app reads the pointer every 30 minutes; a minute's caching lets a CDN in front answer most.
-          aws s3 cp out/index.json "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/index.json" \
+          aws s3 cp out/index.json "s3://$R2_BUCKET/$R2_PLUGIN_INDEX_PREFIX/v2/index.json" \
             --endpoint-url "$endpoint" --content-type application/json \
             --cache-control "public, max-age=60"

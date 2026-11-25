@@ -1,0 +1,16 @@
+{
+  "displayName": "Game Tests",
+  "description": "Saved tests that play your web game in real windows, multiplayer included, and check its rules, flows and screens after every change.",
+  "longDescription": "Keeps game tests as JSON files in tests/game/. Each opens the game in fresh windows, one per player, clicks and presses as players do, takes a player off line or reloads their page, and checks what each player sees and the game's state. The agent writes them, rules first, and runs them with the game_test tool after it changes the game; the Automated tests panel runs them for you, shows the step and frame where one failed, and runs the project's own unit tests beside them.",
+  "example.1": "Write game tests for this game's rules, then run them.",
+  "example.2": "Run the game tests and fix what fails.",
+  "panel.title": "Automated tests",
+  "command.open": "Automated tests",
+  "command.state": "Read tests",
+  "command.run": "Run game tests",
+  "command.cancel": "Stop game tests",
+  "command.detail": "Read a test's steps",
+  "command.capture": "Show a test's frame",
+  "command.unitRun": "Run unit tests",
+  "command.unitCancel": "Stop unit tests"
+}

@@ -1,0 +1,10 @@
+{
+  "plugin.name": "豆包语音",
+  "plugin.description": "使用豆包生成语音、音效和音乐。",
+  "plugin.longDescription": "使用你的火山引擎豆包语音账户，支持语音合成 2.0 和 Seed Audio 1.0、默认音色、复刻音色与已确认付费请求恢复。需要 OhMyGame API 2.25。安装不会迁移或断开内置服务。",
+  "provider.name": "豆包语音（插件）",
+  "config.key.title": "豆包语音 API Key",
+  "config.key.description": "在火山引擎控制台创建密钥，并开通需要的语音服务。生成消耗你的账户额度。",
+  "config.voice.title": "默认 Speaker ID",
+  "config.voice.description": "可选，仅用于文字转语音。可以在画布选择音色，或在此填写 Speaker ID。Seed Audio 的参考音色单独选择。"
+}

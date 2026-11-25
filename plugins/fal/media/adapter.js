@@ -16,6 +16,7 @@
 
 const QUEUE = "https://queue.fal.run/";
 const MODELS = "https://api.fal.ai/v1/models";
+const STABLE_AUDIO_25 = "fal-ai/stable-audio-25/text-to-audio";
 
 // FLUX's named sizes for the aspect ratios it's offered with.
 const IMAGE_SIZES = {
@@ -161,11 +162,23 @@ function build(kind, input, d) {
 
 /** Starts a listed model, or says what it needs that wasn't given. */
 function startListed(kind, input, host) {
+  if (kind === "audio" && input.model === STABLE_AUDIO_25) return startStableAudio25(input, host);
   const d = input.modelData;
   if (d.ref && d.ref.need && !(input.references || []).length) {
     return { error: kind === "video" ? "This model makes a video from a first frame: add a picture." : "This model needs a picture: add one." };
   }
   return submit(input.model, build(kind, input, d), host, d.out);
+}
+
+/** This endpoint makes WAV, takes whole seconds and keeps asynchronous queue history. */
+async function startStableAudio25(input, host) {
+  const seconds = input.durationSeconds ?? 190;
+  if (!Number.isInteger(seconds) || seconds < 1 || seconds > 190)
+    return { error: "Stable Audio 2.5 takes an integer duration from 1 to 190 seconds" };
+  const result = await submit(STABLE_AUDIO_25, { prompt: input.prompt, seconds_total: seconds, sync_mode: false }, host, [["audio", "url"], ["audio"]]);
+  // Stop waiting locally; Retry must still be able to retrieve this paid task.
+  if (result.task) delete result.task.cancel;
+  return result;
 }
 
 // ---- Turning fal.ai's schemas into OhMyGame's models ----
@@ -415,6 +428,9 @@ function describeAudio(model, s, category) {
     }
   }
   if (!fills(s, [said])) return undefined;
+  // The documented Stable Audio 2.5 endpoint has no output_format input and
+  // returns WAV. Do not extrapolate this to other audio models.
+  if (model.endpoint_id === STABLE_AUDIO_25) result.formats = ["wav"];
   // Some models give the file as an object with a url, others as the url alone.
   d.out = outOf(s, [["audio", "url"], ["audio"], ["audio_file", "url"], ["audios", 0, "url"]]);
   if (!d.out) return undefined;
@@ -499,7 +515,22 @@ async function listModels(kind, host) {
 export default {
   image: {
     models: (host) => listModels("image", host),
-    start(input, host) {
+    async start(input, host) {
+      if (input.operation === "remove-background") {
+        if (input.model !== "fal-ai/birefnet" || !input.image || typeof input.image.file !== "string")
+          return { error: "Choose BiRefNet and one source image" };
+        const result = await submit("fal-ai/birefnet", {
+          image_url: { $mediaFile: input.image.file },
+          model: "General Use (Light)",
+          operating_resolution: "1024x1024",
+          output_format: "png",
+          sync_mode: false,
+          refine_foreground: false,
+        }, host, [["image", "url"]]);
+        // Stop waiting locally while preserving queue ownership for Retry.
+        if (result.task) delete result.task.cancel;
+        return result;
+      }
       if (input.modelData) return startListed("image", input, host);
       return submit(input.model, {
         prompt: input.prompt,
@@ -530,6 +561,8 @@ export default {
   audio: {
     models: (host) => listModels("audio", host),
     start(input, host) {
+      // A separate preset ID preserves saved discovered definitions and their task identities.
+      if (input.model === "stable-audio-25") return startStableAudio25(input, host);
       if (input.modelData) return startListed("audio", input, host);
       if (input.model === "fal-ai/minimax/speech-02-hd") {
         // OhMyGame's speed runs from -50 (half as fast) to 100 (twice as fast); MiniMax's from 0.5 to 2.

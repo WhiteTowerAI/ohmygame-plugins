@@ -1,47 +1,40 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
-import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { after, before, describe, it } from "node:test";
+import { before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { promisify } from "node:util";
-import { judgeTarball, loadAppChecks, type AppChecks } from "../src/checks.ts";
+import { judgeArchive, loadAppChecks, unpackArchive, type AppChecks } from "../src/checks.ts";
+import { packRelease } from "../src/pack.ts";
 
-// Each official plugin is packed as npm would publish it and judged as the
-// index will judge it, so one the market would refuse never reaches npm.
+// Each official plugin is packed as its GitHub release attaches it and judged
+// as the index will judge it, so one the market would refuse is never released.
 
+const APP = process.env.OHMYGAME_APP ?? "app";
 const PLUGINS = fileURLToPath(new URL("../plugins/", import.meta.url));
 let app: AppChecks;
-let scratch: string;
 
 before(async () => {
-  app = await loadAppChecks(process.env.OHMYGAME_APP ?? "app");
-  scratch = await mkdtemp(path.join(tmpdir(), "ohmygame-official-"));
+  app = await loadAppChecks(APP);
 });
-after(() => rm(scratch, { recursive: true, force: true }));
 
 describe("official plugins", async () => {
   const folders = (await readdir(PLUGINS, { withFileTypes: true })).filter((entry) => entry.isDirectory()).map((entry) => entry.name);
 
   for (const folder of folders) {
-    it(`${folder} is listed under @ohmygame as it is`, async () => {
+    it(`${folder} is released as ohmygame/${folder} as it is`, async () => {
       const dir = path.join(PLUGINS, folder);
       const pkg = JSON.parse(await readFile(path.join(dir, "package.json"), "utf8"));
       const manifest = JSON.parse(await readFile(path.join(dir, ".ohmygame-plugin", "plugin.json"), "utf8"));
-      assert.equal(pkg.name, `@ohmygame/${folder}`);
       assert.equal(manifest.id, `ohmygame/${folder}`);
       assert.equal(manifest.version, pkg.version);
-      assert.equal(pkg.repository?.directory, `plugins/${folder}`);
-      // npm's own script, run by this Node, so no shell splits the paths (npm sets npm_execpath for `npm test`).
-      const npm = process.env.npm_execpath ? [process.execPath, process.env.npm_execpath] : ["npm"];
-      const { stdout } = await promisify(execFile)(npm[0]!, [...npm.slice(1), "pack", "--json", "--pack-destination", scratch], { cwd: dir });
-      const [{ filename, files }] = JSON.parse(stdout);
+      const { archive, files } = await packRelease(APP, dir);
       // Every runtime file in the preinstalled migration must survive npm's
-      // filtering, including dot-directories and the Godot ignore template.
-      // The host validator alone cannot detect a missing unreferenced helper.
+      // filtering, which the release follows, including dot-directories and
+      // the Godot ignore template. The host validator alone cannot detect a
+      // missing unreferenced helper.
       if (PREINSTALLED.has(folder)) {
-        const packed = new Set(files.map((file: { path: string }) => file.path));
+        const packed = new Set(files);
         for (const file of await runtimeFiles(dir)) {
           assert.ok(packed.has(file), `${folder}: npm omitted ${file}`);
         }
@@ -51,7 +44,25 @@ describe("official plugins", async () => {
           assert.equal(packed.has("templates/godot-game/.gitignore"), false);
         }
       }
-      const verdict = await judgeTarball(app, pkg.name, pkg.version, await readFile(path.join(scratch, filename)));
+      // A project template is copied into projects whole, so npm must keep every file of it.
+      if (folder === "claude-code-game-studios") {
+        const packed = new Set(files);
+        for (const file of await runtimeFiles(path.join(dir, "template"))) {
+          assert.ok(packed.has(`template/${file}`), `${folder}: npm omitted template/${file}`);
+        }
+        assert.ok(packed.has("template/gitignore"));
+        // A script the template runs stays executable once the app unpacks the release.
+        const scratch = await mkdtemp(path.join(tmpdir(), "ohmygame-official-"));
+        try {
+          await writeFile(path.join(scratch, "release.zip"), archive);
+          const root = await unpackArchive(app, path.join(scratch, "release.zip"), await mkdtemp(path.join(scratch, "package-")));
+          assert.ok((await stat(path.join(root, "template/.claude/scripts/one-shot-check.sh"))).mode & 0o100);
+          assert.equal((await stat(path.join(root, "template/.claude/scripts/adr-status.sh"))).mode & 0o111, 0);
+        } finally {
+          await rm(scratch, { recursive: true, force: true });
+        }
+      }
+      const verdict = await judgeArchive(app, archive, { owner: "WhiteTowerAI", version: manifest.version, name: folder });
       assert.deepEqual(verdict.rejected, undefined);
       assert.equal(verdict.plugin?.id, manifest.id);
       if (manifest.icon) assert.ok(verdict.plugin?.icon, `${folder} icon must survive the app validator and package indexing`);

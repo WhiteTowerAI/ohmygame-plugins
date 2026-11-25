@@ -1,0 +1,21 @@
+{
+  "plugin.name": "像素精灵",
+  "plugin.description": "在素材库中搜索 140 万个 AI 生成的 16×16 像素画精灵图。",
+  "plugin.longDescription": "在素材库中添加“像素精灵”标签：140 万个透明背景的 16×16 精灵图，包括武器、药水、食物、怪物、家具等，支持按语义搜索（搜“red dragon”会找到红色的龙）。这些图片由 AI 生成（Krea 2 Turbo 加像素画 LoRA），由 Pixel Art Atlas 数据集的作者在其能放弃的权利范围内以 CC0 发布；Krea 的许可证对商业使用另有条款。第一次搜索会下载约 12 MB 的搜索数据。",
+  "source.title": "像素精灵",
+  "source.description": "来自 Pixel Art Atlas 数据集的 AI 生成 16×16 像素画，在作者能放弃的权利范围内采用 CC0；商用前请查看 Krea 的许可证。可用英文或常用中文游戏词搜索。",
+  "config.scale.title": "添加时的尺寸",
+  "config.scale.description": "添加的精灵图为 16×16，或放大 4 倍、8 倍，每个像素保持清晰。",
+  "collection.all": "全部",
+  "collection.weapon": "武器",
+  "collection.armor": "护甲",
+  "collection.potion": "药水",
+  "collection.food": "食物",
+  "collection.magic": "魔法",
+  "collection.monster": "怪物",
+  "collection.character": "角色",
+  "collection.animal": "动物",
+  "collection.plant": "植物",
+  "collection.tool": "工具",
+  "collection.furniture": "家具"
+}

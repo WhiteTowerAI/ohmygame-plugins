@@ -1,0 +1,79 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/gpt-sovits",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.32.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "categories": ["provider"],
+  "beta": true,
+  "capabilities": {
+    "network": ["127.0.0.1:9880"]
+  },
+  "configuration": {
+    "referencePath": {
+      "type": "text",
+      "title": "%config.referencePath.title%",
+      "description": "%config.referencePath.description%",
+      "required": true
+    },
+    "referenceText": {
+      "type": "text",
+      "title": "%config.referenceText.title%",
+      "description": "%config.referenceText.description%",
+      "required": true
+    },
+    "referenceLanguage": {
+      "type": "select",
+      "title": "%config.referenceLanguage.title%",
+      "description": "%config.referenceLanguage.description%",
+      "required": true,
+      "options": ["zh", "en", "ja"],
+      "default": "zh"
+    },
+    "textLanguage": {
+      "type": "select",
+      "title": "%config.textLanguage.title%",
+      "description": "%config.textLanguage.description%",
+      "required": true,
+      "options": ["auto", "zh", "en", "ja"],
+      "default": "auto"
+    }
+  },
+  "contributes": {
+    "providers": [
+      {
+        "id": "gpt-sovits",
+        "title": "%plugin.name%",
+        "icon": "./assets/icon.svg",
+        "media": {
+          "adapter": "./media/adapter.js",
+          "audio": {
+            "configuration": [
+              "referencePath",
+              "referenceText",
+              "referenceLanguage",
+              "textLanguage"
+            ],
+            "models": [
+              {
+                "id": "reference-speech",
+                "title": "%model.name%",
+                "kinds": ["speech"],
+                "readsText": true,
+                "formats": ["wav"],
+                "languages": ["zh", "en", "ja"],
+                "maxTextCharacters": 2000,
+                "speedRange": [-50, 100]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

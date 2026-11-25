@@ -1,6 +1,6 @@
 {
   "name": "@ohmygame/blender",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Make game assets and export project-ready GLB files.",
   "keywords": [

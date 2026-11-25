@@ -1,0 +1,125 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/elevenlabs",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.21.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "categories": ["provider"],
+  "beta": true,
+  "capabilities": {
+    "network": ["api.elevenlabs.io", "storage.googleapis.com"]
+  },
+  "configuration": {
+    "apiKey": {
+      "type": "secret",
+      "title": "%config.key.title%",
+      "description": "%config.key.description%"
+    }
+  },
+  "contributes": {
+    "providers": [
+      {
+        "id": "elevenlabs",
+        "title": "%provider.name%",
+        "icon": "./assets/icon.svg",
+        "apiKey": "apiKey",
+        "media": {
+          "adapter": "./media/adapter.js",
+          "auth": {
+            "header": "xi-api-key"
+          },
+          "audio": {
+            "listVoices": true,
+            "models": [
+              {
+                "id": "eleven_v4",
+                "title": "Eleven v4",
+                "kinds": ["speech"],
+                "readsText": true,
+                "formats": ["mp3"],
+                "sampleRatesByFormat": {
+                  "mp3": [44100]
+                },
+                "maxTextCharacters": 10000,
+                "speedRange": [0, 0]
+              },
+              {
+                "id": "eleven_flash_v2_5",
+                "title": "Eleven Flash v2.5",
+                "kinds": ["speech"],
+                "readsText": true,
+                "formats": ["mp3"],
+                "sampleRatesByFormat": {
+                  "mp3": [44100]
+                },
+                "maxTextCharacters": 40000,
+                "speedRange": [-30, 20]
+              },
+              {
+                "id": "eleven_text_to_sound_v3",
+                "title": "Eleven Sound Effects v3",
+                "kinds": ["sound-effect"],
+                "formats": ["mp3"],
+                "sampleRatesByFormat": {
+                  "mp3": [44100]
+                },
+                "minDurationSeconds": 0.5,
+                "maxDurationSeconds": 30,
+                "loop": true
+              },
+              {
+                "id": "eleven_text_to_sound_v2",
+                "title": "Eleven Sound Effects v2",
+                "kinds": ["sound-effect"],
+                "formats": ["mp3"],
+                "sampleRatesByFormat": {
+                  "mp3": [44100]
+                },
+                "minDurationSeconds": 0.5,
+                "maxDurationSeconds": 30,
+                "loop": true
+              },
+              {
+                "id": "music_v2_5",
+                "title": "Eleven Music v2.5",
+                "kinds": ["music"],
+                "formats": ["mp3"],
+                "sampleRatesByFormat": {
+                  "mp3": [44100]
+                },
+                "maxTextCharacters": 4100,
+                "minDurationSeconds": 3,
+                "maxDurationSeconds": 600,
+                "instrumental": true
+              },
+              {
+                "id": "music_v1",
+                "title": "Eleven Music v1",
+                "kinds": ["music"],
+                "formats": ["mp3"],
+                "sampleRatesByFormat": {
+                  "mp3": [44100]
+                },
+                "maxTextCharacters": 4100,
+                "minDurationSeconds": 3,
+                "maxDurationSeconds": 600,
+                "instrumental": true
+              },
+              {
+                "id": "scribe_v2",
+                "title": "Scribe v2",
+                "kinds": [],
+                "transcribes": true
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

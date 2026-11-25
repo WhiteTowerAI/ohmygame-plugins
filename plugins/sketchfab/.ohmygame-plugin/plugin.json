@@ -1,0 +1,113 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/sketchfab",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.35.0"
+  },
+  "displayName": "%plugin.name%",
+  "description": "%plugin.description%",
+  "longDescription": "%plugin.longDescription%",
+  "icon": "./assets/icon.svg",
+  "links": {
+    "homepage": "https://sketchfab.com"
+  },
+  "categories": [
+    "3d",
+    "art"
+  ],
+  "keywords": [
+    "sketchfab",
+    "3d models",
+    "glb",
+    "creative commons"
+  ],
+  "beta": true,
+  "entrypoints": {
+    "native": "./native/index.mjs"
+  },
+  "capabilities": {
+    "native": true,
+    "secrets": true,
+    "network": [
+      "sketchfab.com",
+      "api.sketchfab.com"
+    ]
+  },
+  "configuration": {
+    "apiToken": {
+      "type": "secret",
+      "title": "%config.apiToken.title%",
+      "description": "%config.apiToken.description%"
+    }
+  },
+  "contributes": {
+    "assetSources": [
+      {
+        "id": "sketchfab",
+        "title": "%source.title%",
+        "description": "%source.description%",
+        "media": [
+          "model"
+        ],
+        "search": "search",
+        "fetch": "fetch",
+        "timeoutSeconds": 600,
+        "cacheSeconds": 3600,
+        "collections": [
+          { "id": "all", "title": "%collection.all%" },
+          { "id": "characters", "title": "%collection.characters%" },
+          { "id": "animals", "title": "%collection.animals%" },
+          { "id": "vehicles", "title": "%collection.vehicles%" },
+          { "id": "weapons", "title": "%collection.weapons%" },
+          { "id": "nature", "title": "%collection.nature%" },
+          { "id": "buildings", "title": "%collection.buildings%" },
+          { "id": "furniture", "title": "%collection.furniture%" },
+          { "id": "food", "title": "%collection.food%" },
+          { "id": "tech", "title": "%collection.tech%" }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "id": "settings-status",
+        "title": "%action.settings-status%",
+        "run": { "native": "settingsStatus", "changesFiles": false }
+      },
+      {
+        "id": "sign-in",
+        "title": "%action.sign-in%",
+        "run": { "native": "signIn", "changesFiles": false }
+      },
+      {
+        "id": "cancel-sign-in",
+        "title": "%action.cancel-sign-in%",
+        "run": { "native": "cancelSignIn", "changesFiles": false }
+      },
+      {
+        "id": "open-token-page",
+        "title": "%action.open-token-page%",
+        "run": { "native": "openTokenPage", "changesFiles": false }
+      },
+      {
+        "id": "sign-out",
+        "title": "%action.sign-out%",
+        "run": { "native": "signOut", "changesFiles": false }
+      }
+    ],
+    "settings": {
+      "groups": [
+        {
+          "rows": [
+            { "widget": "status" },
+            { "title": "%action.sign-in%", "action": { "command": "sign-in" } },
+            { "title": "%action.cancel-sign-in%", "action": { "command": "cancel-sign-in" } },
+            { "field": "apiToken" },
+            { "title": "%action.open-token-page%", "action": { "command": "open-token-page" } },
+            { "title": "%action.sign-out%", "action": { "command": "sign-out" } }
+          ]
+        }
+      ]
+    }
+  }
+}

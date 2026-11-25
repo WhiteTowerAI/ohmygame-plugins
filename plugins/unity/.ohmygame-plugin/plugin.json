@@ -1,9 +1,9 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/unity",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "engines": {
-    "ohmygame-api": "^2.0.0"
+    "ohmygame-api": "^2.35.0"
   },
   "displayName": "%displayName%",
   "description": "%description%",
@@ -17,10 +17,19 @@
   "categories": [
     "engine"
   ],
+  "activation": { "files": ["ProjectSettings/ProjectVersion.txt"] },
   "appliesTo": [
     "general"
   ],
   "contributes": {
+    "commands": [
+      {
+        "id": "play-in-unity",
+        "title": "%command.start%",
+        "run": { "prompt": "Open this project in the Unity Editor that matches ProjectSettings/ProjectVersion.txt, enter Play Mode, confirm that frames advance, and tell me what the game shows and any errors in the Console. Don't change files.", "skill": "unity-game" },
+        "slots": [{ "slot": "game.start" }]
+      }
+    ],
     "skills": "./skills/"
   }
 }

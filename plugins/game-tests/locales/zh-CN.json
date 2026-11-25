@@ -1,0 +1,16 @@
+{
+  "displayName": "游戏测试",
+  "description": "保存下来的测试会在真实窗口里玩你的网页游戏（包括多人游戏），每次改动后检查规则、流程和界面。",
+  "longDescription": "游戏测试以 JSON 文件保存在 tests/game/。每个测试都会打开新的游戏窗口，每个玩家一个，像玩家一样点击、按键，还能让玩家断网或刷新页面，然后检查每个玩家看到的内容和游戏状态。Agent 会优先针对规则写测试，并在改动游戏后用 game_test 工具运行；你可以在自动测试面板里运行它们，查看失败的步骤和当时的画面，并在旁边运行项目自己的单元测试。",
+  "example.1": "为这个游戏的规则写游戏测试，然后运行。",
+  "example.2": "运行游戏测试，修复失败的地方。",
+  "panel.title": "自动测试",
+  "command.open": "自动测试",
+  "command.state": "读取测试",
+  "command.run": "运行游戏测试",
+  "command.cancel": "停止游戏测试",
+  "command.detail": "读取测试步骤",
+  "command.capture": "查看测试画面",
+  "command.unitRun": "运行单元测试",
+  "command.unitCancel": "停止单元测试"
+}

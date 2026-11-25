@@ -39,7 +39,53 @@ function retryAfter(response) {
     : 5;
 }
 
+// A small reviewed set shared by the official China/Global system-voice lists.
+// Account voice discovery is a POST endpoint; do not bypass the host's read-only voice-query boundary.
+const SPEECH_VOICES = [
+  { id: "Robot_Armor", name: "机械战甲 · Robot Armor", labels: { language: "Chinese" } },
+  { id: "Arrogant_Miss", name: "嚣张小姐 · Arrogant Miss", labels: { language: "Chinese" } },
+  { id: "Cantonese_GentleLady", name: "温柔女声 · Cantonese Gentle Lady", labels: { language: "Cantonese" } },
+  { id: "English_Graceful_Lady", name: "Graceful Lady", labels: { language: "English" } },
+  { id: "English_Gentle-voiced_man", name: "Gentle-voiced Man", labels: { language: "English" } },
+  { id: "Japanese_LoyalKnight", name: "Loyal Knight", labels: { language: "Japanese" } },
+];
+
 export default {
+  audio: {
+    async start(input, host) {
+      const url = base(input.modelData?.region);
+      if (!["speech-2.8-hd", "speech-2.8-turbo"].includes(input.model))
+        return { error: "The selected MiniMax speech model is unavailable." };
+      if (!input.voiceId) return { error: "Choose a MiniMax speech voice." };
+      if (input.prompt.length >= 10000) return { error: "MiniMax speech takes fewer than 10,000 characters." };
+      const response = await host.submit("speech", url + "/v1/t2a_v2", {
+        method: "POST", auth: true, responseType: "file",
+        json: {
+          model: input.model, text: input.prompt, stream: false, output_format: "hex", language_boost: "auto",
+          voice_setting: { voice_id: input.voiceId, speed: 1 + (input.speed ?? 0) / 100, pitch: input.pitch ?? 0, vol: 1 + (input.volume ?? 0) / 100 },
+          audio_setting: { format: input.format, sample_rate: input.sampleRate ?? 32000, channel: input.channels ?? 1 },
+        },
+        decode: { format: "json", encoding: "hex", audioField: ["data", "audio"], statusField: ["base_resp", "status_code"], messageField: ["base_resp", "status_msg"], successCodes: [0] },
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        const detail = body?.base_resp?.status_msg ?? body?.error?.message;
+        return { error: `MiniMax speech HTTP ${response.status}${typeof detail === "string" ? ": " + detail.slice(0, 700) : ""}` };
+      }
+      const metadata = response.metadata;
+      if (metadata.data?.status !== 2) return { error: "MiniMax returned incomplete speech audio." };
+      return { outputs: [{ ...await response.file(),
+        ...(metadata.trace_id ? { requestId: metadata.trace_id } : {}),
+        ...(metadata.extra_info?.usage_characters !== undefined ? { usageCharacters: metadata.extra_info.usage_characters } : {}),
+        ...(metadata.extra_info?.audio_length !== undefined ? { originalDurationMs: metadata.extra_info.audio_length } : {}),
+      }] };
+    },
+    voices(input) {
+      if (input.pageToken) return { error: "MiniMax preset voices have no next page." };
+      const search = input.search?.trim().toLowerCase();
+      return { voices: SPEECH_VOICES.filter(voice => !search || `${voice.id} ${voice.name} ${voice.labels.language}`.toLowerCase().includes(search)) };
+    },
+  },
   video: {
     async start(input, host) {
       const region = input.modelData && input.modelData.region;

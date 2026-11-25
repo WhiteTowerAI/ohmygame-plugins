@@ -1,0 +1,350 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Queue OpenAPI for fal-ai/stable-audio-25/text-to-audio",
+    "version": "1.0.0",
+    "description": "The OpenAPI schema for the fal-ai/stable-audio-25/text-to-audio queue.",
+    "x-fal-metadata": {
+      "endpointId": "fal-ai/stable-audio-25/text-to-audio",
+      "category": "text-to-audio",
+      "thumbnailUrl": "https://v3b.fal.media/files/b/0a9f91ae/mtqDUea-jzlnWg_odMe1j_bB5cIBlf.png",
+      "playgroundUrl": "https://fal.ai/models/fal-ai/stable-audio-25/text-to-audio",
+      "documentationUrl": "https://fal.ai/models/fal-ai/stable-audio-25/text-to-audio/api",
+      "about": "Generate Text To Audio"
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Fal Key"
+      }
+    },
+    "schemas": {
+      "QueueStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["IN_QUEUE", "IN_PROGRESS", "COMPLETED"]
+          },
+          "request_id": {
+            "type": "string",
+            "description": "The request id."
+          },
+          "response_url": {
+            "type": "string",
+            "description": "The response url."
+          },
+          "status_url": {
+            "type": "string",
+            "description": "The status url."
+          },
+          "cancel_url": {
+            "type": "string",
+            "description": "The cancel url."
+          },
+          "logs": {
+            "type": "object",
+            "description": "The logs.",
+            "additionalProperties": true
+          },
+          "metrics": {
+            "type": "object",
+            "description": "The metrics.",
+            "additionalProperties": true
+          },
+          "queue_position": {
+            "type": "integer",
+            "description": "The queue position."
+          }
+        },
+        "required": ["status", "request_id"]
+      },
+      "StableAudio25TextToAudioInput": {
+        "x-fal-order-properties": [
+          "prompt",
+          "seconds_total",
+          "num_inference_steps",
+          "guidance_scale",
+          "sync_mode",
+          "seed",
+          "enable_safety_checker"
+        ],
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "examples": [
+              "A beautiful piano arpeggio grows into a grand orchestral climax"
+            ],
+            "title": "Prompt",
+            "description": "The prompt to generate audio from"
+          },
+          "num_inference_steps": {
+            "default": 8,
+            "minimum": 4,
+            "type": "integer",
+            "maximum": 8,
+            "title": "Num Inference Steps",
+            "description": "The number of steps to denoise the audio for"
+          },
+          "guidance_scale": {
+            "default": 1,
+            "minimum": 1,
+            "type": "number",
+            "maximum": 25,
+            "title": "Guidance Scale",
+            "description": "How strictly the diffusion process adheres to the prompt text (higher values make your audio closer to your prompt)."
+          },
+          "seconds_total": {
+            "default": 190,
+            "minimum": 1,
+            "type": "integer",
+            "maximum": 190,
+            "title": "Seconds Total",
+            "description": "The duration of the audio clip to generate"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "sync_mode": {
+            "default": false,
+            "type": "boolean",
+            "title": "Sync Mode",
+            "description": "If `True`, the media will be returned as a data URI and the output data won't be available in the request history."
+          },
+          "enable_safety_checker": {
+            "default": true,
+            "type": "boolean",
+            "title": "Enable Safety Checker",
+            "description": "Authorized callers may set false to request relaxed screening."
+          }
+        },
+        "type": "object",
+        "required": ["prompt"],
+        "title": "TextToAudioInput"
+      },
+      "StableAudio25TextToAudioOutput": {
+        "x-fal-order-properties": ["audio", "seed"],
+        "properties": {
+          "audio": {
+            "description": "The generated audio clip",
+            "examples": [
+              "https://v3.fal.media/files/zebra/lGob9bN7VHfFXG4R1btQn_tmpabwhgi6n.wav"
+            ],
+            "$ref": "#/components/schemas/File"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "description": "The random seed used for generation"
+          }
+        },
+        "type": "object",
+        "required": ["audio", "seed"],
+        "title": "TextToAudioOutput"
+      },
+      "File": {
+        "x-fal-order-properties": [
+          "url",
+          "content_type",
+          "file_name",
+          "file_size"
+        ],
+        "properties": {
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": ["z9RV14K95DvU.png"],
+            "title": "File Name",
+            "description": "The name of the file. It will be auto-generated if not provided."
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "The URL where the file can be downloaded from."
+          },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [4404019],
+            "title": "File Size",
+            "description": "The size of the file in bytes."
+          },
+          "content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": ["image/png"],
+            "title": "Content Type",
+            "description": "The mime type of the file."
+          }
+        },
+        "type": "object",
+        "required": ["url"],
+        "title": "File"
+      }
+    }
+  },
+  "paths": {
+    "/fal-ai/stable-audio-25/text-to-audio/requests/{request_id}/status": {
+      "get": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          },
+          {
+            "name": "logs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "description": "Whether to include logs (`1`) in the response or not (`0`)."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fal-ai/stable-audio-25/text-to-audio/requests/{request_id}/cancel": {
+      "put": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request was cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the request was cancelled successfully."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fal-ai/stable-audio-25/text-to-audio": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StableAudio25TextToAudioInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fal-ai/stable-audio-25/text-to-audio/requests/{request_id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Request ID"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Result of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StableAudio25TextToAudioOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://queue.fal.run"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}

@@ -1,9 +1,9 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/minimax",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "engines": {
-    "ohmygame-api": "^2.8.0"
+    "ohmygame-api": "^2.26.0"
   },
   "displayName": "%plugin.name%",
   "description": "%plugin.description%",
@@ -35,6 +35,101 @@
         "apiKey": "cnApiKey",
         "media": {
           "adapter": "./media/adapter.js",
+          "audio": {
+            "listVoices": true,
+            "models": [
+              {
+                "id": "speech-2.8-hd",
+                "title": "Speech 2.8 HD",
+                "kinds": [
+                  "speech"
+                ],
+                "readsText": true,
+                "speaker": true,
+                "pitch": true,
+                "volume": true,
+                "formats": [
+                  "mp3",
+                  "wav"
+                ],
+                "sampleRatesByFormat": {
+                  "mp3": [
+                    8000,
+                    16000,
+                    22050,
+                    24000,
+                    32000,
+                    44100
+                  ],
+                  "wav": [
+                    8000,
+                    16000,
+                    22050,
+                    24000,
+                    32000,
+                    44100
+                  ]
+                },
+                "channels": [
+                  1,
+                  2
+                ],
+                "speedRange": [
+                  -50,
+                  100
+                ],
+                "maxTextCharacters": 9999,
+                "data": {
+                  "region": "cn"
+                }
+              },
+              {
+                "id": "speech-2.8-turbo",
+                "title": "Speech 2.8 Turbo",
+                "kinds": [
+                  "speech"
+                ],
+                "readsText": true,
+                "speaker": true,
+                "pitch": true,
+                "volume": true,
+                "formats": [
+                  "mp3",
+                  "wav"
+                ],
+                "sampleRatesByFormat": {
+                  "mp3": [
+                    8000,
+                    16000,
+                    22050,
+                    24000,
+                    32000,
+                    44100
+                  ],
+                  "wav": [
+                    8000,
+                    16000,
+                    22050,
+                    24000,
+                    32000,
+                    44100
+                  ]
+                },
+                "channels": [
+                  1,
+                  2
+                ],
+                "speedRange": [
+                  -50,
+                  100
+                ],
+                "maxTextCharacters": 9999,
+                "data": {
+                  "region": "cn"
+                }
+              }
+            ]
+          },
           "video": {
             "models": [
               {
@@ -92,6 +187,101 @@
         "apiKey": "globalApiKey",
         "media": {
           "adapter": "./media/adapter.js",
+          "audio": {
+            "listVoices": true,
+            "models": [
+              {
+                "id": "speech-2.8-hd",
+                "title": "Speech 2.8 HD",
+                "kinds": [
+                  "speech"
+                ],
+                "readsText": true,
+                "speaker": true,
+                "pitch": true,
+                "volume": true,
+                "formats": [
+                  "mp3",
+                  "wav"
+                ],
+                "sampleRatesByFormat": {
+                  "mp3": [
+                    8000,
+                    16000,
+                    22050,
+                    24000,
+                    32000,
+                    44100
+                  ],
+                  "wav": [
+                    8000,
+                    16000,
+                    22050,
+                    24000,
+                    32000,
+                    44100
+                  ]
+                },
+                "channels": [
+                  1,
+                  2
+                ],
+                "speedRange": [
+                  -50,
+                  100
+                ],
+                "maxTextCharacters": 9999,
+                "data": {
+                  "region": "global"
+                }
+              },
+              {
+                "id": "speech-2.8-turbo",
+                "title": "Speech 2.8 Turbo",
+                "kinds": [
+                  "speech"
+                ],
+                "readsText": true,
+                "speaker": true,
+                "pitch": true,
+                "volume": true,
+                "formats": [
+                  "mp3",
+                  "wav"
+                ],
+                "sampleRatesByFormat": {
+                  "mp3": [
+                    8000,
+                    16000,
+                    22050,
+                    24000,
+                    32000,
+                    44100
+                  ],
+                  "wav": [
+                    8000,
+                    16000,
+                    22050,
+                    24000,
+                    32000,
+                    44100
+                  ]
+                },
+                "channels": [
+                  1,
+                  2
+                ],
+                "speedRange": [
+                  -50,
+                  100
+                ],
+                "maxTextCharacters": 9999,
+                "data": {
+                  "region": "global"
+                }
+              }
+            ]
+          },
           "video": {
             "models": [
               {
