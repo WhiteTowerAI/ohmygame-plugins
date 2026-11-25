@@ -5,8 +5,7 @@ and export sprite sheets.
 
 Official OhMyGame plugin `ohmygame/pixelfx`, an optional Beta for OhMyGame
 plugin API **2.38+**, ported from [pixelfx](https://github.com/rrenovation/pixelfx)
-(MIT; see [NOTICE.md](NOTICE.md)). It is off until a project turns it on, and
-isn't released yet: the package is `private` while the port is in progress.
+(MIT; see [NOTICE.md](NOTICE.md)). It is off until a project turns it on.
 
 ## What it does
 

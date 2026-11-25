@@ -26,6 +26,11 @@ publisher only this organization can use:
 - Pixel art: [`pixellab`](plugins/pixellab), an optional Beta with PixelLab
   pictures, characters, objects, animations, rotations, tilesets, tiles,
   effects, UI and pixel-art edits (requires OhMyGame API 2.34).
+- Pixel art effects: [`pixelfx`](plugins/pixelfx), an optional Beta Pixel
+  Effects panel with pixelfx's 244 code-drawn effects, the project's own
+  effects, sound, an assistant, sprite sheet export and a Library tab of the
+  built-in effects. It is on only in projects that turn it on (requires
+  OhMyGame API 2.38).
 - 3D generation and processing: [`meshy`](plugins/meshy) and
   [`tripo`](plugins/tripo) include text/image generation, remeshing, texturing
   and animation (optional Beta, requires OhMyGame API 2.16).
