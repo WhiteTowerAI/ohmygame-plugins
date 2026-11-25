@@ -702,9 +702,9 @@ describe("pixelfx assistant", () => {
 
 describe("pixelfx native", () => {
   const lib = fileURLToPath(new URL("../plugins/pixelfx/panel/lib/", import.meta.url));
-  /** A project with the built-in fire/torch copied in, as copy_effect leaves it. */
+  /** A project with the built-in fire/torch copied in, as copy_effect leaves it, inside a hidden folder as a worktree may be. */
   async function projectWithTorch() {
-    const folder = await mkdtemp(path.join(tmpdir(), "pixelfx-native-"));
+    const folder = path.join(await mkdtemp(path.join(tmpdir(), "pixelfx-native-")), ".worktrees", "game");
     await cp(path.join(lib, "core"), path.join(folder, "pixelfx/core"), { recursive: true });
     await mkdir(path.join(folder, "pixelfx/fx/fire"), { recursive: true });
     for (const file of ["torch.js", "_lib.js"]) await cp(path.join(lib, "fx/fire", file), path.join(folder, "pixelfx/fx/fire", file));
@@ -745,7 +745,7 @@ describe("pixelfx native", () => {
 
   it("finds built-in effects by English or Chinese words", () => {
     assert.equal(searchBuiltins("").length, Object.keys(effects).length);
-    assert.ok(searchBuiltins("torch").some((fx: { id: string }) => fx.id === "fire/torch"));
+    assert.deepEqual(searchBuiltins("torch").map((fx: { id: string }) => fx.id), ["fire/torch"]);
     assert.ok(searchBuiltins("火把").some((fx: { id: string }) => fx.id === "fire/torch"));
     assert.deepEqual(searchBuiltins("no-such-word"), []);
   });
@@ -768,8 +768,15 @@ describe("pixelfx native", () => {
       assert.equal(builtin.source, "builtin");
       assert.equal(builtin.rendered, true);
       await assert.rejects(tools.get("render_effect")!({ effect: "fire/none" }), /No effect fire\/none/);
+      // The project's code reads nothing but its copy, and sees no environment.
+      const secret = path.join(folder, "secret.txt");
+      await writeFile(secret, "secret");
+      await writeFile(path.join(folder, "pixelfx/fx/fire/spy.js"), `import { readFileSync } from "node:fs";\nexport const meta = { name: String(Object.keys(process.env).filter((key) => key !== "ELECTRON_RUN_AS_NODE").length) };\nreadFileSync(${JSON.stringify(secret)});\nexport function draw() {}\n`);
+      const spy = await tools.get("render_effect")!({ effect: "fire/spy" });
+      assert.equal(spy.rendered, false);
+      assert.match(spy.check.errors[0], /Doesn't load: .*(ERR_ACCESS_DENIED|Access to this API has been restricted)/);
     } finally {
-      await rm(folder, { recursive: true, force: true });
+      await rm(path.dirname(path.dirname(folder)), { recursive: true, force: true });
     }
   });
 

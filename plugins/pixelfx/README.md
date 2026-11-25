@@ -100,7 +100,10 @@ person sees each one work in it:
 `render_effect` comes from the plugin's native code instead, so it works
 without the panel, such as for an agent outside the app: it checks an effect,
 built-in or the project's, and renders it with its default settings to a
-transparent sprite sheet and Aseprite JSON in `pixelfx/exports/`.
+transparent sprite sheet and Aseprite JSON in `pixelfx/exports/`, in place of
+an earlier export of the same name. A project effect's code runs there in a
+process of its own that can read only a copy of `pixelfx/fx/` and
+`pixelfx/core/`.
 
 The panel also tells the agent which effect is open, how it's set and what
 sound it has, and the **pixelfx** Skill has the effect and sound contracts
@@ -109,7 +112,7 @@ and the write, check, look and fix loop.
 ### The Library
 
 The Library page gets a **Pixel effects** tab with the built-in effects, found
-by the same words as in the panel. Adding one adds its transparent sprite
+by the same words as in the panel's search. Adding one adds its transparent sprite
 sheet at its default settings. Like any Library tab, it shows only while the
 plugin is on for every project.
 
@@ -129,7 +132,7 @@ plugin is on for every project.
   are.
 - The Library tab draws each thumbnail when it first shows, about a tenth of
   a second each; a page of 30 takes a few seconds the first time.
-- `render_effect` loads a project effect from a copy of `pixelfx/fx/` and
+- `render_effect` runs a project effect from a copy of `pixelfx/fx/` and
   `pixelfx/core/`, so it can't import files outside them.
 - Sound renders in the panel, a variant at a time, up to 8 variants of 12
   seconds each. Play with effect follows the stage's speed and length, not

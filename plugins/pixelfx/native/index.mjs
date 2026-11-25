@@ -11,6 +11,7 @@ import {
   findEffect,
   renderSheet,
   renderThumbnail,
+  runProjectEffect,
   searchBuiltins,
   sheetConfig,
   SOURCE_URL,
@@ -25,13 +26,17 @@ export function activate(context) {
   const thumbnails = new Map();
 
   if (folder) {
-    context.registerTool("render_effect", async ({ effect, source, flip, seed }) => {
+    context.registerTool("render_effect", async ({ effect, source, flip, seed }, call) => {
       const found = await findEffect(effect, source, folder);
-      const check = checkLoaded(found);
+      let check;
+      let sheet;
+      if (found.fx) {
+        check = checkLoaded(found);
+        if (check.ok) sheet = renderSheet(found.fx, sheetConfig(found.fx, { flip, seed }));
+      } else ({ check, sheet } = await runProjectEffect(folder, effect, { flip, seed }, call?.signal));
       const result = { effect, source: found.source, ...(found.path ? { path: found.path } : {}), check };
-      if (!found.fx || !check.ok) return { ...result, rendered: false };
-      const sheet = renderSheet(found.fx, sheetConfig(found.fx, { flip, seed }));
-      const name = fileName(found.fx);
+      if (!sheet) return { ...result, rendered: false };
+      const name = fileName(effect);
       await mkdir(path.join(folder, EXPORT_DIR), { recursive: true });
       await writeFile(path.join(folder, EXPORT_DIR, `${name}.png`), sheet.png);
       await writeFile(path.join(folder, EXPORT_DIR, `${name}.json`), `${JSON.stringify(sheet.json, null, 2)}\n`);
@@ -47,13 +52,19 @@ export function activate(context) {
     });
   }
 
-  context.registerCommand("searchEffects", async ({ query, cursor }) => {
+  context.registerCommand("searchEffects", async ({ query, cursor }, call) => {
     const found = searchBuiltins(query);
     const start = /^\d+$/.test(String(cursor ?? "")) ? Number(cursor) : 0;
     const page = found.slice(start, start + PAGE_SIZE);
+    // A thumbnail takes up to a tenth of a second: draw them one at a time, letting the host answer in between and stop a search left.
+    for (const fx of page) {
+      if (thumbnails.has(fx.id)) continue;
+      call?.signal?.throwIfAborted();
+      thumbnails.set(fx.id, renderThumbnail(fx));
+      await new Promise((resolve) => setImmediate(resolve));
+    }
     return {
       items: page.map((fx) => {
-        if (!thumbnails.has(fx.id)) thumbnails.set(fx.id, renderThumbnail(fx));
         const thumbnail = thumbnails.get(fx.id);
         return {
           id: fx.id,
@@ -74,6 +85,6 @@ export function activate(context) {
     if (!fx) throw new Error(`${id} isn't a built-in effect`);
     // Adds run one at a time, so every sheet can be saved under one name.
     await writeFile(path.join(context.dataFolder, "sheet.png"), renderSheet(fx).png);
-    return { file: "sheet.png", name: `${fileName(fx)}.png` };
+    return { file: "sheet.png", name: `${fileName(fx.id)}.png` };
   });
 }

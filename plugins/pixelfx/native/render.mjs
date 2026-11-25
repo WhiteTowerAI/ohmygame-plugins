@@ -1,17 +1,18 @@
 // Effects rendered without the panel: sprite sheets and thumbnails as PNG,
 // built from the same rendering and export code the panel uses.
 
-import { cp, mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { cp, mkdtemp, readFile, realpath, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { deflateSync } from "node:zlib";
 import { effects, categories } from "../panel/lib/fx/index.js";
 import { ZH_CATEGORIES, ZH_FX } from "../panel/lib/zh-data.js";
 import { checkEffect } from "../panel/check.js";
 import { exportBudget, renderExportFrames, resampleNearestRGBA, sheetJson, sheetLayout } from "../panel/export.js";
 import { defaultConfig, fullMeta } from "../panel/options.js";
-import { effectPath, FX_ROOT, isEffectId, ROOT } from "../panel/project.js";
+import { effectPath, isEffectId, ROOT } from "../panel/project.js";
 
 export const SOURCE_URL = "https://github.com/rrenovation/pixelfx";
 export const EXPORT_DIR = `${ROOT}/exports`;
@@ -25,45 +26,88 @@ export function effectEntry(id, source, raw) {
 export const BUILTINS = Object.entries(effects).map(([id, raw]) => effectEntry(id, "builtin", raw));
 const BUILTIN = new Map(BUILTINS.map((fx) => [fx.id, fx]));
 
-const exists = (file) => stat(file).then(() => true, () => false);
+/** Whether `file` is there; an error other than its absence is thrown, not taken as "no". */
+const exists = (file) =>
+  stat(file).then(
+    () => true,
+    (error) => {
+      if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return false;
+      throw error;
+    },
+  );
+
+const PLUGIN_DIR = fileURLToPath(new URL("..", import.meta.url));
+const CHILD = fileURLToPath(new URL("./effect-child.mjs", import.meta.url));
+
+/** The project effect `id` in a folder holding a copy of `pixelfx/fx/` and `pixelfx/core/`, as `{ fx }` or `{ error }`. */
+export async function loadEffectFrom(copy, id) {
+  try {
+    const raw = await import(pathToFileURL(path.join(copy, "fx", `${id}.js`)).href);
+    if (!raw?.meta || typeof raw.meta !== "object") return { error: "exports no meta" };
+    return { fx: effectEntry(id, "project", raw) };
+  } catch (error) {
+    return { error: String(error?.message ?? error).split("\n")[0] };
+  }
+}
 
 /**
- * The project's effect `id` in `folder`, loaded from a fresh copy of its
- * `pixelfx/fx/` and `pixelfx/core/`, so an edit to any file it imports is
- * seen. `{ fx, text }`, or `{ error, text }` when it doesn't load.
+ * Checks the project's effect `id` in `folder` and, when it passes and
+ * `render` is set, renders its sheet: `{ check, sheet? }`. The project's
+ * code runs in a process of its own that reads only a fresh copy of
+ * `pixelfx/fx/` and `pixelfx/core/` and the plugin, with no environment, no
+ * writes and no processes of its own, so an edit to any file it imports is
+ * seen and nothing it loads stays behind.
  */
-export async function loadProjectEffect(folder, id) {
-  const file = path.join(folder, effectPath(id));
-  const text = await readFile(file, "utf8");
-  const copy = await mkdtemp(path.join(tmpdir(), "pixelfx-"));
+export async function runProjectEffect(folder, id, { flip, seed, render = true } = {}, signal) {
+  const text = await readFile(path.join(folder, effectPath(id)), "utf8");
+  const copy = await realpath(await mkdtemp(path.join(tmpdir(), "pixelfx-")));
   try {
     for (const part of ["fx", "core"]) {
       const from = path.join(folder, ROOT, part);
-      if (await exists(from)) await cp(from, path.join(copy, part), { recursive: true, filter: (item) => !item.includes(`${path.sep}.`) });
+      if (await exists(from)) await cp(from, path.join(copy, part), { recursive: true, filter: (item) => !path.relative(from, item).split(path.sep).some((name) => name.startsWith(".")) });
     }
-    const raw = await import(pathToFileURL(path.join(copy, "fx", `${id}.js`)).href);
-    if (!raw?.meta || typeof raw.meta !== "object") return { error: "exports no meta", text };
-    return { fx: effectEntry(id, "project", raw), text };
-  } catch (error) {
-    return { error: String(error?.message ?? error).split("\n")[0], text };
+    const input = JSON.stringify({ copy, id, text, flip: !!flip, ...(Number.isFinite(seed) ? { seed } : {}), render });
+    const out = await new Promise((resolve, reject) => {
+      const child = spawn(process.execPath, ["--permission", `--allow-fs-read=${copy}`, `--allow-fs-read=${PLUGIN_DIR}`, "--max-old-space-size=1024", CHILD], {
+        cwd: copy,
+        env: process.versions.electron ? { ELECTRON_RUN_AS_NODE: "1" } : {},
+        stdio: ["pipe", "pipe", "pipe"],
+        signal,
+      });
+      const stdout = [];
+      let stderr = "";
+      child.stdout.on("data", (chunk) => stdout.push(chunk));
+      child.stderr.on("data", (chunk) => (stderr = (stderr + chunk).slice(-4000)));
+      child.on("error", reject);
+      child.on("close", (code) => {
+        if (code === 0) return resolve(Buffer.concat(stdout).toString("utf8"));
+        const last = stderr.trim().split("\n").filter(Boolean).pop();
+        reject(new Error(`Rendering ${id} stopped${last ? `: ${last}` : ` with code ${code}`}`));
+      });
+      child.stdin.end(input);
+    });
+    const { check, sheet } = JSON.parse(out);
+    return { check, ...(sheet ? { sheet: { ...sheet, png: Buffer.from(sheet.png, "base64") } } : {}) };
   } finally {
     await rm(copy, { recursive: true, force: true });
   }
 }
 
+const BUILTIN_DIR = fileURLToPath(new URL("../panel/lib/fx/", import.meta.url));
+
 /**
  * The effect `id`: the project's copy when `folder` has one and `source`
- * isn't "builtin", else the built-in one. Throws when there is neither.
+ * isn't "builtin", as `{ source: "project", path }` for `runProjectEffect`,
+ * else the built-in one, as `{ source: "builtin", fx, text }`. Throws when
+ * there is neither.
  */
 export async function findEffect(id, source, folder) {
   if (!isEffectId(id)) throw new Error(`${id} isn't an effect id, such as fire/torch`);
-  if (source !== "builtin" && folder && (await exists(path.join(folder, effectPath(id))))) {
-    return { source: "project", path: effectPath(id), ...(await loadProjectEffect(folder, id)) };
-  }
+  if (source !== "builtin" && folder && (await exists(path.join(folder, effectPath(id))))) return { source: "project", path: effectPath(id) };
   if (source === "project") throw new Error(`The project has no effect ${id} at ${effectPath(id)}`);
   const fx = BUILTIN.get(id);
   if (!fx) throw new Error(`No effect ${id}. find_effects lists them.`);
-  return { source: "builtin", fx };
+  return { source: "builtin", fx, text: await readFile(path.join(BUILTIN_DIR, `${id}.js`), "utf8") };
 }
 
 /** Settings a sheet is rendered with: the effect's defaults without its actor, mirrored when `flip`. */
@@ -110,26 +154,22 @@ export function checkLoaded({ fx, error, text }) {
   return fx ? checkEffect(fx.raw, text ?? "") : { ok: false, errors: [`Doesn't load: ${error}`], warnings: [], stats: {} };
 }
 
-const CATEGORY = new Map(categories.map((item) => [item.id, item]));
-/** Words that find a built-in effect: its id, name, tags and description, and its category's, in English and Chinese. */
+const CATEGORY = new Map(categories.map((item) => [item.id, item.name]));
+/** What the panel's search looks through for a built-in effect: its id, name, description and tags, and its category's name, in English and Chinese. */
 function wordsOf(fx) {
-  const category = CATEGORY.get(fx.cat);
-  return [fx.id, fx.meta.name, fx.meta.desc, ...(fx.meta.tags ?? []), category?.name, category?.blurb, ...(ZH_FX[fx.id] ?? []), ZH_CATEGORIES[fx.cat]?.name]
-    .filter((value) => typeof value === "string")
-    .join(" ")
-    .toLowerCase();
+  const zh = ZH_FX[fx.id] ?? [];
+  return [fx.id, fx.meta.name, fx.meta.desc, zh[0], zh[1], CATEGORY.get(fx.cat), ZH_CATEGORIES[fx.cat]?.name, ...(fx.meta.tags ?? [])].join(" ").toLowerCase();
 }
 const WORDS = new Map(BUILTINS.map((fx) => [fx.id, wordsOf(fx)]));
 
-/** Built-in effects with every word of `query`, in the gallery's order. */
+/** Built-in effects whose words hold `query`, as the panel's search finds them, in the gallery's order. */
 export function searchBuiltins(query = "") {
-  const words = String(query).toLowerCase().split(/\s+/).filter(Boolean);
-  return BUILTINS.filter((fx) => words.every((word) => WORDS.get(fx.id).includes(word)));
+  const phrase = String(query).trim().toLowerCase();
+  return BUILTINS.filter((fx) => WORDS.get(fx.id).includes(phrase));
 }
 
 /** The name a file of `fx` gets: its own name, as in fire/torch's torch. */
-export const fileName = (fx) => fx.id.split("/")[1];
-export { FX_ROOT };
+export const fileName = (id) => id.split("/")[1];
 
 // ---- PNG: 8-bit RGBA, no interlace, each row with no filter.
 const CRC = Array.from({ length: 256 }, (_, n) => {
