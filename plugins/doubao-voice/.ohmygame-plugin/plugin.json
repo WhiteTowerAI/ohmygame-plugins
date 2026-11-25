@@ -3,7 +3,7 @@
   "id": "ohmygame/doubao-voice",
   "version": "0.1.1",
   "engines": {
-    "ohmygame-api": "^2.39.0"
+    "ohmygame-api": "^2.38.0"
   },
   "displayName": "%plugin.name%",
   "description": "%plugin.description%",

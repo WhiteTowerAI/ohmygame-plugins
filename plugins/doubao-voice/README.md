@@ -1,6 +1,6 @@
 # Doubao Voice Beta
 
-Optional `@ohmygame/doubao-voice` for OhMyGame API **2.39 or newer**.
+Optional `@ohmygame/doubao-voice` for OhMyGame API **2.38 or newer**.
 Installing it does not migrate or disconnect built-in services or their tasks.
 
 Includes Speech Synthesis 2.0 (text-to-speech, preset/custom/cloned speakers,
@@ -67,7 +67,7 @@ billing, audio quality or real account availability.
 
 ## 中文说明
 
-需要 OhMyGame API **2.39 或更新版本**。这是使用你自己账户的可选 Beta 插件。
+需要 OhMyGame API **2.38 或更新版本**。这是使用你自己账户的可选 Beta 插件。
 支持豆包语音合成 2.0 与 Seed Audio 1.0。安装不会迁移、覆盖或关闭现有内置服务。
 在火山引擎开通所需语音服务并创建密钥，启用插件后保存 API Key，再选择
 **豆包语音（插件）** 模型。不需要回调、机器人或电脑操作权限，生成消耗你的额度。
