@@ -84,11 +84,11 @@ async function setup(t: TestContext, reply?: Reply) {
     if (r.url.endsWith("/download"))
       return json({
         list: [
-          { name: "model.glb", url: "https://api.hyper3d.com/mock/model.glb" },
+          { name: "model.glb", url: "https://file.hyper3d.com/mock/model.glb" },
         ],
       });
     if (r.url.endsWith("/check_balance")) return json({ balance: 12 });
-    if (r.url.startsWith("https://api.hyper3d.com/mock/"))
+    if (r.url.startsWith("https://file.hyper3d.com/mock/"))
       return new Response(new Uint8Array(GLB));
     throw new Error("Unexpected test request: " + r.url);
   };
@@ -212,7 +212,7 @@ it("refreshes expired artifact URLs without resubmission and rejects downloads o
             url:
               ++downloads === 1
                 ? "https://outside.example/model.glb"
-                : "https://api.hyper3d.com/mock/fresh.glb",
+                : "https://file.hyper3d.com/mock/fresh.glb",
           },
         ],
       });
@@ -442,7 +442,7 @@ it("persists rate-limit deadlines and skips queries while a saved deadline remai
       assert.ok(r.url.endsWith("/download"));
       assert.deepEqual(r.json, { task_uuid: "task-uuid" });
       return wire({
-        list: [{ name: "model.glb", url: "https://api.hyper3d.com/fresh.glb" }],
+        list: [{ name: "model.glb", url: "https://file.hyper3d.com/fresh.glb" }],
       });
     },
   );

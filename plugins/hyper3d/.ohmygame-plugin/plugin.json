@@ -12,7 +12,7 @@
   "categories": ["provider"],
   "beta": true,
   "capabilities": {
-    "network": ["api.hyper3d.com"]
+    "network": ["api.hyper3d.com", "file.hyper3d.com"]
   },
   "configuration": {
     "apiKey": {

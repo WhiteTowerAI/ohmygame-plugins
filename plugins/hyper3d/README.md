@@ -2,7 +2,7 @@
 
 Optional Beta for your own Hyper3D API account. Requires OhMyGame with plugin API 2.16.
 
-Development only: publication is held until the API result download origin is verified and the network allowlist is completed. No native provider is replaced.
+On 2026-11-25 the Rodin web workspace fetched a confirmed model GLB from `file.hyper3d.com` (HTTP 200). The manifest allows this file host and `api.hyper3d.com`. Before publication, verify the GLB hostname in a real response from `POST /api/v2/download`.
 
 ## Features
 
