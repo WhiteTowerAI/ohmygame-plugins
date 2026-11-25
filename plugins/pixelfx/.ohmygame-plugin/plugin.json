@@ -25,6 +25,7 @@
   "activation": "project",
   "projectFiles": ["./pixelfx/"],
   "capabilities": {
+    "native": true,
     "project.files": "write",
     "library": true,
     "composer": true,
@@ -89,6 +90,12 @@
         "timeoutSeconds": 120
       },
       {
+        "name": "render_effect",
+        "description": "Checks an effect, then renders it with its default settings to a transparent sprite sheet and Aseprite JSON in pixelfx/exports/, replacing an earlier export of the same name. A project effect's code runs on this computer, as the game's does. Works without the Pixel Effects panel; use export_effect for what the panel shows.",
+        "input": "./tools/render-effect.json",
+        "timeoutSeconds": 120
+      },
+      {
         "name": "read_sfx",
         "description": "Returns an effect's sound: its script in pixelfx/sfx/ if any, the variants rendered or made by a model, and the effect's length and an act's hits as it plays, to line a sound up with.",
         "input": "./tools/read-sfx.json",
@@ -109,9 +116,24 @@
         "timeoutSeconds": 300
       }
     ],
-    "skills": "./skills/"
+    "skills": "./skills/",
+    "assetSources": [
+      {
+        "id": "effects",
+        "title": "%source.title%",
+        "description": "%source.description%",
+        "media": ["image"],
+        "search": "searchEffects",
+        "fetch": "fetchEffect",
+        "timeoutSeconds": 120,
+        "cacheSeconds": 86400
+      }
+    ]
   },
   "ui": {
     "projectModules": ["./pixelfx/"]
+  },
+  "entrypoints": {
+    "native": "./native/index.mjs"
   }
 }

@@ -97,14 +97,26 @@ person sees each one work in it:
 | `write_sfx` | writes an effect's sound script and renders it |
 | `make_sfx_with_model` | makes a sound with the person's audio model, when they ask |
 
+`render_effect` comes from the plugin's native code instead, so it works
+without the panel, such as for an agent outside the app: it checks an effect,
+built-in or the project's, and renders it with its default settings to a
+transparent sprite sheet and Aseprite JSON in `pixelfx/exports/`, in place of
+an earlier export of the same name. A project effect's code runs on this
+computer, as the game's does, in a process of its own started from a copy of
+`pixelfx/fx/` and `pixelfx/core/`. Node's permission flags keep it to
+reading that copy, with no environment, which keeps ordinary code in bounds
+but isn't a sandbox: use it only in projects you'd run.
+
 The panel also tells the agent which effect is open, how it's set and what
 sound it has, and the **pixelfx** Skill has the effect and sound contracts
 and the write, check, look and fix loop.
 
-## Coming next
+### The Library
 
-Render and check tools for the agent without the panel, a Library source and
-a Canvas node.
+The Library page gets a **Pixel effects** tab with the built-in effects, found
+by the same words as in the panel's search. Adding one adds its transparent sprite
+sheet at its default settings. Like any Library tab, it shows only while the
+plugin is on for every project.
 
 ## Limits
 
@@ -120,6 +132,10 @@ a Canvas node.
 - Settings aren't kept when you change effects or close the panel, besides
   presets; the colour theme, the last effect and whether the assistant is open
   are.
+- The Library tab draws each thumbnail when it first shows, about a tenth of
+  a second each; a page of 30 takes a few seconds the first time.
+- `render_effect` runs a project effect from a copy of `pixelfx/fx/` and
+  `pixelfx/core/`, so it can't import files outside them.
 - Sound renders in the panel, a variant at a time, up to 8 variants of 12
   seconds each. Play with effect follows the stage's speed and length, not
   each frame.

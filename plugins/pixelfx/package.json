@@ -20,6 +20,7 @@
     ".ohmygame-plugin",
     "assets",
     "locales",
+    "native",
     "panel",
     "skills",
     "tools",

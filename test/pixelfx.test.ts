@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { inflateSync } from "node:zlib";
+// @ts-expect-error The native entry is plain JavaScript.
+import { activate } from "../plugins/pixelfx/native/index.mjs";
+// @ts-expect-error The native entry is plain JavaScript.
+import { BUILTINS, encodePng, renderSheet, runProjectEffect, searchBuiltins } from "../plugins/pixelfx/native/render.mjs";
 // @ts-expect-error The panel is plain JavaScript.
 import { effects } from "../plugins/pixelfx/panel/lib/fx/index.js";
 // @ts-expect-error The panel is plain JavaScript.
@@ -692,5 +697,122 @@ describe("pixelfx assistant", () => {
     assert.ok(prompt.endsWith("The Pixel Effects panel shows the built-in effect fire/torch."));
     assert.ok(!/[一-鿿]/.test(prompt));
     for (const locale of ["en", "zh-CN"]) for (const [, chip] of TEXT[locale].agent.chips) assert.ok(!/[一-鿿]/.test(chip));
+  });
+});
+
+describe("pixelfx native", () => {
+  const lib = fileURLToPath(new URL("../plugins/pixelfx/panel/lib/", import.meta.url));
+  /** A project with the built-in fire/torch copied in, as copy_effect leaves it, inside a hidden folder as a worktree may be. */
+  async function projectWithTorch() {
+    const folder = path.join(await mkdtemp(path.join(tmpdir(), "pixelfx-native-")), ".worktrees", "game");
+    await cp(path.join(lib, "core"), path.join(folder, "pixelfx/core"), { recursive: true });
+    await mkdir(path.join(folder, "pixelfx/fx/fire"), { recursive: true });
+    for (const file of ["torch.js", "_lib.js"]) await cp(path.join(lib, "fx/fire", file), path.join(folder, "pixelfx/fx/fire", file));
+    return folder;
+  }
+  function activated(folder?: string, dataFolder = tmpdir()) {
+    const tools = new Map<string, (input: unknown) => Promise<any>>();
+    const commands = new Map<string, (input: unknown) => Promise<any>>();
+    activate({
+      ...(folder ? { project: { folder } } : {}),
+      dataFolder,
+      registerTool: (name: string, handler: any) => tools.set(name, handler),
+      registerCommand: (name: string, handler: any) => commands.set(name, handler),
+    });
+    return { tools, commands };
+  }
+
+  it("writes a PNG whose rows hold the pixels given", () => {
+    const rgba = new Uint8Array([255, 0, 0, 255, 0, 255, 0, 128, 0, 0, 255, 0, 1, 2, 3, 4]);
+    const png = encodePng(rgba, 2, 2);
+    assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+    assert.equal(png.readUInt32BE(16), 2);
+    assert.equal(png.readUInt32BE(20), 2);
+    const idat = png.indexOf("IDAT");
+    const rows = inflateSync(png.subarray(idat + 4, idat + 4 + png.readUInt32BE(idat - 4)));
+    assert.deepEqual([...rows], [0, ...rgba.subarray(0, 8), 0, ...rgba.subarray(8)]);
+  });
+
+  it("renders a sheet laid out as its JSON says", () => {
+    const fx = BUILTINS.find((item: { id: string }) => item.id === "fire/torch");
+    const sheet = renderSheet(fx);
+    const { size, pixelfx } = sheet.json.meta;
+    assert.deepEqual([size.w, size.h], [sheet.width, sheet.height]);
+    assert.equal(pixelfx.columns * pixelfx.frameSize[0], sheet.width);
+    assert.equal(sheet.json.frames.length, sheet.frames);
+    assert.equal(sheet.png.readUInt32BE(16), sheet.width);
+  });
+
+  it("finds built-in effects by English or Chinese words", () => {
+    assert.equal(searchBuiltins("").length, Object.keys(effects).length);
+    assert.deepEqual(searchBuiltins("torch").map((fx: { id: string }) => fx.id), ["fire/torch"]);
+    assert.ok(searchBuiltins("火把").some((fx: { id: string }) => fx.id === "fire/torch"));
+    assert.deepEqual(searchBuiltins("no-such-word"), []);
+  });
+
+  it("renders and checks a project effect, seeing an edit to what it imports", async () => {
+    const folder = await projectWithTorch();
+    try {
+      const { tools } = activated(folder);
+      const done = await tools.get("render_effect")!({ effect: "fire/torch" });
+      assert.equal(done.source, "project");
+      assert.equal(done.check.ok, true);
+      assert.deepEqual(done.saved, ["pixelfx/exports/torch.png", "pixelfx/exports/torch.json"]);
+      const json = JSON.parse(await readFile(path.join(folder, "pixelfx/exports/torch.json"), "utf8"));
+      assert.equal(json.meta.pixelfx.id, "fire/torch");
+      await writeFile(path.join(folder, "pixelfx/fx/fire/_lib.js"), "export const broken = ;\n");
+      const broken = await tools.get("render_effect")!({ effect: "fire/torch" });
+      assert.equal(broken.rendered, false);
+      assert.match(broken.check.errors[0], /^Doesn't load: /);
+      const builtin = await tools.get("render_effect")!({ effect: "fire/torch", source: "builtin", flip: true });
+      assert.equal(builtin.source, "builtin");
+      assert.equal(builtin.rendered, true);
+      await assert.rejects(tools.get("render_effect")!({ effect: "fire/none" }), /No effect fire\/none/);
+      // The project's code reads nothing but its copy, and sees no environment.
+      const secret = path.join(folder, "secret.txt");
+      await writeFile(secret, "secret");
+      await writeFile(path.join(folder, "pixelfx/fx/fire/spy.js"), `import { readFileSync } from "node:fs";\nexport const meta = { name: String(Object.keys(process.env).filter((key) => key !== "ELECTRON_RUN_AS_NODE").length) };\nreadFileSync(${JSON.stringify(secret)});\nexport function draw() {}\n`);
+      const spy = await tools.get("render_effect")!({ effect: "fire/spy" });
+      assert.equal(spy.rendered, false);
+      assert.match(spy.check.errors[0], /Doesn't load: .*(ERR_ACCESS_DENIED|Access to this API has been restricted)/);
+      // A link in the project isn't copied, so it can't lead out of the copy.
+      await symlink(folder, path.join(folder, "pixelfx/core/leak"));
+      await writeFile(path.join(folder, "pixelfx/fx/fire/link.js"), `import { readFileSync } from "node:fs";\nreadFileSync(new URL("../../core/leak/secret.txt", import.meta.url));\nexport const meta = { name: "link" };\nexport function draw() {}\n`);
+      assert.match((await tools.get("render_effect")!({ effect: "fire/link" })).check.errors[0], /Doesn't load: .*ENOENT/);
+      // What an effect logs doesn't get in the way of its answer.
+      await cp(path.join(lib, "fx/fire/_lib.js"), path.join(folder, "pixelfx/fx/fire/_lib.js"));
+      await writeFile(path.join(folder, "pixelfx/fx/fire/loud.js"), `export * from "./torch.js";\nconsole.log("debug");\n`);
+      assert.equal((await tools.get("render_effect")!({ effect: "fire/loud" })).rendered, true);
+      // A run that never ends is killed when its call stops, and its copy removed.
+      await writeFile(path.join(folder, "pixelfx/fx/fire/stuck.js"), `process.on("SIGTERM", () => {});\nwhile (true) {}\n`);
+      const before = (await readdir(tmpdir())).filter((name) => name.startsWith("pixelfx-") && !name.startsWith("pixelfx-native-")).length;
+      await assert.rejects(runProjectEffect(folder, "fire/stuck", {}, AbortSignal.timeout(500)), { name: "TimeoutError" });
+      assert.equal((await readdir(tmpdir())).filter((name) => name.startsWith("pixelfx-") && !name.startsWith("pixelfx-native-")).length, before);
+    } finally {
+      await rm(path.dirname(path.dirname(folder)), { recursive: true, force: true });
+    }
+  });
+
+  it("offers built-in effects in the Library a page at a time and adds one as a sheet", async () => {
+    const data = await mkdtemp(path.join(tmpdir(), "pixelfx-data-"));
+    try {
+      const { tools, commands } = activated(undefined, data);
+      assert.equal(tools.size, 0);
+      const page = await commands.get("searchEffects")!({ query: "torch" });
+      const torch = page.items.find((item: { id: string }) => item.id === "fire/torch");
+      assert.match(torch.thumbnail, /^data:image\/png;base64,/);
+      assert.equal(torch.license, "MIT");
+      assert.equal(page.next, undefined);
+      const first = await commands.get("searchEffects")!({ query: "fire" });
+      assert.equal(first.items.length, 30);
+      const second = await commands.get("searchEffects")!({ query: "fire", cursor: first.next });
+      assert.ok(second.items.every((item: { id: string }) => !first.items.some((seen: { id: string }) => seen.id === item.id)));
+      const added = await commands.get("fetchEffect")!({ id: "fire/torch", mediaType: "image" });
+      assert.deepEqual(added, { file: "sheet.png", name: "torch.png" });
+      assert.deepEqual([...(await readFile(path.join(data, "sheet.png"))).subarray(1, 4)], [80, 78, 71]);
+      await assert.rejects(commands.get("fetchEffect")!({ id: "../x", mediaType: "image" }), /isn't a built-in effect/);
+    } finally {
+      await rm(data, { recursive: true, force: true });
+    }
   });
 });
