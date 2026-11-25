@@ -9,6 +9,7 @@ or migrate credentials, model choices, canvas references or historical tasks.
 1. Create an API key in your [Tripo developer account](https://developers.tripo3d.ai/).
 2. Add the plugin, approve its API and download hosts, enter the key and enable
    **Every project**.
+   When updating to 0.1.1, approve `openapi-dl.data.tripo3d.com` to download generated models.
 3. Select the plugin's Tripo models in the asset canvas or provider settings.
 
 Credentials remain in the host. File uploads use host-owned handles, and result

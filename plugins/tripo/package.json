@@ -1,6 +1,6 @@
 {
   "name": "@ohmygame/tripo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tripo 3D generation, texturing, remeshing and animation for OhMyGame.",
   "keywords": [
     "ohmygame-plugin",
