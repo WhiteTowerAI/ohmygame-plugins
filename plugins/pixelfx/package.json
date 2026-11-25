@@ -1,7 +1,6 @@
 {
   "name": "@ohmygame/pixelfx",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Browse 244 pixel art effects, make your own in the project and export sprite sheets.",
   "keywords": [
