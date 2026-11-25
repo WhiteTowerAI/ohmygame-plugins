@@ -137,6 +137,8 @@ export function createDrawer({ host, t, el, root, context, target, onBusy = () =
   // Reading the conversation, once at a time; a conversation that can't be read can still be cleared.
   let loading;
   let unreadable = false;
+  // No model was set up when it last looked; it looks again each time the drawer opens.
+  let noModel = false;
 
   const updateTarget = () => {
     const sub = $(".agent-sub");
@@ -189,7 +191,8 @@ export function createDrawer({ host, t, el, root, context, target, onBusy = () =
   async function load() {
     try {
       const models = host.models ? await host.models.list() : [];
-      if (!models.length) {
+      noModel = !models.length;
+      if (noModel) {
         unavailable = t.agent.noModel;
         loaded = true;
         return draw();
@@ -259,6 +262,8 @@ export function createDrawer({ host, t, el, root, context, target, onBusy = () =
       }
     } catch (error) {
       unavailable = t.agent.unavailable(error instanceof Error ? error.message : String(error));
+      // New chat stays there to try again.
+      unreadable = true;
     }
     draw();
   });
@@ -267,7 +272,7 @@ export function createDrawer({ host, t, el, root, context, target, onBusy = () =
     closeButton: $(".agent-close"),
     /** Reads the conversation the first time the drawer opens. */
     open() {
-      loading ??= load();
+      if (!loading || (noModel && loaded)) loading = load();
       draw();
       input.focus();
     },

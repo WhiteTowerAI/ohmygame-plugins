@@ -59,6 +59,8 @@ The script exports a few `variants`; the panel renders each to a 22,050 Hz
 WAV file in `pixelfx/sfx/<category>/<name>/`, with `sfx.json` listing them
 with their length, loudness, waveform and cues. **Render** renders the
 script again after it changes. A built-in effect's sound is the project's too.
+Renaming an effect takes its sound along; deleting one deletes its sound,
+unless a built-in effect of the same name still plays it.
 
 **Make with model** asks the audio model set up in OhMyGame's Settings for a
 sound, from a description the panel writes from the effect and the person

@@ -37,6 +37,8 @@ import {
   sfxIdOf,
   sfxScriptPath,
   sfxTemplate,
+  soundMoves,
+  soundPaths,
   soundPrompt,
   withModelVariant,
   withScriptVariants,
@@ -620,6 +622,19 @@ describe("pixelfx sound", () => {
     assert.throws(() => parseManifest('{"version": 1, "variants": [{"id": "x", "file": "../../fx/fire/torch.js"}]}'), /sound list/);
     assert.equal(manifestPath("fire/torch"), "pixelfx/sfx/fire/torch/sfx.json");
     assert.equal(sfxDir("fire/torch"), "pixelfx/sfx/fire/torch");
+  });
+
+  it("moves an effect's sound with it and finds it to delete, never replacing another's", () => {
+    const paths = new Set(["pixelfx/sfx/fire/torch.js", "pixelfx/sfx/fire/torch/sfx.json", "pixelfx/sfx/fire/torch/default.wav", "pixelfx/sfx/fire/torch-2/model-1.mp3", "pixelfx/sfx/fire/tor.js"]);
+    assert.deepEqual(soundPaths("fire/torch", paths), ["pixelfx/sfx/fire/torch.js", "pixelfx/sfx/fire/torch"]);
+    assert.deepEqual(soundPaths("fire/tor", paths), ["pixelfx/sfx/fire/tor.js"]);
+    assert.deepEqual(soundPaths("fire/none", paths), []);
+    assert.deepEqual(soundMoves("fire/torch", "fire/blue", paths), [
+      ["pixelfx/sfx/fire/torch.js", "pixelfx/sfx/fire/blue.js"],
+      ["pixelfx/sfx/fire/torch", "pixelfx/sfx/fire/blue"],
+    ]);
+    // torch-2 already has a folder of its own, so only the script moves.
+    assert.deepEqual(soundMoves("fire/torch", "fire/torch-2", paths), [["pixelfx/sfx/fire/torch.js", "pixelfx/sfx/fire/torch-2.js"]]);
   });
 
   it("asks a model for a sound that fits the effect", () => {

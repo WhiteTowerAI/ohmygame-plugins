@@ -67,10 +67,11 @@ import {
   sfxDir,
   SFX_CORE_PATH,
   SFX_CORE_VERSION_PATH,
-  sfxIdOf,
   sfxScriptPath,
   soundPrompt,
   withModelVariant,
+  soundMoves,
+  soundPaths,
   withScriptVariants,
 } from "./sfx.js";
 
@@ -157,7 +158,8 @@ const state = {
   exporting: false,
   cfg: undefined,
   // The shown effect's sound: its list of variants, the one chosen, and whether it plays with the stage.
-  sound: { id: undefined, doc: undefined, error: "", variant: undefined, sync: false, busy: false },
+  // `want` is a variant asked for (by write_sfx or a model's sound) that the next reading that has it chooses.
+  sound: { id: undefined, doc: undefined, error: "", variant: undefined, want: undefined, sync: false, making: 0, rendering: false },
   agentOpen: false,
 };
 // The assistant's drawer, made once the page is.
@@ -485,9 +487,9 @@ function showEffect(fx, cfg) {
   if (state.view === "code") void refreshCode();
   if (state.sound.id !== fx.id) {
     stopSound();
-    drawSound();
     soundReady = loadSound(fx);
   }
+  drawSound();
   drawer?.refresh();
   updateContext();
 }
@@ -1039,6 +1041,7 @@ async function runExport(format) {
   const fx = state.fx;
   const cfg = exportConfig();
   const sound = shownSound();
+  const warnings = [];
   const name = fx.id.split("/")[1];
   state.exporting = true;
   updateExportButton();
@@ -1057,10 +1060,19 @@ async function runExport(format) {
       const png = await canvasToPngBlob(sheet.canvas);
       if (format === "sheet-png") await toLibrary(png, `${name}.png`);
       else {
-        // The chosen sound goes beside the sheet, which names it.
+        // The chosen sound goes beside the sheet, which names it; a sound whose file is gone is left out, and the sheet still saved.
+        let audio;
         if (sound) {
+          try {
+            audio = await host.files.read(variantPath(sound.id, sound.variant));
+          } catch (error) {
+            if (!notFound(error)) throw error;
+            warnings.push(uiError(`The sound ${variantPath(sound.id, sound.variant)} is missing, so the sheet was saved without it`, t.soundMissing));
+          }
+        }
+        if (audio) {
           const file = `${name}.${sound.variant.file.split(".").pop()}`;
-          await write(`${EXPORT_DIR}/${file}`, await host.files.read(variantPath(sound.id, sound.variant)));
+          await write(`${EXPORT_DIR}/${file}`, audio);
           sheet.json.meta.pixelfx.sound = { file, variant: sound.variant.id, duration: sound.variant.duration, cues: sound.variant.cues ?? [] };
         }
         await write(`${EXPORT_DIR}/${name}.png`, png);
@@ -1073,7 +1085,7 @@ async function runExport(format) {
     } else if (format === "frames") {
       await exportFrames(fx, cfg, name, write);
     } else throw new Error(`Unknown format ${format}`);
-    return { fx, cfg, saved, library };
+    return { fx, cfg, saved, library, warnings };
   } catch (error) {
     throw Object.assign(error instanceof Error ? error : new Error(String(error)), { saved });
   } finally {
@@ -1085,9 +1097,10 @@ async function runExport(format) {
 async function exportAs(format) {
   if (state.exporting || !state.fx) return;
   try {
-    const { saved } = await runExport(format);
+    const { saved, warnings } = await runExport(format);
     // The app announces what reaches the Library itself.
     if (saved.length) toast(t.savedFiles(saved), "success");
+    for (const warning of warnings) toast(localText(warning));
   } catch (error) {
     const saved = error.saved ?? [];
     toast(saved.length ? t.exportFailedAfter(localText(error), saved) : t.exportFailed(localText(error)), "danger");
@@ -1539,8 +1552,12 @@ async function renameEffect(fx) {
   const to = effectPath(id);
   try {
     await change(async () => {
+      // Its sound goes with it, as its presets do.
+      const moves = soundMoves(fx.id, id, (await projectFiles()).paths);
       const heard = filesHeard([fx.path, to]);
       await host.files.move(fx.path, to);
+      for (const [from, target] of moves) await host.files.move(from, target);
+      if (moves.length) await retagManifest(id);
       for (const map of [state.drafts, state.checks]) {
         if (map.has(fx.key)) map.set(`project:${id}`, map.get(fx.key));
         map.delete(fx.key);
@@ -1560,6 +1577,17 @@ async function renameEffect(fx) {
   }
 }
 
+/** Names the effect `id` in its sound list after a rename; a list that can't be read is left as it is. */
+async function retagManifest(id) {
+  let doc;
+  try {
+    doc = await readManifest(id);
+  } catch {
+    return;
+  }
+  if (doc && doc.effect !== id) await host.files.write(manifestPath(id), manifestText({ ...doc, effect: id }));
+}
+
 let removeTimer;
 function resetRemove() {
   clearTimeout(removeTimer);
@@ -1571,8 +1599,11 @@ function resetRemove() {
 async function removeEffect(fx) {
   try {
     await change(async () => {
+      // Its sound goes with it, unless a built-in effect of the same name still plays it. The app's history brings both back.
+      const sound = BUILTIN_IDS.has(fx.id) ? [] : soundPaths(fx.id, (await projectFiles()).paths);
       const heard = filesHeard([fx.path]);
       await host.files.delete(fx.path);
+      for (const path of sound) await host.files.delete(path);
       state.drafts.delete(fx.key);
       state.checks.delete(fx.key);
       await heard;
@@ -1741,6 +1772,8 @@ let soundTicket = 0;
 async function loadSound(fx = state.fx, choose) {
   // Only the shown effect's sound is read, so reading another's never cancels it.
   if (!fx || state.fx?.id !== fx.id) return;
+  // A variant asked for stays wanted until a reading has it, so a later reading started by a files event still chooses it.
+  if (choose) state.sound.want = { id: fx.id, variant: choose };
   const ticket = ++soundTicket;
   let doc;
   let error = "";
@@ -1751,9 +1784,11 @@ async function loadSound(fx = state.fx, choose) {
   }
   if (ticket !== soundTicket || state.fx?.id !== fx.id) return;
   for (const path of audioCache.keys()) if (path.startsWith(`${sfxDir(fx.id)}/`)) audioCache.delete(path);
-  const keep = choose ?? (state.sound.id === fx.id ? state.sound.variant : undefined);
-  const variant = doc?.variants.some((item) => item.id === keep) ? keep : doc?.variants[0]?.id;
-  state.sound = { ...state.sound, id: fx.id, doc, error, variant };
+  const has = (id) => !!id && !!doc?.variants.some((item) => item.id === id);
+  const want = state.sound.want?.id === fx.id ? state.sound.want.variant : undefined;
+  const keep = state.sound.id === fx.id ? state.sound.variant : undefined;
+  const variant = has(want) ? want : has(keep) ? keep : doc?.variants[0]?.id;
+  state.sound = { ...state.sound, id: fx.id, doc, error, variant, want: has(want) || state.sound.want?.id !== fx.id ? undefined : state.sound.want };
   drawSound();
   updateExportButton();
   updateContext();
@@ -1761,7 +1796,7 @@ async function loadSound(fx = state.fx, choose) {
 
 function drawSound() {
   const fx = state.fx;
-  const { error, busy } = state.sound;
+  const { error, making, rendering } = state.sound;
   const variants = state.sound.id === fx?.id ? soundVariants() : [];
   const variant = state.sound.id === fx?.id ? activeVariant() : undefined;
   const select = $("#sel-sfx-variant");
@@ -1770,7 +1805,7 @@ function drawSound() {
   select.disabled = !variants.length;
   const render = $("#btn-sfx-render");
   render.hidden = !fx || !state.files?.has(sfxScriptPath(fx.id));
-  render.disabled = !!busy;
+  render.disabled = rendering;
   const made = variant?.source === "model" ? t.soundFromModel(variant.model?.name ?? variant.model?.id ?? "?") : "";
   const empty = [t.soundEmpty, fx?.source === "builtin" ? t.soundBuiltinNote : ""].filter(Boolean).join(" ");
   // A model's sound says which model made it; what it was asked shows on hover.
@@ -1778,9 +1813,9 @@ function drawSound() {
   $("#sfx-desc").title = variant?.source === "model" ? (variant.prompt ?? "") : "";
   $("#sfx-meta").textContent = variant ? t.soundSummary(variants.length, variant.duration, variant.rmsDb ?? "–") : "";
   $("#btn-sfx-play").disabled = !variant;
-  $("#btn-sfx-library").disabled = !variant || !!busy;
-  $("#btn-sfx-model").disabled = !!busy || !fx || !!fx.error || !!error;
-  $("#btn-sfx-model").textContent = busy === "model" ? t.making : t.soundModel;
+  $("#btn-sfx-library").disabled = !variant;
+  $("#btn-sfx-model").disabled = making > 0 || !fx || !!fx.error || !!error;
+  $("#btn-sfx-model").textContent = making > 0 ? t.making : t.soundModel;
   $("#btn-sfx-ask").disabled = !fx || !!fx.error;
   drawWave();
 }
@@ -1979,8 +2014,8 @@ function writeSfx(id, code, signal) {
 /** Renders the shown effect's script again, as the person's Render does. */
 async function renderShown() {
   const fx = state.fx;
-  if (!fx || state.sound.busy) return;
-  state.sound.busy = "render";
+  if (!fx || state.sound.rendering) return;
+  state.sound.rendering = true;
   drawSound();
   try {
     const { doc } = await change(() => renderNow(fx.id));
@@ -1988,7 +2023,8 @@ async function renderShown() {
   } catch (error) {
     toast(t.soundFailed(localText(error)), "danger");
   } finally {
-    state.sound.busy = false;
+    state.sound.rendering = false;
+    drawSound();
     await loadSound(fx);
   }
 }
@@ -2006,6 +2042,8 @@ async function figuresOf(blob) {
 /** Asks the person's audio model for a sound for `fx` and keeps it as a variant. */
 async function makeModelSound(fx, { prompt, seconds, model }, signal) {
   if (!host.media) throw new Error("This version of OhMyGame can't make sounds with a model");
+  // A sound list that can't be read would refuse the sound after it was paid for, so it's checked first.
+  await readManifest(fx.id);
   const request = {
     media: "audio",
     kind: "sound-effect",
@@ -2100,7 +2138,7 @@ function askModelSound(list) {
 
 async function makeSoundFromPanel() {
   const fx = state.fx;
-  if (!fx || fx.error || state.sound.busy) return;
+  if (!fx || fx.error || state.sound.making) return;
   let list;
   try {
     list = host.media ? await host.media.models("audio", { kind: "sound-effect" }) : { models: [] };
@@ -2110,19 +2148,16 @@ async function makeSoundFromPanel() {
   if (!list?.models?.length) return toast(t.noAudioModel);
   const values = await askModelSound(list);
   if (!values) return;
-  state.sound.busy = "model";
+  state.sound.making++;
   drawSound();
   try {
     const { key, label } = await makeModelSound(fx, values);
     toast(t.soundMade(label), "success");
-    if (state.fx?.id === fx.id) {
-      state.sound.busy = false;
-      await loadSound(fx, key);
-    }
+    await loadSound(fx, key);
   } catch (error) {
     toast(t.failed(localText(error)), "danger");
   } finally {
-    state.sound.busy = false;
+    state.sound.making--;
     drawSound();
   }
 }
@@ -2345,8 +2380,8 @@ function handleTools() {
       if (state.fx?.key !== fx.key) openEffect(fx);
     }
     await soundReady;
-    const { fx, cfg, saved, library } = await runExport(format);
-    return { effect: fx.id, source: fx.source, format, saved, library, settings: settingsOf(cfg, fx) };
+    const { fx, cfg, saved, library, warnings } = await runExport(format);
+    return { effect: fx.id, source: fx.source, format, saved, library, settings: settingsOf(cfg, fx), ...(warnings.length ? { warnings: warnings.map((warning) => warning.message) } : {}) };
   });
   host.tools.handle("read_sfx", async ({ effect }) => {
     await projectSettled();
@@ -2393,15 +2428,14 @@ function handleTools() {
     if (state.fx?.key !== fx.key) openEffect(fx);
     const shown = shownPrompt(fx);
     const words = typeof prompt === "string" && prompt.trim() ? prompt.trim() : shown.prompt;
-    state.sound.busy = "model";
+    state.sound.making++;
     drawSound();
     try {
       const made = await makeModelSound(fx, { prompt: words, seconds: modelDuration(durationSeconds ?? shown.seconds, model), model }, signal);
-      state.sound.busy = false;
-      if (state.fx?.id === fx.id) await loadSound(fx, made.key);
+      await loadSound(fx, made.key);
       return { effect: fx.id, variant: made.key, path: made.path, prompt: words, ...(made.assetId ? { assetId: made.assetId } : {}) };
     } finally {
-      state.sound.busy = false;
+      state.sound.making--;
       drawSound();
     }
   });

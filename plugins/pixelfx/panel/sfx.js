@@ -29,6 +29,23 @@ export const sfxScriptPath = (id) => `${SFX_ROOT}/${id}.js`;
 export const sfxDir = (id) => `${SFX_ROOT}/${id}`;
 export const manifestPath = (id) => `${sfxDir(id)}/${MANIFEST}`;
 
+/** The sound of `id` among the project's file `paths`: its script and its folder, each when the project has it. */
+export function soundPaths(id, paths) {
+  const list = [...paths];
+  return [
+    ...(paths.has(sfxScriptPath(id)) ? [sfxScriptPath(id)] : []),
+    ...(list.some((path) => path.startsWith(`${sfxDir(id)}/`)) ? [sfxDir(id)] : []),
+  ];
+}
+
+/** What to move so the sound of `from` follows it to `to`, as `[from, to]`: each part `to` doesn't already have, since a move never replaces. */
+export function soundMoves(from, to, paths) {
+  const taken = new Set(soundPaths(to, paths));
+  return soundPaths(from, paths)
+    .map((path) => [path, path === sfxScriptPath(from) ? sfxScriptPath(to) : sfxDir(to)])
+    .filter(([, target]) => !taken.has(target));
+}
+
 /** The effect whose script `path` is, or undefined. */
 export function sfxIdOf(path) {
   const match = /^pixelfx\/sfx\/([^/]+)\/([^/]+)\.js$/.exec(path);

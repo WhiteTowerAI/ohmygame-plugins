@@ -82,7 +82,7 @@ export const TEXT = {
       contact: "Contact sheet",
     },
     exportHints: {
-      "sheet-both": (dir, sound) => `Transparent PNG and Aseprite JSON${sound ? ", with the sound as WAV" : ""}, saved to ${dir}.`,
+      "sheet-both": (dir, sound) => `Transparent PNG and Aseprite JSON${sound ? ", with its sound" : ""}, saved to ${dir}.`,
       "sheet-png": () => "Transparent PNG, added to the Library.",
       gif: (dir) => `Animated GIF, saved to ${dir}.`,
       frames: (dir) => `One transparent PNG per frame, saved to ${dir}.`,
@@ -261,7 +261,7 @@ export const TEXT = {
       contact: "分帧联系表",
     },
     exportHints: {
-      "sheet-both": (dir, sound) => `透明 PNG 与 Aseprite JSON${sound ? "，连同 WAV 音效" : ""}，保存到 ${dir}。`,
+      "sheet-both": (dir, sound) => `透明 PNG 与 Aseprite JSON${sound ? "，连同音效" : ""}，保存到 ${dir}。`,
       "sheet-png": () => "透明 PNG，加入素材库。",
       gif: (dir) => `动态 GIF，保存到 ${dir}。`,
       frames: (dir) => `每帧一张透明 PNG，保存到 ${dir}。`,
