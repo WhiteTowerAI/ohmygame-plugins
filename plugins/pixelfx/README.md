@@ -101,9 +101,11 @@ person sees each one work in it:
 without the panel, such as for an agent outside the app: it checks an effect,
 built-in or the project's, and renders it with its default settings to a
 transparent sprite sheet and Aseprite JSON in `pixelfx/exports/`, in place of
-an earlier export of the same name. A project effect's code runs there in a
-process of its own that can read only a copy of `pixelfx/fx/` and
-`pixelfx/core/`.
+an earlier export of the same name. A project effect's code runs on this
+computer, as the game's does, in a process of its own started from a copy of
+`pixelfx/fx/` and `pixelfx/core/`. Node's permission flags keep it to
+reading that copy, with no environment, which keeps ordinary code in bounds
+but isn't a sandbox: use it only in projects you'd run.
 
 The panel also tells the agent which effect is open, how it's set and what
 sound it has, and the **pixelfx** Skill has the effect and sound contracts

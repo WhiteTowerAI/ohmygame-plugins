@@ -91,7 +91,7 @@
       },
       {
         "name": "render_effect",
-        "description": "Checks an effect, then renders it with its default settings to a transparent sprite sheet and Aseprite JSON in pixelfx/exports/, replacing an earlier export of the same name. Works without the Pixel Effects panel; use export_effect for what the panel shows.",
+        "description": "Checks an effect, then renders it with its default settings to a transparent sprite sheet and Aseprite JSON in pixelfx/exports/, replacing an earlier export of the same name. A project effect's code runs on this computer, as the game's does. Works without the Pixel Effects panel; use export_effect for what the panel shows.",
         "input": "./tools/render-effect.json",
         "timeoutSeconds": 120
       },

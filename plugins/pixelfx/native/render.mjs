@@ -2,7 +2,7 @@
 // built from the same rendering and export code the panel uses.
 
 import { spawn } from "node:child_process";
-import { cp, mkdtemp, readFile, realpath, rm, stat } from "node:fs/promises";
+import { copyFile, lstat, mkdir, mkdtemp, readdir, readFile, realpath, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -50,37 +50,72 @@ export async function loadEffectFrom(copy, id) {
   }
 }
 
+/** The most a run may answer: a sheet at the export limit, as base64 with its JSON. */
+const MAX_ANSWER = 512 * 1024 * 1024;
+
+/** Copies `from` to `to`: only folders and regular files, none whose name starts with a dot, never a link. */
+async function copyPlain(from, to) {
+  await mkdir(to, { recursive: true });
+  for (const item of await readdir(from, { withFileTypes: true })) {
+    if (item.name.startsWith(".")) continue;
+    if (item.isDirectory()) await copyPlain(path.join(from, item.name), path.join(to, item.name));
+    else if (item.isFile()) await copyFile(path.join(from, item.name), path.join(to, item.name));
+  }
+}
+
 /**
  * Checks the project's effect `id` in `folder` and, when it passes and
  * `render` is set, renders its sheet: `{ check, sheet? }`. The project's
- * code runs in a process of its own that reads only a fresh copy of
- * `pixelfx/fx/` and `pixelfx/core/` and the plugin, with no environment, no
- * writes and no processes of its own, so an edit to any file it imports is
- * seen and nothing it loads stays behind.
+ * code runs on this computer, as the game's does, in a process of its own
+ * started from a fresh copy of `pixelfx/fx/` and `pixelfx/core/`, so an
+ * edit to any file it imports is seen and nothing it loads stays behind.
+ * Node's permission flags keep it to reading that copy and the plugin, with
+ * no environment; they keep honest code in bounds, not hostile code out.
  */
 export async function runProjectEffect(folder, id, { flip, seed, render = true } = {}, signal) {
+  signal?.throwIfAborted();
   const text = await readFile(path.join(folder, effectPath(id)), "utf8");
   const copy = await realpath(await mkdtemp(path.join(tmpdir(), "pixelfx-")));
   try {
     for (const part of ["fx", "core"]) {
       const from = path.join(folder, ROOT, part);
-      if (await exists(from)) await cp(from, path.join(copy, part), { recursive: true, filter: (item) => !path.relative(from, item).split(path.sep).some((name) => name.startsWith(".")) });
+      const kind = await lstat(from).catch((error) => {
+        if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return undefined;
+        throw error;
+      });
+      if (kind?.isDirectory()) await copyPlain(from, path.join(copy, part));
     }
     const input = JSON.stringify({ copy, id, text, flip: !!flip, ...(Number.isFinite(seed) ? { seed } : {}), render });
     const out = await new Promise((resolve, reject) => {
+      // The answer comes on its own pipe (fd 3), so what the effect logs can't spoil it.
       const child = spawn(process.execPath, ["--permission", `--allow-fs-read=${copy}`, `--allow-fs-read=${PLUGIN_DIR}`, "--max-old-space-size=1024", CHILD], {
         cwd: copy,
         env: process.versions.electron ? { ELECTRON_RUN_AS_NODE: "1" } : {},
-        stdio: ["pipe", "pipe", "pipe"],
-        signal,
+        stdio: ["pipe", "ignore", "pipe", "pipe"],
       });
-      const stdout = [];
+      const answer = [];
+      let size = 0;
       let stderr = "";
-      child.stdout.on("data", (chunk) => stdout.push(chunk));
+      let failure;
+      const stop = (error) => {
+        failure ??= error;
+        child.kill("SIGKILL");
+      };
+      const abort = () => stop(signal.reason ?? new DOMException("The call was stopped", "AbortError"));
+      signal?.addEventListener("abort", abort, { once: true });
+      child.stdio[3].on("data", (chunk) => {
+        size += chunk.length;
+        if (size > MAX_ANSWER) return stop(new Error(`Rendering ${id} answered more than ${MAX_ANSWER / 1024 / 1024} MB`));
+        answer.push(chunk);
+      });
       child.stderr.on("data", (chunk) => (stderr = (stderr + chunk).slice(-4000)));
-      child.on("error", reject);
+      child.stdin.on("error", () => {});
+      child.on("error", stop);
+      // Settles only once the process is gone, so its copy is never removed under it.
       child.on("close", (code) => {
-        if (code === 0) return resolve(Buffer.concat(stdout).toString("utf8"));
+        signal?.removeEventListener("abort", abort);
+        if (failure) return reject(failure);
+        if (code === 0) return resolve(Buffer.concat(answer).toString("utf8"));
         const last = stderr.trim().split("\n").filter(Boolean).pop();
         reject(new Error(`Rendering ${id} stopped${last ? `: ${last}` : ` with code ${code}`}`));
       });

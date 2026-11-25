@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
@@ -8,7 +8,7 @@ import { inflateSync } from "node:zlib";
 // @ts-expect-error The native entry is plain JavaScript.
 import { activate } from "../plugins/pixelfx/native/index.mjs";
 // @ts-expect-error The native entry is plain JavaScript.
-import { BUILTINS, encodePng, renderSheet, searchBuiltins } from "../plugins/pixelfx/native/render.mjs";
+import { BUILTINS, encodePng, renderSheet, runProjectEffect, searchBuiltins } from "../plugins/pixelfx/native/render.mjs";
 // @ts-expect-error The panel is plain JavaScript.
 import { effects } from "../plugins/pixelfx/panel/lib/fx/index.js";
 // @ts-expect-error The panel is plain JavaScript.
@@ -775,6 +775,19 @@ describe("pixelfx native", () => {
       const spy = await tools.get("render_effect")!({ effect: "fire/spy" });
       assert.equal(spy.rendered, false);
       assert.match(spy.check.errors[0], /Doesn't load: .*(ERR_ACCESS_DENIED|Access to this API has been restricted)/);
+      // A link in the project isn't copied, so it can't lead out of the copy.
+      await symlink(folder, path.join(folder, "pixelfx/core/leak"));
+      await writeFile(path.join(folder, "pixelfx/fx/fire/link.js"), `import { readFileSync } from "node:fs";\nreadFileSync(new URL("../../core/leak/secret.txt", import.meta.url));\nexport const meta = { name: "link" };\nexport function draw() {}\n`);
+      assert.match((await tools.get("render_effect")!({ effect: "fire/link" })).check.errors[0], /Doesn't load: .*ENOENT/);
+      // What an effect logs doesn't get in the way of its answer.
+      await cp(path.join(lib, "fx/fire/_lib.js"), path.join(folder, "pixelfx/fx/fire/_lib.js"));
+      await writeFile(path.join(folder, "pixelfx/fx/fire/loud.js"), `export * from "./torch.js";\nconsole.log("debug");\n`);
+      assert.equal((await tools.get("render_effect")!({ effect: "fire/loud" })).rendered, true);
+      // A run that never ends is killed when its call stops, and its copy removed.
+      await writeFile(path.join(folder, "pixelfx/fx/fire/stuck.js"), `process.on("SIGTERM", () => {});\nwhile (true) {}\n`);
+      const before = (await readdir(tmpdir())).filter((name) => name.startsWith("pixelfx-") && !name.startsWith("pixelfx-native-")).length;
+      await assert.rejects(runProjectEffect(folder, "fire/stuck", {}, AbortSignal.timeout(500)), { name: "TimeoutError" });
+      assert.equal((await readdir(tmpdir())).filter((name) => name.startsWith("pixelfx-") && !name.startsWith("pixelfx-native-")).length, before);
     } finally {
       await rm(path.dirname(path.dirname(folder)), { recursive: true, force: true });
     }
