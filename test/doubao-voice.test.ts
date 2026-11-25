@@ -207,7 +207,6 @@ it("keeps a configured speech voice separate from Seed Audio references and bill
   const s = await setup(t, (req) =>
     req.url.endsWith("/create")
       ? Response.json({
-          code: 0,
           audio: MP3.toString("base64"),
           original_duration: 1.25,
         })

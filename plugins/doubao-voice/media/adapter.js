@@ -481,6 +481,7 @@ export default {
             format: tts ? "jsonl" : "json",
             audioField: tts ? "data" : "audio",
             statusField: "code",
+            ...(tts ? {} : { statusOnlyOnError: true }),
             successCodes: [0, 20000000],
           },
         },

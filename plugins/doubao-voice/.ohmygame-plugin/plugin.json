@@ -1,9 +1,9 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/doubao-voice",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "engines": {
-    "ohmygame-api": "^2.25.0"
+    "ohmygame-api": "^2.39.0"
   },
   "displayName": "%plugin.name%",
   "description": "%plugin.description%",
