@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, readdir, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { it } from "node:test";
+import { it, mock } from "node:test";
+// @ts-expect-error The plugin's native code is plain JavaScript.
+import { activate } from "../plugins/godot/native/index.mjs";
 import { crc32, deflateRawSync } from "node:zlib";
 // @ts-expect-error The plugin's native code is plain JavaScript.
 import { godotBuild, installWebTemplates, isSelfContained, templatesFolder, templatesProblem, templatesUrl } from "../plugins/godot/native/templates.mjs";
@@ -119,4 +121,55 @@ it("leaves nothing behind when a file is damaged, missing, or ranges aren't serv
     await assert.rejects(installWebTemplates("4.3.stable.mono.official", { fetch: serving(whole).fetch, folder: target }), /mono/);
     assert.deepEqual(await readdir(folder), []);
   } finally { await rm(folder, { recursive: true, force: true }); }
+});
+
+function editorCommand(
+  start?: (options: unknown) => Promise<{ stop: () => Promise<void> }>,
+  onDispose: (cleanup: () => void) => void = () => assert.fail("The host owns managed sessions"),
+) {
+  type Command = (input: unknown, call: unknown) => Promise<unknown>;
+  const commands = new Map<string, Command>();
+  activate({
+    project: { folder: tmpdir() },
+    registerProjectType() {},
+    registerTool() {},
+    registerCommand: (name: string, handler: Command) => commands.set(name, handler),
+    onDispose,
+    nativeSessions: start && { start },
+  });
+  return (signal = new AbortController().signal) =>
+    commands.get("runInGodot")!({}, { configuration: { godotPath: process.execPath }, signal });
+}
+
+it("launches the managed editor and propagates a rejected second launch", async () => {
+  const stop = mock.fn(async () => {});
+  const start = mock.fn(async (_options: unknown) => ({ stop }));
+  const run = editorCommand(start);
+  assert.deepEqual(await run(), { started: true });
+  assert.deepEqual(start.mock.calls[0]?.arguments, [{
+    executable: process.execPath, args: ["--path", tmpdir(), "--editor"], label: "Godot",
+  }]);
+  const busy = new Error("already running");
+  start.mock.mockImplementation(async () => { throw busy; });
+  await assert.rejects(run(), (error) => error === busy);
+  assert.equal(stop.mock.callCount(), 0);
+});
+
+it("stops a managed session cancelled while it starts", async () => {
+  const controller = new AbortController();
+  const stop = mock.fn(async () => {});
+  const run = editorCommand(async () => {
+    controller.abort();
+    return { stop };
+  });
+  await assert.rejects(run(controller.signal), /Stopped/);
+  assert.equal(stop.mock.callCount(), 1);
+});
+
+it("registers cleanup for the child it spawns on older hosts", async () => {
+  const onDispose = mock.fn((_cleanup: () => void) => {});
+  const run = editorCommand(undefined, onDispose);
+  assert.deepEqual(await run(), { started: true });
+  assert.equal(onDispose.mock.callCount(), 1);
+  onDispose.mock.calls[0]!.arguments[0]();
 });

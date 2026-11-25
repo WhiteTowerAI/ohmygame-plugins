@@ -281,7 +281,24 @@ export function activate(context) {
     const project = needFolder();
     const executable = await requireGodot(call);
     if (call.signal.aborted) throw new Error("Stopped");
-    const child = spawn(executable, ["--path", project, "--editor"], { cwd: project, stdio: "ignore", windowsHide: false });
+    const args = ["--path", project, "--editor"];
+    // A host that manages native sessions keeps itself alive while the editor
+    // runs and ends the editor's process tree when the project or plugin stops.
+    if (context.nativeSessions?.start) {
+      const session = await context.nativeSessions.start({
+        executable,
+        args,
+        label: "Godot",
+      });
+      // Cancelled while it started: the editor doesn't stay open.
+      if (call.signal.aborted) {
+        await session.stop();
+        throw new Error("Stopped");
+      }
+      return { started: true };
+    }
+    // Older apps have no native sessions; the editor ends with this host.
+    const child = spawn(executable, args, { cwd: project, stdio: "ignore", windowsHide: false });
     await new Promise((resolve, reject) => {
       child.once("spawn", resolve);
       child.once("error", reject);
