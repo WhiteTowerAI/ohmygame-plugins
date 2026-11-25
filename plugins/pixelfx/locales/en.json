@@ -5,5 +5,7 @@
   "example.1": "Make a frost nova effect for the mage's spell and use it in the game.",
   "example.2": "Recolor the fireball effect purple and export it as a sprite sheet.",
   "keyword.effects": "effects",
-  "panel.title": "Pixel Effects"
+  "panel.title": "Pixel Effects",
+  "source.title": "Pixel effects",
+  "source.description": "pixelfx's 244 built-in effects; each adds as a transparent sprite sheet. Searches stay on this computer."
 }

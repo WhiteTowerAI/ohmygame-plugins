@@ -112,6 +112,6 @@ if (fx.done()) remove(fx);
 
 An effect with an `act` plays with its stock character through `createAct(mod, { x, y })`, or its timing (`windup`, `recovery`, `hits`) drives the game's own character.
 
-Any other engine (Godot, Unity and others) uses a sprite sheet: `export_effect` with `sheet-both` writes a transparent PNG and Aseprite JSON to `pixelfx/exports/`, whose `meta.pixelfx` has fps, loop, frame size and the pivot, and, with the sound chosen in the panel beside it, `sound`. Import it with nearest-neighbour filtering and no compression, and set the pivot to `meta.pixelfx.pivot`.
+Any other engine (Godot, Unity and others) uses a sprite sheet: `export_effect` with `sheet-both` writes a transparent PNG and Aseprite JSON to `pixelfx/exports/`, whose `meta.pixelfx` has fps, loop, frame size and the pivot, and, with the sound chosen in the panel beside it, `sound`. Import it with nearest-neighbour filtering and no compression, and set the pivot to `meta.pixelfx.pivot`. When the panel can't be opened, such as from an agent outside the app, `render_effect` checks an effect and writes the same sheet and JSON at its default settings.
 
 `pixelfx/LICENSE-pixelfx.md` is pixelfx's MIT notice; keep it with the copied files.

@@ -5,5 +5,7 @@
   "example.1": "给法师的技能做一个冰霜新星特效，并用到游戏里。",
   "example.2": "把火球特效改成紫色，导出成图集。",
   "keyword.effects": "特效",
-  "panel.title": "像素特效"
+  "panel.title": "像素特效",
+  "source.title": "像素特效",
+  "source.description": "pixelfx 的 244 个内置特效，添加后是透明精灵图集。搜索只在本机进行。"
 }
