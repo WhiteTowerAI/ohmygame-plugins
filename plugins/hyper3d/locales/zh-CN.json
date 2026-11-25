@@ -1,0 +1,7 @@
+{
+  "plugin.name": "Hyper3D",
+  "plugin.description": "使用 Hyper3D Rodin 生成 3D 模型和贴图。",
+  "plugin.longDescription": "使用自己的 Hyper3D API 密钥，通过文字或最多五张参考图生成模型，也可为已有 GLB 模型生成贴图。",
+  "config.key.title": "Hyper3D API 密钥",
+  "config.key.description": "在 Hyper3D API 控制台创建密钥。生成与贴图会消耗你的 Hyper3D 积分。"
+}
