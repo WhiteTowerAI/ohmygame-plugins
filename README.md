@@ -67,7 +67,7 @@ publisher only this organization can use:
 - Story boards: [`story-board`](plugins/story-board), an optional Beta panel for any
   project that lays out a game's chapters, scenes or levels as cards joined
   by arrows on a canvas, kept in `story-board/`, with a Skill so agents read
-  and update it (requires OhMyGame API 2.38).
+  and update it (requires OhMyGame API 2.37).
 - Testing: [`game-tests`](plugins/game-tests), an optional Beta that keeps a
   web game's tests in `tests/game/`, runs them in real game windows with up to
   four players, and shows them with the project's unit tests in an Automated

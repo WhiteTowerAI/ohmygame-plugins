@@ -10,9 +10,10 @@ It is an early Beta. Open it from the panel menu.
 
 ## What it adds
 
-- **Story Board panel.** OhMyGame's own canvas (`<omg-canvas>`): pan and
-  zoom, a pointer and a hand tool, grid snapping and alignment guides while
-  dragging, marquee selection, and the zoom controls and tool bar. Cards look
+- **Story Board panel.** A canvas drawn and handled as OhMyGame's own
+  canvases are (the plugin's `panel/canvas.js`): pan and zoom, a pointer and
+  a hand tool, grid snapping and alignment guides while dragging, marquee
+  selection, and the zoom controls and tool bar. Cards look
   like the app's canvas nodes, with + ports either side: drag from one to
   another card to draw an arrow, or click it to add a card joined there. An
   arrow with a label is a row on its card's right side, with its condition
@@ -43,4 +44,4 @@ The board lives in the project, in `story-board/`:
 the Agent or an older panel wrote and writes back only the format's fields; it
 won't write over a board from a later version.
 
-Requires OhMyGame API 2.38.
+Requires OhMyGame API 2.37.

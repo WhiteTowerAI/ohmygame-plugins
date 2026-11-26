@@ -1,8 +1,9 @@
 // The Story Board: cards on a canvas joined by arrows, kept in
 // story-board/board.json, with where each card sits in story-board/layout.json.
-// OhMyGame's <omg-canvas> draws and handles the canvas as the app's own
+// <story-canvas> (canvas.js) draws and handles the canvas as the app's own
 // canvases do; this page keeps the board and changes it.
 import { connect } from "/_ohmygame/plugin-ui.js";
+import "./canvas.js";
 import { TEXT } from "./i18n.js";
 
 const host = await connect();
@@ -47,7 +48,7 @@ const PICTURE_TYPES = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "
 // The page's fixed parts.
 
 const app = document.getElementById("app");
-const canvas = el("omg-canvas", {
+const canvas = el("story-canvas", {
   label: t.board,
   "select-label": t.select,
   "pan-label": t.pan,
@@ -222,9 +223,9 @@ function render() {
   if (state.status === "loading") return app.replaceChildren(el("omg-empty", { heading: t.loading }));
   if (state.status === "error") return app.replaceChildren(el("div", { class: "empty" }, el("omg-empty", { heading: state.error })));
   if (!canvas.isConnected) app.replaceChildren(canvas);
-  const cards = new Map([...canvas.querySelectorAll("omg-canvas-node")].map((element) => [element.nodeId, element]));
+  const cards = new Map([...canvas.querySelectorAll("story-card")].map((element) => [element.nodeId, element]));
   const wanted = state.board.nodes.map((card) => {
-    const element = cards.get(card.id) ?? el("omg-canvas-node", { "node-id": card.id, renamable: true, "rename-label": t.rename });
+    const element = cards.get(card.id) ?? el("story-card", { "node-id": card.id, renamable: true, "rename-label": t.rename });
     drawCard(element, card);
     return element;
   });
@@ -275,13 +276,13 @@ function action(label, run) {
 // ---------------------------------------------------------------------------
 // What the person does on the canvas.
 
-canvas.addEventListener("omg-move", ({ detail }) => {
+canvas.addEventListener("story-move", ({ detail }) => {
   record();
   for (const { node: id, x, y } of detail.nodes) state.positions[id] = { x, y };
   saveLayout();
 });
 
-canvas.addEventListener("omg-connect", async ({ detail }) => {
+canvas.addEventListener("story-connect", async ({ detail }) => {
   const { from, to } = detail;
   if (state.board.edges.some((edge) => edge.from === from && edge.to === to)) return;
   const id = uniqueId(`${from}-${to}`, state.board.edges.map((edge) => edge.id));
@@ -292,9 +293,9 @@ canvas.addEventListener("omg-connect", async ({ detail }) => {
   await saveBoard();
 });
 
-canvas.addEventListener("omg-selection-change", () => updateContext());
-canvas.addEventListener("omg-delete", ({ detail }) => void remove(detail));
-canvas.addEventListener("omg-rename", async ({ detail }) => {
+canvas.addEventListener("story-selection-change", () => updateContext());
+canvas.addEventListener("story-delete", ({ detail }) => void remove(detail));
+canvas.addEventListener("story-rename", async ({ detail }) => {
   const card = node(detail.node);
   if (!card) return;
   record();
@@ -302,7 +303,7 @@ canvas.addEventListener("omg-rename", async ({ detail }) => {
   render();
   await saveBoard();
 });
-canvas.addEventListener("omg-exit-rename", async ({ detail }) => {
+canvas.addEventListener("story-exit-rename", async ({ detail }) => {
   const edge = state.board.edges.find((each) => each.id === detail.exit);
   if (!edge) return;
   record();
@@ -311,19 +312,19 @@ canvas.addEventListener("omg-exit-rename", async ({ detail }) => {
   render();
   await saveBoard();
 });
-canvas.addEventListener("omg-undo", () => void step(state.undo, state.redo));
-canvas.addEventListener("omg-redo", () => void step(state.redo, state.undo));
-canvas.addEventListener("omg-duplicate", ({ detail }) => void duplicate(detail.nodes));
-canvas.addEventListener("omg-copy", ({ detail }) => copy(detail.nodes));
-canvas.addEventListener("omg-paste", ({ detail }) => void paste(detail));
+canvas.addEventListener("story-undo", () => void step(state.undo, state.redo));
+canvas.addEventListener("story-redo", () => void step(state.redo, state.undo));
+canvas.addEventListener("story-duplicate", ({ detail }) => void duplicate(detail.nodes));
+canvas.addEventListener("story-copy", ({ detail }) => copy(detail.nodes));
+canvas.addEventListener("story-paste", ({ detail }) => void paste(detail));
 
 // A double-click names the new card's middle; a card's + port names where it goes, and the card it joins.
-canvas.addEventListener("omg-add", ({ detail }) => {
+canvas.addEventListener("story-add", ({ detail }) => {
   if (detail.from || detail.to) return void addCard({ x: detail.x, y: detail.y }, { from: detail.from, to: detail.to });
   void addCard({ x: detail.x - CARD_WIDTH / 2, y: detail.y - 28 });
 });
 
-canvas.addEventListener("omg-context-menu", ({ detail }) => {
+canvas.addEventListener("story-context-menu", ({ detail }) => {
   const remove = { value: "delete", label: t.delete, icon: "delete", shortcut: MOD === "⌘" ? "⌫" : "Del", danger: true, separator: true };
   if (detail.node) {
     if (node(detail.node)?.image) detail.items.push({ value: "remove-picture", label: t.removePicture, icon: "picture" });
@@ -341,7 +342,7 @@ canvas.addEventListener("omg-context-menu", ({ detail }) => {
   }
 });
 
-canvas.addEventListener("omg-menu-select", ({ detail }) => {
+canvas.addEventListener("story-menu-select", ({ detail }) => {
   const { value } = detail;
   if (value === "remove-picture") return removePicture(detail.node);
   if (value === "copy") return copy(canvas.selection.nodes);
