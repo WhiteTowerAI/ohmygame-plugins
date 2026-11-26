@@ -14,10 +14,11 @@ publisher only this organization can use:
   game workflows and creative-tool plugins, packaged here with their original
   IDs and runtime contents. App #823 supplies the migration loader; the app
   cutover will pin the published versions before replacing bundled copies.
-- Interactive Stories: [`interactive-story`](plugins/interactive-story),
-  preinstalled, holds the `blank` template every new Interactive Story starts
-  from: an empty `graph.json` and the Project Style. OhMyGame adds the page
-  that plays the story (requires OhMyGame API 2.38).
+- Interactive stories: [`interactive-story`](plugins/interactive-story)
+  gives the `story` web game template, with the story runtime, and a Skill
+  that adds Scenes from starters and checks the story. The runtime's source
+  is in the plugin's `runtime/`; `npm run build:interactive-story` builds it
+  into the template.
 - Model providers, one plugin each, so a person adds only those they use:
   [`siliconflow-cn`](plugins/siliconflow-cn), [`modelscope`](plugins/modelscope),
   [`command-code`](plugins/command-code) and [`fal`](plugins/fal) (images, video,
