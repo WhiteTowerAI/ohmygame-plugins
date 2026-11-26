@@ -29,6 +29,10 @@ export const TEXT = {
     zoomOut: "Zoom out",
     resetZoom: "Zoom to 100%",
     busy: "The Agent is working; try again when it's done.",
+    importHint: "This project has an interactive story.",
+    importStory: "Show its Scenes on the board",
+    startTag: "Start",
+    endingTag: "Ending",
   },
   "zh-CN": {
     board: "故事看板",
@@ -58,5 +62,9 @@ export const TEXT = {
     zoomOut: "缩小",
     resetZoom: "缩放到 100%",
     busy: "Agent 正在工作，请等它完成后再试。",
+    importHint: "这个项目里有一个互动故事。",
+    importStory: "把它的场景放到看板上",
+    startTag: "开始",
+    endingTag: "结局",
   },
 };

@@ -25,7 +25,11 @@ It is an early Beta. Open it from the panel menu.
   and redo the author's own changes (an Agent's edit starts the history
   again), and ⌘C, ⌘V, ⌘D or an Option-drag copy cards with the arrows
   between them. Picking cards tells the Agent which ones the author is
-  looking at.
+  looking at. In an interactive story (a project with `graph.json`, such as
+  one from the Interactive Story plugin), an empty board offers to show the
+  story's Scenes: a card per Scene, where the old Story canvas placed it, and
+  an arrow per connection. The board then stays a picture of the story; the
+  game still plays from `graph.json`.
 - **Skill** `story-board`, which tells agents the board's format and to keep
   it in step with the game.
 

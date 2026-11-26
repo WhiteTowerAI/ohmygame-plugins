@@ -12,6 +12,9 @@ document.documentElement.lang = host.locale;
 
 const BOARD = "story-board/board.json";
 const LAYOUT = "story-board/layout.json";
+/** An interactive story's flow and where its Scenes sat, which an empty board offers to import. */
+const STORY = "graph.json";
+const STORY_LAYOUT = "editor/layout.json";
 const BOARD_VERSION = 1;
 const GRID = 10;
 const CARD_WIDTH = 440;
@@ -39,6 +42,8 @@ const state = {
   redo: [],
   /** Cards copied with ⌘C, with the arrows between them and where they sat. */
   clipboard: undefined,
+  /** The project's story as a board, while the board is empty and the project has one. */
+  story: undefined,
 };
 const HISTORY_LIMIT = 100;
 const MOD = /mac/i.test(navigator.platform) ? "⌘" : "Ctrl+";
@@ -60,6 +65,9 @@ const canvas = el("story-canvas", {
 });
 const addButton = el("button", { type: "button", slot: "tools", "aria-label": t.add, "data-tooltip": t.add });
 addButton.innerHTML = PLUS;
+const importButton = el("button", { type: "button", class: "import-button" }, t.importStory);
+importButton.addEventListener("click", () => void importStory());
+const importBar = el("div", { class: "import-bar" }, el("span", {}, t.importHint), importButton);
 addButton.addEventListener("click", () => {
   const { x, y, zoom } = canvas.viewport;
   void addCard({ x: (canvas.clientWidth / 2 - x) / zoom - CARD_WIDTH / 2, y: (canvas.clientHeight / 2 - y) / zoom - CARD_HEIGHT / 2 });
@@ -106,9 +114,65 @@ async function reload() {
       state.disk.layout = layoutText;
     } catch { /* A broken layout only loses where cards sit. */ }
   }
+  state.story = state.board.nodes.length ? undefined : await readStory();
   placeNewCards();
   await loadPictures();
   render();
+}
+
+/**
+ * The project's interactive story (graph.json, from the Interactive Story
+ * plugin or a story made before it) as a board: a card per Scene, with its
+ * first picture and its files, and an arrow per connection, named after the
+ * Exit. Scenes sit where the old Story canvas put them, which had cards this
+ * size. Undefined when the project has no story.
+ */
+async function readStory() {
+  let graph;
+  try { graph = JSON.parse(await host.files.text(STORY)); } catch { return undefined; }
+  if (!Array.isArray(graph?.nodes) || !Array.isArray(graph.edges) || !graph.nodes.length) return undefined;
+  let placed = {};
+  try { placed = JSON.parse(await host.files.text(STORY_LAYOUT)).nodes ?? {}; } catch { /* Placed by the arrows instead. */ }
+  const assets = graph.assets && typeof graph.assets === "object" ? graph.assets : {};
+  const scenes = graph.nodes.filter((scene) => scene && typeof scene.id === "string" && scene.id);
+  const nodes = scenes.map((scene) => {
+    const picture = (scene.assets ?? []).map((id) => assets[id]).find((asset) => asset?.type === "image" && asset.source?.kind === "workspace");
+    const exits = Array.isArray(scene.signals) ? scene.signals : [];
+    return {
+      id: scene.id,
+      title: typeof scene.title === "string" && scene.title.trim() ? scene.title : scene.id,
+      ...(scene.id === graph.entryNodeId ? { tag: t.startTag } : !exits.length ? { tag: t.endingTag } : {}),
+      ...(picture ? { image: picture.source.path } : {}),
+      files: Object.values(scene.source ?? {}).filter((file) => typeof file === "string"),
+    };
+  });
+  const edges = graph.edges.filter((edge) => edge?.source && typeof edge.targetNodeId === "string").map((edge) => {
+    const exit = scenes.find((scene) => scene.id === edge.source.nodeId)?.signals?.find((signal) => signal?.id === edge.source.signal);
+    return {
+      id: edge.id,
+      from: edge.source.nodeId,
+      to: edge.targetNodeId,
+      ...(exit?.label || exit?.id ? { label: exit.label || exit.id } : {}),
+      ...(exit?.when ? { when: exit.when } : {}),
+    };
+  });
+  const positions = Object.fromEntries(nodes.filter((card) => validPosition(placed[card.id])).map((card) => [card.id, snap(placed[card.id])]));
+  return { board: normalise({ nodes, edges }), positions };
+}
+
+/** Makes the board from the project's story; the author's undo takes it back. */
+async function importStory() {
+  if (!state.story) return;
+  record();
+  state.board = structuredClone(state.story.board);
+  state.positions = structuredClone(state.story.positions);
+  state.story = undefined;
+  placeNewCards();
+  await loadPictures();
+  render();
+  requestAnimationFrame(() => canvas.fit());
+  await saveBoard();
+  saveLayout();
 }
 
 function missing(cause) {
@@ -233,6 +297,9 @@ function render() {
   for (const [id, element] of cards) if (!node(id)) element.remove();
   for (const element of wanted) if (element.parentElement !== canvas) canvas.append(element);
   if (!addButton.isConnected) canvas.append(addButton);
+  if (state.story && !state.board.nodes.length) {
+    if (!importBar.isConnected) app.append(importBar);
+  } else importBar.remove();
   // A named arrow leaves from its row; one without a name from the card's + port.
   canvas.edges = state.board.edges.map((edge) => ({ id: edge.id, from: edge.from, ...(edge.label ? { exit: edge.id } : {}), to: edge.to }));
 }
@@ -612,5 +679,5 @@ function el(tag, attributes = {}, ...children) {
 
 await reload();
 host.on("files", ({ paths }) => {
-  if (!paths || paths.some((file) => file.startsWith("story-board/") || state.pictures.has(file))) void reload();
+  if (!paths || paths.some((file) => file.startsWith("story-board/") || file === STORY || state.pictures.has(file))) void reload();
 });

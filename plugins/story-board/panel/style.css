@@ -62,3 +62,16 @@ story-canvas > button[slot="tools"]::after {
   visibility: hidden; opacity: 0; content: attr(data-tooltip);
 }
 story-canvas > button[slot="tools"]:is(:hover, :focus-visible)::after { visibility: visible; opacity: 1; }
+
+/* An empty board in a project with an interactive story offers to show its Scenes. */
+#app { position: relative; }
+.import-bar {
+  position: absolute; top: var(--space-4); left: 50%; z-index: 2; display: flex; align-items: center; gap: var(--space-3);
+  padding: 6px 6px 6px 14px; border: 1px solid var(--color-border); border-radius: 999px;
+  background: var(--color-surface-raised); box-shadow: var(--shadow-float);
+  color: var(--color-text-secondary); font-size: 12px; transform: translateX(-50%); white-space: nowrap;
+}
+.import-button {
+  padding: 4px 12px; border: 0; border-radius: 999px; background: var(--color-accent);
+  color: var(--color-on-accent); cursor: pointer; font: inherit; font-weight: 600;
+}

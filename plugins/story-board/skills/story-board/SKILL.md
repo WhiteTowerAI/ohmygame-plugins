@@ -61,3 +61,13 @@ can move cards, draw arrows and edit cards there.
 - Removing a card removes the arrows from and to it.
 - If `story-board/board.json` doesn't exist and the author asks for a board,
   create it with `"version": 1`.
+
+## Interactive stories
+
+A project with `graph.json` and `story/` is an interactive story, whose
+`graph.json` is the game's real flow. While its board is empty, the panel
+offers to show the story's Scenes on it: a card per Scene, with its files,
+and an arrow per connection, named after the Exit. After that the board is
+a picture of the story like any other: when the author changes the flow on
+it and asks for the game to follow, change `graph.json` and the Scenes to
+match, and keep the cards' `files` pointing at each Scene's files.
