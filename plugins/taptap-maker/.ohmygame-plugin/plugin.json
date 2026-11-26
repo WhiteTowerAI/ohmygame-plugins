@@ -2,7 +2,7 @@
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/taptap-maker",
   "beta": true,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "engines": { "ohmygame-api": "^2.3.0" },
   "displayName": "%displayName%",
   "description": "%description%",
