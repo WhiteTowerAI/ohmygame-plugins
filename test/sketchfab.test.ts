@@ -146,8 +146,10 @@ describe("sketchfab", () => {
     const signedOut = await activate("sketchfab");
     const none = await signedOut.commands.settingsStatus!({ locale: "en" });
     assert.match(none.message, /Not signed in\. Browsing and previews work without an account/);
-    // Without OhMyGame's client ID, only the token is offered.
-    assert.deepEqual(none.actions, ["open-token-page"]);
+    // OhMyGame's own application offers sign-in; without a client ID, only the token is offered.
+    assert.deepEqual(none.actions, ["sign-in", "open-token-page"]);
+    const noClient = await activate("sketchfab", {}, { clientId: "" });
+    assert.deepEqual((await noClient.commands.settingsStatus!({ locale: "en" })).actions, ["open-token-page"]);
     const page = await signedOut.commands.openTokenPage!({ locale: "zh-CN" });
     assert.equal(page.link.url, "https://sketchfab.com/settings/password");
     assert.equal(page.link.title, "Sketchfab API 令牌");
