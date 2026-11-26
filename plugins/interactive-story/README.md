@@ -16,9 +16,6 @@ plays `graph.json`'s Scenes from their own files. It gives:
   scripts: `add-scene.mjs` adds a Scene from a starter, and `check.mjs`
   checks the story, strictly with `--publish`.
 
-The Story Board plugin can show a story's flow from its `graph.json`; this
-plugin doesn't need it.
-
 ## The runtime
 
 The runtime's TypeScript source is in `runtime/`, outside the package. Build

@@ -66,10 +66,3 @@ and fix what you introduced. Before publishing, run it with `--publish`: every
 Exit other than navigation ones must be connected. Then play the story in the
 Game panel, or with `game_use`, from the Start; add `?scene=<id>` to the
 page's address to start at one Scene.
-
-## The flow on the Story Board
-
-When the Story Board plugin is on, the board in `story-board/board.json` can
-show this story's flow for the author. It is a picture, not the game: when
-the author changes the flow on the board and asks for it, change
-`graph.json` and the Scenes to match, then run the check.
