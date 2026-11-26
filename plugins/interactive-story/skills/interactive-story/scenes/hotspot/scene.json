@@ -1,0 +1,15 @@
+{
+  "label": "Hotspot",
+  "summary": "Spots on a picture to click",
+  "brief": "Pulsing spots over the background picture, each emitting its own Signal; a spot's name shows on hover. Place one spot per thing the player can click, and name each Signal after it. To require several finds before moving on, record them in a declared State key and mark found spots with `is-found`.",
+  "signals": [
+    {
+      "id": "door",
+      "label": "Door"
+    },
+    {
+      "id": "window",
+      "label": "Window"
+    }
+  ]
+}

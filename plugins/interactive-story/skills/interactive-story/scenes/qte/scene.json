@@ -1,0 +1,15 @@
+{
+  "label": "QTE",
+  "summary": "Press in time, or miss",
+  "brief": "A timed prompt: a ring runs out around the key, pressing the key or clicking it in time emits `success`, and running out of time emits `fail`. Set the key, the time limit, and the prompt for this moment, and rename the Signals to what happens.",
+  "signals": [
+    {
+      "id": "success",
+      "label": "Made it"
+    },
+    {
+      "id": "fail",
+      "label": "Missed"
+    }
+  ]
+}

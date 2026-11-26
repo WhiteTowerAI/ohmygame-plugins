@@ -1,0 +1,6 @@
+{
+  "label": "Story map",
+  "summary": "The branches the player has found so far",
+  "brief": "Shows the story as a map: the Scenes the player has seen, the locked ones a step past them, and the endings found, with a line for each way taken. It lays the story out from graph.json in `layout.js` and reads what the player has seen with `context.story.seen()`. Reach it from a menu, a pause button, or an ending through an Exit with Allow Back; Back and Esc return there. In `node.js`, list the IDs of Scenes that are not steps in the story, such as menus and settings, in `OFF_MAP`, give players another name than a title in `LABELS`, and change `isEnding` where the guess from Exits is wrong. Set `SHOW_ALL` to show every Scene, locked.",
+  "signals": []
+}

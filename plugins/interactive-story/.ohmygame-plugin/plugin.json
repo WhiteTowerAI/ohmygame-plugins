@@ -1,22 +1,25 @@
 {
   "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
   "id": "ohmygame/interactive-story",
+  "beta": true,
   "version": "0.1.0",
-  "engines": { "ohmygame-api": "^2.38.0" },
+  "engines": { "ohmygame-api": "^2.36.0" },
   "displayName": "%displayName%",
   "description": "%description%",
   "longDescription": "%longDescription%",
   "icon": "./assets/icon.svg",
   "categories": ["templates"],
   "keywords": ["%keyword.story%", "visual-novel", "interactive-film"],
+  "appliesTo": ["web-game"],
   "contributes": {
+    "skills": "./skills/",
     "templates": [
       {
-        "id": "blank",
-        "title": "%template.blank.title%",
-        "description": "%template.blank.description%",
-        "projectType": "interactive-story",
-        "folder": "./templates/blank/"
+        "id": "story",
+        "title": "%template.story.title%",
+        "description": "%template.story.description%",
+        "projectType": "web-game",
+        "folder": "./templates/story/"
       }
     ]
   }

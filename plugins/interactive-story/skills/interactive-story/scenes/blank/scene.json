@@ -1,0 +1,11 @@
+{
+  "label": "Blank",
+  "summary": "A video or an image, then next",
+  "brief": "A full-screen background that emits `next` when its video ends or the player clicks. The author sets the background from the editor. Build the screen over the background (a `.subtitle` for a line of dialogue, for example), and rename `next` or add Signals for each outcome the player can reach.",
+  "signals": [
+    {
+      "id": "next",
+      "label": "Next"
+    }
+  ]
+}

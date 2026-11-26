@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "title": "Untitled story",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "entryNodeId": "opening",
+  "initialState": {},
+  "variables": {},
+  "assets": {},
+  "nodes": [
+    {
+      "id": "opening",
+      "title": "Opening",
+      "source": {
+        "html": "nodes/opening/index.html",
+        "css": "nodes/opening/style.css",
+        "javascript": "nodes/opening/node.js"
+      },
+      "assets": [],
+      "signals": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ]
+    }
+  ],
+  "edges": []
+}

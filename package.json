@@ -9,13 +9,14 @@
   },
   "scripts": {
     "build": "tsx src/build-index.ts",
-    "test": "tsx --conditions=ohmygame-source --test test/*.test.ts && npm run test:taptap",
-    "typecheck": "tsc --noEmit",
+    "test": "tsx --conditions=ohmygame-source --test test/*.test.ts && node scripts/build-interactive-story.mjs --check && npm run test:taptap",
+    "typecheck": "tsc --noEmit && tsc -p plugins/interactive-story/runtime",
     "build:feishu": "node scripts/build-feishu.mjs",
     "pretest": "npm run build:feishu && npm run build:computer-use && npm run build:game-tests",
     "build:computer-use": "node scripts/build-computer-use.mjs",
     "build:game-tests": "node scripts/build-game-tests.mjs",
-    "test:taptap": "vitest run"
+    "test:taptap": "vitest run",
+    "build:interactive-story": "node scripts/build-interactive-story.mjs"
   },
   "dependencies": {
     "tar": "7.5.22",

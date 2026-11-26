@@ -1,0 +1,6 @@
+{
+  "label": "Ending",
+  "summary": "The end, with Play again",
+  "brief": "Ending title with a stamp, closing lines, and a restart action. Endings need no Signals because they use session controls; add one if this ending continues into an epilogue.",
+  "signals": []
+}

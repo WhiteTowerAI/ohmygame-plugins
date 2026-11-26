@@ -1,23 +1,37 @@
 # Interactive Story
 
-What a new Interactive Story starts from.
+Make visual novels and interactive films as web games.
 
-Official OhMyGame plugin `ohmygame/interactive-story`, preinstalled. It gives
-one [project template](https://github.com/WhiteTowerAI/ohmygame/blob/dev/docs/plugins.md#project-templates),
-`blank`: the story's own files a new Interactive Story starts with.
+Official OhMyGame plugin `ohmygame/interactive-story`. A story made with it is
+an ordinary web game: `index.html` loads the story runtime in `story/`, which
+plays `graph.json`'s Scenes from their own files. It gives:
 
-- `templates/blank/graph.json`: an empty story, 1280 × 720, with no Scenes.
-  OhMyGame titles it after the project.
-- `templates/blank/editor/layout.json`: the Story canvas's layout.
-- `templates/blank/shared/style/`: the Project Style every Scene imports.
+- **A [project template](https://github.com/WhiteTowerAI/ohmygame/blob/dev/docs/plugins.md#project-templates)**,
+  `story` (`templates/story/`): a story that plays from its first Scene, with
+  the runtime, the Project Style in `shared/style/`, `AGENTS.md`, `README.md`
+  and `schemas/`. It's copied once; updating the plugin only changes stories
+  made afterwards, and each story's runtime is its own to change.
+- **A Skill**, `interactive-story`, with Scene starters in `scenes/` (main
+  menu, choice, QTE, hotspot, ending, story map, visual novel) and two
+  scripts: `add-scene.mjs` adds a Scene from a starter, and `check.mjs`
+  checks the story, strictly with `--publish`.
 
-OhMyGame adds the rest when it copies the template: `index.html`, the runtime
-under `story/`, `AGENTS.md`, `README.md` and `schemas/`. The app doesn't list
-`blank` as a template, since choosing the Interactive Story type starts from
-it. Without this plugin, installed and on, no new story can start; existing
-stories still open.
+The Story Board plugin can show a story's flow from its `graph.json`; this
+plugin doesn't need it.
 
-The template is copied once: updating the plugin only changes stories made
-afterwards. Keep `shared/style/` in step with the Project Style the app's
-Scene Templates import (`src/daemon/assets/story-templates/project/` in the
-app) until those Templates move here too.
+## The runtime
+
+The runtime's TypeScript source is in `runtime/`, outside the package. Build
+it into the template after changing it:
+
+```sh
+npm run build:interactive-story
+```
+
+Each module is one source file with its types removed and its comments kept,
+so the Agent can read and change a story's copy. The tests fail when the
+template's copy doesn't match the source, and `npm run typecheck` checks the
+source.
+
+The starters' pictures are stills from the Last Bus example, made by the
+OhMyGame team and licensed under Apache 2.0 (`NOTICE.txt` beside each).

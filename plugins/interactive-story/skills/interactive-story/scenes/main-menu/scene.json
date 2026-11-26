@@ -1,0 +1,16 @@
+{
+  "label": "Main menu",
+  "summary": "A title, the game's entries, Load, and Settings",
+  "brief": "Title, tagline, and entry list over the background, which the author sets from the editor. Rename the `start` Signal and add one Signal per entry. The entry marked `data-new-game` calls `context.session.reset()` before its Signal, so a new game begins with the starting Variables; keep that on the entry that starts the game. An entry whose Signal is not connected shows disabled, such as Story map before the project has a Story map Scene; remove the entry and its Signal when the author does not want it. Load and Settings open over the menu from this Scene's own code, with no Signal: Load lists the games saved in slots and continues the one picked, and Settings has a slider for each preference, the music and sound volumes the Runtime reads. Add a slider for another preference the game reads, such as a Visual Novel's `textSpeed` and `autoWait`, and remove Load or Settings when the author does not want them.",
+  "signals": [
+    {
+      "id": "start",
+      "label": "Start"
+    },
+    {
+      "id": "story-map",
+      "label": "Story map",
+      "role": "navigation"
+    }
+  ]
+}

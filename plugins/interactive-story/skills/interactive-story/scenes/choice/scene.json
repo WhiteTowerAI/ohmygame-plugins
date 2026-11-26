@@ -1,0 +1,15 @@
+{
+  "label": "Choice",
+  "summary": "Answers that lead different ways",
+  "brief": "A line of dialogue with its speaker and answer bars that may read State, over the background. Rewrite the line and the answers for this beat, rename the Signals to the outcomes they describe, and gate an answer on State when the story needs it. Add a time limit only when asked, with the Project Style's `.timer`.",
+  "signals": [
+    {
+      "id": "option-a",
+      "label": "Option A"
+    },
+    {
+      "id": "option-b",
+      "label": "Option B"
+    }
+  ]
+}

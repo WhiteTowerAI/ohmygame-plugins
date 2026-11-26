@@ -45,11 +45,16 @@ describe("official plugins", async () => {
         }
       }
       // A project template is copied into projects whole, so npm must keep every file of it.
+      if (TEMPLATES[folder]) {
+        const packed = new Set(files);
+        for (const file of await runtimeFiles(path.join(dir, TEMPLATES[folder]))) {
+          assert.ok(packed.has(`${TEMPLATES[folder]}/${file}`), `${folder}: npm omitted ${TEMPLATES[folder]}/${file}`);
+        }
+        // The story template's runtime is built from source the package leaves out.
+        if (folder === "interactive-story") assert.ok(!files.some((file) => file.startsWith("runtime/")));
+      }
       if (folder === "claude-code-game-studios") {
         const packed = new Set(files);
-        for (const file of await runtimeFiles(path.join(dir, "template"))) {
-          assert.ok(packed.has(`template/${file}`), `${folder}: npm omitted template/${file}`);
-        }
         assert.ok(packed.has("template/gitignore"));
         // A script the template runs stays executable once the app unpacks the release.
         const scratch = await mkdtemp(path.join(tmpdir(), "ohmygame-official-"));
@@ -71,9 +76,15 @@ describe("official plugins", async () => {
   }
 });
 
+/** The folders of official plugins' project templates. */
+const TEMPLATES: Record<string, string> = {
+  "claude-code-game-studios": "template",
+  "interactive-story": "templates/story",
+};
+
 const PREINSTALLED = new Set([
   "aseprite", "blender", "cocos-creator", "douyin-minigame", "game-studio",
-  "godot", "interactive-story", "taptap", "taptap-maker", "tiled", "unity", "unreal-engine",
+  "godot", "taptap", "taptap-maker", "tiled", "unity", "unreal-engine",
   "web-game-studio", "wechat-minigame",
 ]);
 

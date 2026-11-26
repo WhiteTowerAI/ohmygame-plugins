@@ -1,8 +1,8 @@
 {
   "displayName": "Interactive Story",
-  "description": "What a new Interactive Story starts from.",
-  "longDescription": "Interactive Stories are games told in Scenes joined by the player's choices, such as visual novels and interactive films. This plugin holds the files a new one starts from: an empty story and the Project Style its Scenes share. OhMyGame adds the page that plays the story. Removing it doesn't change your stories, but no new one can start until it's back.",
+  "description": "Make visual novels and interactive films as web games.",
+  "longDescription": "Interactive stories are games told in Scenes joined by the player's choices, such as visual novels and interactive films. This plugin gives a template a new story starts from, with the runtime that plays its Scenes, saves and Variables, and a Skill that adds Scenes from starters (main menu, choice, QTE, hotspot, ending, story map, visual novel) and checks the story. Stories made from it are ordinary web games: they keep playing if you remove the plugin.",
   "keyword.story": "story",
-  "template.blank.title": "Blank story",
-  "template.blank.description": "An empty story with the Project Style, ready for its first Scene."
+  "template.story.title": "Interactive Story",
+  "template.story.description": "A story that plays from its first Scene, with saves, Variables and the Project Style."
 }

@@ -1,0 +1,14 @@
+/* Last Bus template artwork. Setting a background in the editor replaces it. */
+[data-template-artwork="lastbus-store-window"] {
+  --letterbox: 0cqw;
+}
+
+[data-template-artwork="lastbus-store-window"] .backdrop[data-media="backdrop"]:not([data-asset]) {
+  background: linear-gradient(rgb(0 0 0 / 0.18), rgb(0 0 0 / 0.35)),
+    url("./lastbus/store-window.webp") center / cover no-repeat;
+}
+
+/* Hide the former placeholder figure or window, including in existing projects. */
+[data-template-artwork="lastbus-store-window"] .backdrop[data-media="backdrop"]:not([data-asset])::before {
+  display: none;
+}
