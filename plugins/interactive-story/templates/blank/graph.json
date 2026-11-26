@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "title": "Untitled story",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "entryNodeId": "start",
+  "initialState": {},
+  "assets": {},
+  "nodes": [],
+  "edges": []
+}

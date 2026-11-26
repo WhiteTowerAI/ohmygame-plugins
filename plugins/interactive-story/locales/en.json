@@ -1,0 +1,8 @@
+{
+  "displayName": "Interactive Story",
+  "description": "What a new Interactive Story starts from.",
+  "longDescription": "Interactive Stories are games told in Scenes joined by the player's choices, such as visual novels and interactive films. This plugin holds the files a new one starts from: an empty story and the Project Style its Scenes share. OhMyGame adds the page that plays the story. Removing it doesn't change your stories, but no new one can start until it's back.",
+  "keyword.story": "story",
+  "template.blank.title": "Blank story",
+  "template.blank.description": "An empty story with the Project Style, ready for its first Scene."
+}

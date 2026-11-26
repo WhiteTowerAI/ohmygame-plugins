@@ -1,0 +1,27 @@
+{
+  "name": "@ohmygame/interactive-story",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "What a new Interactive Story starts from.",
+  "keywords": [
+    "ohmygame-plugin",
+    "story",
+    "visual-novel"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/interactive-story"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "templates",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

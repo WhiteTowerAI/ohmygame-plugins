@@ -1,0 +1,8 @@
+{
+  "displayName": "互动故事",
+  "description": "新建互动故事时用到的初始文件。",
+  "longDescription": "互动故事由一个个场景组成，场景之间按玩家的选择连接，比如视觉小说和互动电影。这个插件提供新建互动故事时用到的文件：一个空故事，以及所有场景共用的项目样式。播放故事的页面由 OhMyGame 添加。移除它不会影响已有的故事，但在重新装上之前无法新建故事。",
+  "keyword.story": "故事",
+  "template.blank.title": "空白故事",
+  "template.blank.description": "一个带项目样式的空故事，等你添加第一个场景。"
+}
