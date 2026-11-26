@@ -1,0 +1,29 @@
+{
+  "name": "@ohmygame/story-board",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Plan a game's story, levels or flow as cards joined by arrows on a canvas.",
+  "keywords": [
+    "ohmygame-plugin",
+    "story",
+    "level-design",
+    "flowchart"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/story-board"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "locales",
+    "panel",
+    "skills",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

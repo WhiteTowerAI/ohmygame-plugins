@@ -1,0 +1,33 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/story-board",
+  "version": "0.1.0",
+  "engines": { "ohmygame-api": "^2.38.0" },
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "longDescription": "%longDescription%",
+  "examples": ["%example.1%", "%example.2%", "%example.3%"],
+  "beta": true,
+  "icon": "./assets/icon.svg",
+  "categories": ["design"],
+  "keywords": ["%keyword.story%", "%keyword.level%", "flowchart"],
+  "ui": { "major": 1 },
+  "capabilities": {
+    "project.files": "write",
+    "composer": true
+  },
+  "projectFiles": ["./story-board/layout.json"],
+  "contributes": {
+    "skills": "./skills/",
+    "panels": [
+      {
+        "id": "board",
+        "title": "%panel.title%",
+        "icon": "./assets/icon.svg",
+        "area": "center",
+        "entry": "./panel/index.html",
+        "opens": "onRequest"
+      }
+    ]
+  }
+}

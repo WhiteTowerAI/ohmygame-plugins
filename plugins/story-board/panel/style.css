@@ -1,0 +1,64 @@
+/* The board fills the panel; <omg-canvas> draws the canvas itself, so this is
+   only what goes on its cards, the empty state and the dialog. */
+
+/* The canvas reaches every edge of the panel: no gutter kept for a scroll bar it never has. */
+html { scrollbar-gutter: auto; }
+html, body, #app { height: 100%; }
+body { padding: 0; overflow: hidden; }
+omg-canvas { height: 100%; }
+
+.empty { display: grid; height: 100%; place-items: center; padding: var(--space-6); }
+
+/* What the card holds, in the colours the app's canvas nodes mark text and pictures with. */
+.card-icon.is-text { color: var(--gray-9); }
+.card-icon.is-picture { color: var(--hue-image); }
+
+/* As the app's Scene cards show their kind. */
+.badges { display: flex; min-width: 0; align-items: center; gap: 4px; }
+.badge {
+  display: inline-flex; max-width: 96px; align-items: center; overflow: hidden; gap: 3px;
+  padding: 1px 6px; border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent); border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface-raised) 70%, transparent);
+  color: var(--color-text-secondary); font-size: 9px; font-weight: 600; line-height: 14px;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* A card without a picture shows its summary, as a Scene card shows its title. */
+.summary {
+  display: -webkit-box; max-width: 72%; margin: 0; overflow: hidden;
+  color: var(--color-text-secondary); font-size: 12px; line-height: 1.5; text-align: center;
+  -webkit-box-orient: vertical; -webkit-line-clamp: 4;
+}
+
+/* Writing a card's text where it shows. */
+.summary-input {
+  width: 72%; max-height: 100%; padding: 6px 8px; resize: none;
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); outline: 0;
+  background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 12px; line-height: 1.5; text-align: center;
+}
+
+/* Adding a picture or text: in the middle of an empty card, and at the foot of
+   one with something on it while it's hovered or picked. */
+.card-actions {
+  position: absolute; left: 0; right: 0; bottom: 10px; display: flex; max-width: none; justify-content: center; gap: 6px;
+  padding: 0; opacity: 0; transition: opacity var(--duration-fast, 120ms);
+}
+.card-actions.is-empty { position: static; opacity: 1; }
+omg-canvas-node:is(:hover, [selected]) .card-actions { opacity: 1; }
+.card-action {
+  height: 24px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  background: var(--color-surface); color: var(--color-text-secondary); font: inherit; font-size: 11px; cursor: pointer;
+}
+.card-action:hover { border-color: var(--color-border-strong); color: var(--color-text); }
+.card-action:focus-visible { outline: 2px solid var(--color-ink); outline-offset: 1px; }
+
+/* The Add button sits in the canvas's tool bar, with a hint like its own buttons'. */
+omg-canvas > button[slot="tools"] { position: relative; }
+omg-canvas > button[slot="tools"]::after {
+  position: absolute; z-index: 100; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  width: max-content; padding: 6px 8px; border: 1px solid var(--color-border); border-radius: 5px;
+  background: var(--color-surface-raised); color: var(--color-text); box-shadow: var(--shadow-float);
+  font-size: 11px; line-height: 1.4; white-space: nowrap; pointer-events: none;
+  visibility: hidden; opacity: 0; content: attr(data-tooltip);
+}
+omg-canvas > button[slot="tools"]:is(:hover, :focus-visible)::after { visibility: visible; opacity: 1; }

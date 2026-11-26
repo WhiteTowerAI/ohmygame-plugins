@@ -1,0 +1,11 @@
+{
+  "displayName": "Story Board",
+  "description": "Plan a game's story, levels or flow as cards joined by arrows on a canvas.",
+  "longDescription": "A canvas for the shape of a game: chapters, scenes, levels, quests or screens as cards, joined by arrows for where each leads. Drag cards into place with grid snapping and alignment guides, and draw an arrow from one card to another. The board is a design document kept in story-board/ in the project; it runs nothing. Ask the Agent to draft a board from your idea, or to build the game from one.",
+  "example.1": "Draft a story board for a five-level platformer with a secret level",
+  "example.2": "Turn this board into the level order the game loads",
+  "example.3": "Add a branch after the forest: a cave route and a river route that meet again",
+  "keyword.story": "story",
+  "keyword.level": "level design",
+  "panel.title": "Story Board"
+}
