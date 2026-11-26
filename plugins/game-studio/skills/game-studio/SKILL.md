@@ -33,6 +33,6 @@ When a required generation tool is unavailable or fails, use a coherent substitu
 
 - For engine choice, state ownership, input, saving, or performance boundaries, read [Game Foundations](../game-foundations/SKILL.md).
 - For playtest scope, runtime evidence, regression paths, or visual QA, read [Game QA](../game-qa/SKILL.md).
-- Use relevant installed engine Skills or Connections when available. Follow the workspace's own authoring contract, including Playable Nodes rules for Interactive Story. These optional enhancements do not replace the engine-independent workflow.
+- Use relevant installed engine Skills or Connections when available. Follow the workspace's own authoring contract, such as its `AGENTS.md`. These optional enhancements do not replace the engine-independent workflow.
 
 For a single-domain request, use the relevant specialist directly. Keep one plan and one definition of done for mixed work; reconcile new requests with unfinished commitments. Preserve meaningful player choices when automating repetition. Verification must match available tools; never claim gameplay or visual checks that were not performed.
