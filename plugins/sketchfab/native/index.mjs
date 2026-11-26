@@ -20,10 +20,9 @@ export const TOKEN_PAGE = `${SITE}/settings/password`;
 /**
  * OhMyGame's Sketchfab OAuth application: authorization code, registered as a
  * public client (no secret, as Sketchfab sets up desktop apps) with the
- * redirect below. Sign-in is offered only once it is set;
- * `OHMYGAME_SKETCHFAB_CLIENT_ID` sets one for development.
+ * redirect below. A public client's ID isn't a secret.
  */
-export const CLIENT_ID = "";
+export const CLIENT_ID = "UzF21eLjwbKLCben4gh6PnBGdn0RcBhMrC3seoZr";
 // Sketchfab takes only redirects it has registered, so the port is fixed.
 export const REDIRECT_PORT = 52817;
 export const REDIRECT_PATH = "/sketchfab/callback";
@@ -367,7 +366,7 @@ async function requestToken(fields, signal) {
 export function sketchfab({
   dataFolder,
   apiToken,
-  clientId = process.env.OHMYGAME_SKETCHFAB_CLIENT_ID?.trim() || CLIENT_ID,
+  clientId = CLIENT_ID,
   now = () => Date.now(),
 }) {
   let token = typeof apiToken === "string" ? apiToken.trim() : "";

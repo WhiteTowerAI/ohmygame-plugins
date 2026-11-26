@@ -63,11 +63,9 @@ The plugin's Settings tab shows who is signed in and how:
 
   Sketchfab sets up desktop apps as public clients of the authorization-code
   grant, without a client secret; it doesn't offer the implicit grant, PKCE or
-  custom URL schemes. Sign-in needs OhMyGame's application (`CLIENT_ID` in
-  `native/index.mjs`, with the redirect URI above), which Sketchfab registers
-  on request through its Help Center (Developers & API › API and OAuth).
-  Until it is set, the button isn't offered. For development, start OhMyGame
-  with `OHMYGAME_SKETCHFAB_CLIENT_ID` set to an application's client ID.
+  custom URL schemes. Sign-in uses OhMyGame's application (`CLIENT_ID` in
+  `native/index.mjs`, registered with the redirect URI above); as a public
+  client's ID it isn't a secret.
 - **Sketchfab API token**: paste the token from Sketchfab's
   [Settings › Password & API](https://sketchfab.com/settings/password)
   (**Get API token** opens it). It is saved as a secret on this computer and
@@ -105,7 +103,7 @@ large downloads time.
 - Settings: **Get API token** opens Sketchfab's page; paste the token, and the
   status says whose it is. Add a model and check it opens as GLB with its
   author, license and page. A wrong token says Sketchfab didn't accept it.
-- With `OHMYGAME_SKETCHFAB_CLIENT_ID` set: **Sign in with Sketchfab**, allow,
+- **Sign in with Sketchfab**, allow,
   and the browser says you're signed in and the status says who; **Cancel
   sign-in** stops waiting; **Sign out** returns to signed out. Denying on
   Sketchfab's page says you didn't allow OhMyGame.
