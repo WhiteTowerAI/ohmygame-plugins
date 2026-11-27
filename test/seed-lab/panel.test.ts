@@ -116,6 +116,7 @@ describe("the Seed lab panel page", () => {
     bridge.release!();
     await vi.waitFor(() => expect(root.querySelector(".tiles")).not.toBeNull());
     const tiles = [...root.querySelectorAll(".tile")].map((tile) => [tile.querySelector(".tile-label")!.textContent, tile.querySelector(".tile-value")!.textContent]);
+    expect(root.querySelector(".tile .muted")?.textContent).toBe("2 of 3 that answered");
     expect(tiles).toEqual([["Solvable", "66.7%"], ["Seeds", "4"], ["Unsolvable", "1"], ["Errors", "1"], ["Timed out", "0"]]);
     // One chart per metric, one bar per bin, each named for screen readers.
     const bars = [...root.querySelectorAll('[data-metric="moves"] .slot')].map((slot) => slot.getAttribute("aria-label"));

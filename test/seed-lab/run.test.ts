@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -39,6 +39,35 @@ describe("bundling the simulation module", () => {
     await expect(bundle(fixture("broken"), "sim/index.ts", data)).rejects.toThrow(/sim\/index\.ts:3:/);
     await expect(bundle(fixture("escape"), "sim/index.ts", data)).rejects.toThrow(/outside the project/);
   }, 30_000);
+
+  it("imports packages that are ES modules only, and their subpaths", async () => {
+    const sim = await import((await bundle(fixture("with-package"), "sim/index.ts", data)).url);
+    expect(sim.generate(3)).toEqual({ value: 2 });
+  }, 30_000);
+
+  it("refuses a symlink that leads out of the project", async () => {
+    const project = path.join(data, "project");
+    await mkdir(path.join(project, "sim"), { recursive: true });
+    await writeFile(path.join(data, "secret.ts"), "export const secret = 1;\n");
+    await symlink(path.join(data, "secret.ts"), path.join(project, "sim", "secret.ts"));
+    await writeFile(path.join(project, "sim", "index.ts"), 'import { secret } from "./secret";\nexport const generate = () => secret;\nexport const evaluate = () => ({ solvable: true });\n');
+    await expect(bundle(project, "sim/index.ts", path.join(data, "out"))).rejects.toThrow(/outside the project/);
+  }, 30_000);
+
+  it("doesn't start for a cancelled call, and keeps only the newest bundles", async () => {
+    const cancelled = new AbortController();
+    cancelled.abort(new Error("cancelled"));
+    await expect(bundle(ARROWS, "sim/index.ts", data, cancelled.signal)).rejects.toThrow("cancelled");
+    const old = new Date(Date.now() - 60_000);
+    for (let i = 0; i < 7; i += 1) {
+      await writeFile(path.join(data, `old-${i}.mjs`), "");
+      await utimes(path.join(data, `old-${i}.mjs`), old, old);
+    }
+    const { file } = await bundle(ARROWS, "sim/index.ts", data);
+    const left = (await readdir(data)).filter((name) => name.endsWith(".mjs"));
+    expect(left).toHaveLength(5);
+    expect(left).toContain(path.basename(file));
+  }, 30_000);
 });
 
 describe("running seeds", () => {
@@ -55,17 +84,23 @@ describe("running seeds", () => {
     const { url } = await bundle(ARROWS, "sim/index.ts", data);
     const { results } = await runSeeds({ bundle: url, from: 0, count: 30, threads: 2, timeoutMs: 300, params: { hangSeed: 4, throwSeed: 9 } });
     expect(results[4]).toMatchObject({ seed: 4, timeout: true });
-    expect(results[9]).toMatchObject({ seed: 9, error: "RangeError: seed 9 is broken on purpose" });
+    // The error says where, in the project's own file, through the source map.
+    expect(results[9].error).toMatch(/^RangeError: seed 9 is broken on purpose \(sim\/index\.ts:\d+\)$/);
     expect(results.filter((result) => typeof result.solvable === "boolean")).toHaveLength(28);
   }, 30_000);
 
-  it("stops when asked", async () => {
+  it("stops when asked, and says nothing more afterwards", async () => {
     const { url } = await bundle(ARROWS, "sim/index.ts", data);
     const controller = new AbortController();
-    const running = runSeeds({ bundle: url, from: 0, count: 20, threads: 1, timeoutMs: 10_000, params: { hangSeed: 0 }, signal: controller.signal });
+    let after = 0;
+    const running = runSeeds({ bundle: url, from: 0, count: 20, threads: 1, timeoutMs: 600, params: { hangSeed: 0 }, signal: controller.signal, onProgress: () => controller.signal.aborted && (after += 1) });
     setTimeout(() => controller.abort(new Error("cancelled")), 200);
     await expect(running).rejects.toThrow("cancelled");
+    // The stuck seed's time limit would have passed by now.
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    expect(after).toBe(0);
   }, 30_000);
+
 
   it("fails the run at once when the module doesn't export generate and evaluate", async () => {
     const { url } = await bundle(fixture("no-exports"), "sim/index.ts", data);

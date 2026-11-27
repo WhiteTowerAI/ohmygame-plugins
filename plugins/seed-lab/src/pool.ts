@@ -37,6 +37,8 @@ export async function runSeeds(options: PoolOptions): Promise<{ results: SeedRes
   let next = 0;
   let done = 0;
   const live = new Set<Worker>();
+  /** Each live thread's time limit for the seed it has, cleared when the run ends. */
+  const timers = new Set<NodeJS.Timeout>();
 
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -44,6 +46,8 @@ export async function runSeeds(options: PoolOptions): Promise<{ results: SeedRes
       if (settled) return;
       settled = true;
       signal?.removeEventListener("abort", abort);
+      for (const timer of timers) clearTimeout(timer);
+      timers.clear();
       for (const worker of live) void worker.terminate();
       live.clear();
       if (error) reject(error);
@@ -69,6 +73,10 @@ export async function runSeeds(options: PoolOptions): Promise<{ results: SeedRes
       /** A seed is out with this thread. */
       let busy = false;
       let timer: NodeJS.Timeout | undefined;
+      const stopTimer = () => {
+        clearTimeout(timer);
+        if (timer) timers.delete(timer);
+      };
       const take = () => {
         if (settled) return;
         if (next >= count) {
@@ -80,19 +88,21 @@ export async function runSeeds(options: PoolOptions): Promise<{ results: SeedRes
         next += 1;
         timer = setTimeout(() => {
           // Stuck: record it, end this thread, and carry on with a new one.
+          stopTimer();
           live.delete(worker);
           worker.removeAllListeners();
           void worker.terminate();
           record(index, { seed: from + index, timeout: true, ms: timeoutMs });
           start();
         }, timeoutMs);
+        timers.add(timer);
         busy = true;
         worker.postMessage({ seed: from + index });
       };
       worker.on("message", (message: SeedResult & { ready?: boolean; fatal?: string }) => {
         if (message.fatal !== undefined) return finish(new Error(`The simulation module couldn't load: ${message.fatal}`));
         if (message.ready) return take();
-        clearTimeout(timer);
+        stopTimer();
         busy = false;
         record(index, message);
         take();
@@ -100,10 +110,13 @@ export async function runSeeds(options: PoolOptions): Promise<{ results: SeedRes
       worker.on("error", (error) => {
         live.delete(worker);
         // Before the module loaded, every thread would fail the same way.
-        if (index < 0 || !busy) return finish(new Error(`A seed thread failed: ${error.message}`));
-        clearTimeout(timer);
+        if (index < 0) return finish(new Error(`A seed thread failed: ${error.message}`));
+        stopTimer();
+        // A crash with a seed out is recorded as that seed's error, even if a
+        // timer an earlier seed left behind caused it. A thread with no seed
+        // out has already been ended, so a crash without one can't arrive.
+        if (busy) record(index, { seed: from + index, error: `The thread crashed: ${error.message}` });
         busy = false;
-        record(index, { seed: from + index, error: `The thread crashed: ${error.message}` });
         start();
       });
       worker.on("exit", () => live.delete(worker));

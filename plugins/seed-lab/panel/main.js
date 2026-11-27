@@ -25,7 +25,7 @@ const TEXT = {
     lastRun: (entry, from, to, when) => `${entry}, seeds ${from}–${to}, ${when}`,
     took: (seconds, threads) => `${seconds.toFixed(1)} s on ${threads} ${threads === 1 ? "thread" : "threads"}`,
     solvable: "Solvable",
-    solvableOf: (count) => `${count} of the seeds that answered`,
+    solvableOf: (count, answered) => `${count} of ${answered} that answered`,
     seeds: "Seeds",
     unsolvable: "Unsolvable",
     errors: "Errors",
@@ -73,7 +73,7 @@ const TEXT = {
     lastRun: (entry, from, to, when) => `${entry}，种子 ${from}–${to}，${when}`,
     took: (seconds, threads) => `${seconds.toFixed(1)} 秒，${threads} 个线程`,
     solvable: "可解",
-    solvableOf: (count) => `${count} 个，按有结果的种子算`,
+    solvableOf: (count, answered) => `${answered} 个有结果的种子中 ${count} 个`,
     seeds: "种子",
     unsolvable: "不可解",
     errors: "报错",
@@ -123,11 +123,15 @@ function h(tag, attrs = {}, ...children) {
 const n = (value) => formatNumber(value, locale);
 const ask = (text) => host.request("composer.fill", { text }).catch(() => {});
 
-// The chart's colour follows the app's light or dark surface.
+// The chart's colour follows the app's light or dark surface. The browser
+// works the token out to rgb() whatever form the app sets it in.
+const probe = document.createElement("span");
+probe.style.cssText = "position:absolute;width:0;height:0;overflow:hidden;background:var(--color-surface)";
+document.body.append(probe);
 function scheme() {
-  const surface = getComputedStyle(document.documentElement).getPropertyValue("--color-surface").trim();
-  const match = /^#([0-9a-f]{6})$/i.exec(surface);
-  const dark = match ? parseInt(match[1].slice(0, 2), 16) + parseInt(match[1].slice(2, 4), 16) + parseInt(match[1].slice(4, 6), 16) < 384 : matchMedia("(prefers-color-scheme: dark)").matches;
+  const channels = getComputedStyle(probe).backgroundColor.match(/[\d.]+/g)?.map(Number) ?? [];
+  const [red, green, blue, alpha = 1] = channels;
+  const dark = channels.length >= 3 && alpha > 0 ? 0.2126 * red + 0.7152 * green + 0.0722 * blue < 128 : matchMedia("(prefers-color-scheme: dark)").matches;
   document.documentElement.dataset.scheme = dark ? "dark" : "light";
 }
 scheme();
@@ -208,7 +212,7 @@ function summaryTiles(run) {
   return h(
     "div",
     { class: "tiles" },
-    tile(t.solvable, formatPercent(summary.solvableRate, locale), t.solvableOf(n(summary.solvable))),
+    tile(t.solvable, formatPercent(summary.solvableRate, locale), t.solvableOf(n(summary.solvable), n(summary.solvable + summary.unsolvable))),
     tile(t.seeds, n(summary.total)),
     tile(t.unsolvable, n(summary.unsolvable), undefined, summary.unsolvable ? "warning" : undefined),
     tile(t.errors, n(summary.errors), undefined, summary.errors ? "bad" : undefined),

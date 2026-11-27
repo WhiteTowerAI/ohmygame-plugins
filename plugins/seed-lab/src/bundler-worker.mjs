@@ -6,7 +6,7 @@
 //
 // workerData: { entry, root, esbuild: { script, wasm } }, esbuild being the
 // paths of browser.min.js and esbuild.wasm. Posts { code } or { error }.
-import { readFile, stat } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 import { builtinModules, createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -24,10 +24,76 @@ const isFile = async (file) => {
     return false;
   }
 };
-const inside = (file) => {
-  const relative = path.relative(root, file);
+const realRoot = await realpath(root);
+/** Inside the project where the file really is, so a symlink can't reach out. */
+const inside = async (file) => {
+  const relative = path.relative(realRoot, await realpath(file));
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 };
+
+// Packages resolve as an ES module import does: `exports` with these
+// conditions, then `module`, then `main`. CommonJS resolution is the fallback.
+const CONDITIONS = ["import", "module", "default", "node", "require"];
+
+/** One `exports` target for a subpath, or undefined. */
+function exportTarget(exports, subpath) {
+  if (typeof exports === "string" || Array.isArray(exports)) return subpath === "." ? pick(exports) : undefined;
+  if (!exports || typeof exports !== "object") return undefined;
+  const keys = Object.keys(exports);
+  // Conditions at the top: the same as { ".": conditions }.
+  if (!keys.some((key) => key.startsWith("."))) return subpath === "." ? pick(exports) : undefined;
+  if (exports[subpath] !== undefined) return pick(exports[subpath]);
+  for (const key of keys.filter((item) => item.includes("*"))) {
+    const [before, after] = key.split("*");
+    if (subpath.startsWith(before) && subpath.endsWith(after) && subpath.length >= key.length - 1) {
+      const target = pick(exports[key]);
+      return target?.replaceAll("*", subpath.slice(before.length, subpath.length - after.length));
+    }
+  }
+  return undefined;
+}
+function pick(target) {
+  if (typeof target === "string") return target;
+  if (Array.isArray(target)) {
+    for (const item of target) {
+      const found = pick(item);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  if (target && typeof target === "object") for (const key of Object.keys(target)) if (CONDITIONS.includes(key)) {
+    const found = pick(target[key]);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+async function findPackage(specifier, from) {
+  const parts = specifier.split("/");
+  const name = specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+  const subpath = `.${specifier.slice(name.length)}`;
+  for (let folder = from; ; folder = path.dirname(folder)) {
+    // Only the project's own node_modules folders, from the importer up to the project.
+    const relative = path.relative(root, folder);
+    if (relative.startsWith("..") || path.isAbsolute(relative)) return undefined;
+    const packageFolder = path.join(folder, "node_modules", name);
+    let manifest;
+    try {
+      manifest = JSON.parse(await readFile(path.join(packageFolder, "package.json"), "utf8"));
+    } catch {
+      manifest = undefined;
+    }
+    if (manifest) {
+      if (manifest.exports !== undefined) {
+        const target = exportTarget(manifest.exports, subpath);
+        return target ? findFile(path.join(packageFolder, target)) : undefined;
+      }
+      if (subpath !== ".") return findFile(path.join(packageFolder, subpath));
+      return findFile(path.join(packageFolder, manifest.module ?? manifest.main ?? "index.js"));
+    }
+    if (folder === path.dirname(folder)) return undefined;
+  }
+}
 
 /** A relative import the way bundlers find it: as written, with an extension, or a folder's index. */
 async function findFile(base) {
@@ -47,15 +113,18 @@ const projectFiles = {
       if (args.kind === "entry-point" || path.isAbsolute(args.path)) file = await findFile(path.resolve(root, args.path));
       else if (args.path.startsWith(".")) file = await findFile(path.resolve(args.resolveDir, args.path));
       else {
-        // A package: resolved from the project's own node_modules.
-        try {
-          file = createRequire(path.join(args.resolveDir || root, "noop.js")).resolve(args.path);
-        } catch {
-          file = undefined;
+        // A package: from the project's own node_modules.
+        file = await findPackage(args.path, args.resolveDir || root);
+        if (!file) {
+          try {
+            file = createRequire(path.join(args.resolveDir || root, "noop.js")).resolve(args.path);
+          } catch {
+            file = undefined;
+          }
         }
       }
       if (!file) return { errors: [{ text: `Can't find "${args.path}"${args.importer ? ` imported by ${path.relative(root, args.importer)}` : ""}.` }] };
-      if (!inside(file)) return { errors: [{ text: `"${args.path}" is outside the project; the simulation module can only use the project's own files.` }] };
+      if (!(await inside(file))) return { errors: [{ text: `"${args.path}" is outside the project; the simulation module can only use the project's own files.` }] };
       return { path: file };
     });
     build.onLoad({ filter: /.*/ }, async (args) => ({
@@ -78,8 +147,11 @@ try {
     target: "es2022",
     write: false,
     logLevel: "silent",
+    // Sources relative to the project, under a root the seed threads strip,
+    // so an error says "sim/solver.ts:42".
     sourcemap: "inline",
-    sourceRoot: root,
+    absWorkingDir: root,
+    sourceRoot: "project:///",
     plugins: [projectFiles],
   });
   parentPort.postMessage({ code: result.outputFiles[0].text });

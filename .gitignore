@@ -9,3 +9,4 @@ cache.json
 /plugins/launch-check/dist/
 /plugins/ship-ladder/dist/
 /plugins/seed-lab/dist/
+!/test/seed-lab/fixtures/with-package/node_modules/

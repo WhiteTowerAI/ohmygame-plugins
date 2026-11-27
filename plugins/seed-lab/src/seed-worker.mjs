@@ -8,7 +8,19 @@ import { parentPort, workerData } from "node:worker_threads";
 
 const { bundle, params } = workerData;
 
-const message = (error) => (error instanceof Error ? `${error.name === "Error" ? "" : `${error.name}: `}${error.message}` : String(error));
+// Stack frames point at the project's own files, through the bundle's inline source map.
+process.setSourceMapsEnabled(true);
+
+/** "Name: message (file:line)", the place being the first frame in the project's code. */
+function message(error) {
+  if (!(error instanceof Error)) return String(error);
+  const text = `${error.name === "Error" ? "" : `${error.name}: `}${error.message}`;
+  const frame = String(error.stack ?? "")
+    .split("\n")
+    .map((line) => /\(?((?:file:\/\/)?[^()\s]+:\d+):\d+\)?$/.exec(line.trim())?.[1])
+    .find((place) => place && !place.startsWith("node:") && !place.includes("seed-worker.mjs"));
+  return frame ? `${text} (${frame.replace(/^project:\/\/\//, "").replace(/^file:\/\//, "")})` : text;
+}
 
 /** Keeps only finite numbers; anything else in `metrics` is reported, not guessed at. */
 function check(answer) {

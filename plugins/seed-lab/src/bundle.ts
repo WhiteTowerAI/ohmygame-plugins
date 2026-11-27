@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, rename, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -12,6 +12,8 @@ import { Worker } from "node:worker_threads";
 // to the plugin's data folder, never the project.
 
 export const DEFAULT_ENTRY = "sim/index.ts";
+/** Bundles kept in the data folder: each change to the module makes a new one. */
+const KEEP_BUNDLES = 5;
 
 /** esbuild's WebAssembly build: copied beside the built entry, or the repository's own package when run from source. */
 export function esbuildFiles(): { script: string; wasm: string } {
@@ -30,6 +32,7 @@ export function resolveEntry(project: string, entry = DEFAULT_ENTRY): string {
 }
 
 export async function bundle(project: string, entry: string, outFolder: string, signal?: AbortSignal): Promise<{ file: string; url: string }> {
+  signal?.throwIfAborted();
   const file = resolveEntry(project, entry);
   if (!existsSync(file)) throw new Error(`There is no ${entry} in this project. The seed-lab skill explains how to split the level generator and solver into one.`);
   const files = esbuildFiles();
@@ -59,5 +62,17 @@ export async function bundle(project: string, entry: string, outFolder: string, 
     await writeFile(temporary, code);
     await rename(temporary, out);
   }
+  await prune(outFolder, out);
   return { file: out, url: pathToFileURL(out).href };
+}
+
+/** Keeps the newest few bundles, and always the one about to run. */
+async function prune(folder: string, keep: string): Promise<void> {
+  const bundles = await Promise.all(
+    (await readdir(folder))
+      .filter((name) => name.endsWith(".mjs"))
+      .map(async (name) => ({ file: path.join(folder, name), at: (await stat(path.join(folder, name)).catch(() => undefined))?.mtimeMs ?? 0 })),
+  );
+  bundles.sort((a, b) => b.at - a.at);
+  for (const { file } of bundles.slice(KEEP_BUNDLES)) if (file !== keep) await rm(file, { force: true });
 }
