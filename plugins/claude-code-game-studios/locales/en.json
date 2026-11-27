@@ -1,7 +1,0 @@
-{
-  "displayName": "Claude Code Game Studios",
-  "description": "A project template that turns Claude Code into a game studio: 49 agents, 78 skills and a full workflow.",
-  "longDescription": "Claude Code Game Studios by Donchitos (MIT), as a project template. Start a project from it on Home, then run /start in Claude Code: the template's agents, skills, hooks and rules are in the project's .claude folder, as when you clone the repository. It is made for Claude Code; other agents can read its documents but not use its agents or hooks. Updates to this plugin only change new projects; upgrade an existing one with UPGRADING.md.",
-  "template.title": "Claude Code Game Studios",
-  "template.description": "A game studio for Claude Code, with agents, skills and design docs. Needs Claude Code."
-}

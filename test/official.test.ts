@@ -1,10 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { judgeArchive, loadAppChecks, unpackArchive, type AppChecks } from "../src/checks.ts";
+import { judgeArchive, loadAppChecks, type AppChecks } from "../src/checks.ts";
 import { packRelease } from "../src/pack.ts";
 
 // Each official plugin is packed as its GitHub release attaches it and judged
@@ -42,24 +41,6 @@ describe("official plugins", async () => {
         if (folder === "godot") {
           assert.ok(packed.has("templates/godot-game/gitignore"));
           assert.equal(packed.has("templates/godot-game/.gitignore"), false);
-        }
-      }
-      // A project template is copied into projects whole, so npm must keep every file of it.
-      if (folder === "claude-code-game-studios") {
-        const packed = new Set(files);
-        for (const file of await runtimeFiles(path.join(dir, "template"))) {
-          assert.ok(packed.has(`template/${file}`), `${folder}: npm omitted template/${file}`);
-        }
-        assert.ok(packed.has("template/gitignore"));
-        // A script the template runs stays executable once the app unpacks the release.
-        const scratch = await mkdtemp(path.join(tmpdir(), "ohmygame-official-"));
-        try {
-          await writeFile(path.join(scratch, "release.zip"), archive);
-          const root = await unpackArchive(app, path.join(scratch, "release.zip"), await mkdtemp(path.join(scratch, "package-")));
-          assert.ok((await stat(path.join(root, "template/.claude/scripts/one-shot-check.sh"))).mode & 0o100);
-          assert.equal((await stat(path.join(root, "template/.claude/scripts/adr-status.sh"))).mode & 0o111, 0);
-        } finally {
-          await rm(scratch, { recursive: true, force: true });
         }
       }
       const verdict = await judgeArchive(app, archive, { owner: "WhiteTowerAI", version: manifest.version, name: folder });
