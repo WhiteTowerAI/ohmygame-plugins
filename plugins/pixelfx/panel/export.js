@@ -2,8 +2,8 @@
 // (MIT, see lib/LICENSE): the top-down brick and checker backdrops,
 // resampling to a chosen size, frame rate and length, the transparent sprite
 // sheet with Aseprite-style JSON, the contact sheet and the GIF89a encoder.
-// Downloads and the ZIP writer are left out: the panel adds to the Library
-// or writes project files instead.
+// Downloads and the ZIP writer are left out: the panel adds to the project's
+// assets or writes project files instead.
 
 import {
   createFrame,

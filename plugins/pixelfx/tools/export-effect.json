@@ -23,7 +23,7 @@
         "gif",
         "frames"
       ],
-      "description": "sheet-png and contact go to the Library; sheet-both (PNG + JSON), gif and frames to pixelfx/exports/."
+      "description": "sheet-png and contact go to the project's assets; sheet-both (PNG + JSON), gif and frames to pixelfx/exports/."
     }
   },
   "required": [
