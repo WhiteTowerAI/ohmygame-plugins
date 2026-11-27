@@ -29,6 +29,7 @@ export const viteDefault = {
   "index.html": `<!doctype html>
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script type="module" crossorigin src="/assets/index-a1b2.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-c3d4.js">
     <link rel="stylesheet" crossorigin href="/assets/index-e5f6.css">

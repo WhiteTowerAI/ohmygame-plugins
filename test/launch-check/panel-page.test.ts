@@ -14,6 +14,8 @@ const bridge = vi.hoisted(() => ({
   scanned: null as unknown,
   scanError: undefined as string | undefined,
   storage: undefined as unknown,
+  lanStatus: { running: false, devices: [] } as unknown,
+  lanDone: undefined as undefined | (() => void),
   requests: [] as [string, unknown][],
   listeners: new Map<string, Listener>(),
 }));
@@ -26,6 +28,8 @@ vi.mock("../plugin-ui.ts", () => ({
       bridge.requests.push([name === "command.run" ? value.command! : name, value]);
       if (name === "storage.get") return structuredClone(bridge.storage);
       if (name === "command.run" && value.command === "last") return structuredClone(bridge.last);
+      if (name === "command.run" && value.command === "lan-status") return structuredClone(bridge.lanStatus);
+      if (name === "command.run" && value.command === "lan") return new Promise((resolve) => (bridge.lanDone = () => resolve({ devices: [] })));
       if (name === "command.run" && value.command === "scan") {
         if (bridge.scanError) throw new Error(bridge.scanError);
         return structuredClone(bridge.scanned);
@@ -55,6 +59,8 @@ beforeEach(async () => {
   bridge.storage = undefined;
   bridge.scanError = undefined;
   bridge.requests = [];
+  bridge.lanStatus = { running: false, devices: [] };
+  bridge.lanDone = undefined;
   bridge.listeners.clear();
   viteReport ??= report(await scanBuild(await build(viteDefault)), new Date("2026-11-27T00:00:00Z"));
   bridge.scanned = viteReport;
@@ -92,7 +98,7 @@ describe("the Launch check panel page", () => {
     expect(root.textContent).toContain("Poki's pages disagree");
     expect([...root.querySelectorAll("[data-kind]")].map((item) => item.getAttribute("data-kind"))).toEqual(["absolute-path", "unreferenced", "source-map"]);
     expect(root.textContent).toContain('A game can build a file\'s name at run time');
-    expect(buttons(root)).toEqual(["Scan again", "Ask the AI to fix these"]);
+    expect(buttons(root)).toEqual(["Scan again", "Start", "Ask the AI to fix these"]);
   });
 
   it("asks the AI to fix what fails where the person plans to publish, which it remembers", async () => {
@@ -115,5 +121,40 @@ describe("the Launch check panel page", () => {
     const root = await show();
     click(root, "Scan the web build");
     await vi.waitFor(() => expect(root.querySelector("omg-banner")?.textContent).toBe("OhMyGame couldn't build the game for the scan."));
+  });
+
+  it("serves the game to phones: a QR code, the address, and what each phone reports", async () => {
+    bridge.last = viteReport;
+    const root = await show();
+    click(root, "Start");
+    await vi.waitFor(() => expect(bridge.requests.map(([name]) => name)).toContain("lan"));
+    bridge.lanStatus = {
+      running: true,
+      url: "http://192.168.1.20:52311/?t=abc",
+      devices: [{ id: "p1", seenAt: "2026-11-27T01:00:00Z", userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)", viewport: { width: 390, height: 844, dpr: 3 }, fps: { current: 24, low: 18 }, audio: ["suspended"], errors: [] }],
+    };
+    const platforms = root.querySelector('[data-profile]');
+    expect(platforms).not.toBeNull();
+    await vi.waitFor(() => expect(root.querySelector(".qr svg")).not.toBeNull(), { timeout: 3000 });
+    // Polls redraw only the phone section; what the person opened elsewhere stays.
+    expect(root.querySelector('[data-profile]')).toBe(platforms);
+    expect(root.querySelector(".address")!.textContent).toBe("http://192.168.1.20:52311/?t=abc");
+    expect(root.querySelector('[data-device="p1"]')!.textContent).toContain("iPhone, iOS 17.5");
+    expect(root.querySelector('[data-device="p1"] omg-badge')!.textContent).toBe("2 to check");
+    expect([...root.querySelectorAll('[data-device="p1"] .problems li')].map((item) => item.textContent)).toEqual(["Frame rate dropped to 18 fps", "Sound is off: the game's audio was never unlocked by a tap"]);
+    ([...root.querySelectorAll("omg-button")].find((button) => button.textContent === "Ask the AI to fix what phones reported") as HTMLElement).click();
+    expect(bridge.requests.filter(([name]) => name === "composer.fill").at(-1)![1]).toMatchObject({ text: expect.stringContaining("frame rate dropped to 18 fps") });
+    click(root, "Stop");
+    expect(bridge.requests.map(([name]) => name)).toContain("lan-stop");
+    bridge.lanStatus = { running: false, devices: [] };
+    bridge.lanDone!();
+    await vi.waitFor(() => expect(buttons(root)).toContain("Start"));
+  });
+
+  it("serves at once when opened from Test on a phone", async () => {
+    bridge.opened = { phone: true };
+    await show();
+    await vi.waitFor(() => expect(bridge.requests.map(([name]) => name)).toContain("lan"));
+    bridge.lanDone!();
   });
 });

@@ -42,6 +42,10 @@ describe("the launch-check plugin", () => {
     expect(commands.last.run).toEqual({ native: "last", changesFiles: false });
     expect(commands.open.run).toEqual({ openPanel: "launch", state: { scan: true } });
     expect(commands.open.slots.map((slot: { slot: string }) => slot.slot)).toEqual(["project.publish", "game.more"]);
+    // Serving to phones also gets a build, changes nothing, and runs until stopped, at most an hour.
+    expect(commands.lan.run).toEqual({ native: "lan", build: "web", changesFiles: false, timeoutSeconds: 3600 });
+    expect(commands.phone.run).toEqual({ openPanel: "launch", state: { phone: true } });
+    expect((await read("package.json")).files).toContain("overlay");
     // It reads the build the app hands it: no project files, network or processes.
     expect(manifest.capabilities).toEqual({ native: true, composer: true });
     expect((await read("package.json")).version).toBe(manifest.version);
@@ -60,7 +64,7 @@ describe("the launch-check plugin", () => {
     const dataFolder = await mkdtemp(path.join(tmpdir(), "launch-data-"));
     data.push(dataFolder);
     const plugin = host("/projects/one", dataFolder);
-    expect(plugin.names).toEqual(["scan", "last"]);
+    expect(plugin.names).toEqual(["scan", "last", "lan", "lanStatus", "lanStop"]);
     expect(await plugin.run("last")).toBeNull();
 
     const result = (await plugin.run("scan", await build(viteDefault))) as { profiles: { id: string }[] };

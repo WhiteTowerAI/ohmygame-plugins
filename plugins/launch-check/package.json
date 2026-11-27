@@ -19,6 +19,7 @@
     "dist",
     "locales",
     "panel",
+    "overlay",
     "LICENSE"
   ],
   "publishConfig": {

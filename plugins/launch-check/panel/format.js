@@ -23,6 +23,7 @@ export const STATUS_ORDER = { fail: 0, warn: 1, pass: 2 };
 
 /** Findings grouped by kind, in the order a person should look at them. */
 export const FINDING_ORDER = [
+  "no-viewport",
   "missing-file",
   "case-mismatch",
   "bare-import",
@@ -42,6 +43,7 @@ export function findingGroups(scan) {
 }
 
 const FIX = {
+  "no-viewport": 'No <meta name="viewport" content="width=device-width, initial-scale=1"> in the page, so phones lay the game out at desktop width',
   "missing-file": "References to files the build doesn't have",
   "case-mismatch": "References whose capitals differ from the file's (hosts such as itch.io are case-sensitive)",
   "bare-import": "Imports of package names that a browser can't load from the build",
@@ -98,4 +100,52 @@ export function fixPrompt(report, targets, titles) {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+/** A phone's name from its user agent, short enough for a heading. */
+export function deviceName(userAgent = "") {
+  const ios = /\((iPhone|iPad|iPod)[^)]*?OS (\d+)[._](\d+)/.exec(userAgent);
+  if (ios) return `${ios[1]}, iOS ${ios[2]}.${ios[3]}`;
+  const android = /Android (\d+(?:\.\d+)?);\s*([^;)]+?)(?:\s+Build\/[^;)]*)?[;)]/.exec(userAgent);
+  if (android) return android[2] && android[2] !== "K" ? `${android[2].trim()}, Android ${android[1]}` : `Android ${android[1]}`;
+  if (/Android (\d+)/.test(userAgent)) return `Android ${/Android (\d+)/.exec(userAgent)[1]}`;
+  if (/Macintosh/.test(userAgent) && /Mobile/.test(userAgent)) return "iPad";
+  const browser = /(Firefox|Edg|Chrome|Safari)\/(\d+)/.exec(userAgent);
+  return browser ? `${browser[1] === "Edg" ? "Edge" : browser[1]} ${browser[2]}` : "Unknown device";
+}
+
+/**
+ * What a phone's report says needs a look, as keys the page words: errors,
+ * a low frame rate, sound that a tap hasn't unlocked, a slow first frame.
+ */
+export function deviceProblems(device) {
+  const problems = [];
+  if (device.errors?.length) problems.push({ key: "errors", count: device.errors.length });
+  if (device.fps && device.fps.low > 0 && device.fps.low < 30) problems.push({ key: "lowFps", value: device.fps.low });
+  if (device.audio?.includes("suspended")) problems.push({ key: "audioSuspended" });
+  if (device.firstFrameMs !== undefined && device.firstFrameMs > 10000) problems.push({ key: "slowStart", value: device.firstFrameMs });
+  return problems;
+}
+
+/** The request to the AI about what phones reported. In English, as text to the agent is. */
+export function phonePrompt(devices) {
+  const lines = devices
+    .map((device) => {
+      const problems = deviceProblems(device);
+      if (!problems.length) return undefined;
+      const parts = problems.map((problem) =>
+        problem.key === "errors"
+          ? `errors: ${device.errors.slice(-3).join(" | ")}`
+          : problem.key === "lowFps"
+            ? `frame rate dropped to ${problem.value} fps`
+            : problem.key === "audioSuspended"
+              ? "its AudioContext stayed suspended, so there was no sound; resume it in a touchend or click handler"
+              : `the first frame took ${(problem.value / 1000).toFixed(1)} s`,
+      );
+      const size = device.viewport ? ` at ${device.viewport.width}×${device.viewport.height} (×${device.viewport.dpr})` : "";
+      return `- ${deviceName(device.userAgent)}${size}: ${parts.join("; ")}`;
+    })
+    .filter(Boolean);
+  if (!lines.length) return undefined;
+  return `I played this game's web build on real phones with the Launch check. Fix what they reported, keeping the game working in OhMyGame's preview:\n${lines.join("\n")}`;
 }

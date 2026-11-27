@@ -81,7 +81,7 @@ describe("scanning a web build", () => {
   it("finds nothing to fix in a relative build", async () => {
     const scan = await scanBuild(
       await build({
-        "index.html": `<script type="module" src="./assets/main.js"></script>`,
+        "index.html": `<meta name="viewport" content="width=device-width"><script type="module" src="./assets/main.js"></script>`,
         "assets/main.js": `import "./util.js"; fetch("data/level.json");`,
         "assets/util.js": `export {}`,
         "data/level.json": `{"tiles":"img/tiles.png"}`,
@@ -159,6 +159,13 @@ describe("scanning a web build", () => {
     expect(kinds(scan, "unreferenced")).toHaveLength(50);
     // 60 images and the page in a subfolder, which nothing names either.
     expect(scan.omitted).toEqual({ unreferenced: 11 });
+  });
+
+  it("finds a page without a viewport tag, which phones show at desktop width", async () => {
+    const without = await scanBuild(await build({ "index.html": `<!-- <meta name="viewport" content="width=device-width"> --><canvas></canvas>` }));
+    expect(kinds(without, "no-viewport")).toEqual(["index.html → index.html"]);
+    const withTag = await scanBuild(await build({ "index.html": `<meta content="width=device-width" name=viewport>` }));
+    expect(kinds(withTag, "no-viewport")).toEqual([]);
   });
 
   it("measures the longest path", async () => {

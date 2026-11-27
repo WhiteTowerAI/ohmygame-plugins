@@ -8,12 +8,27 @@
   "displayName": "%displayName%",
   "description": "%description%",
   "longDescription": "%longDescription%",
-  "examples": ["%example.1%", "%example.2%"],
+  "examples": [
+    "%example.1%",
+    "%example.2%"
+  ],
   "beta": true,
   "icon": "./assets/icon.svg",
-  "categories": ["publishing", "testing"],
-  "keywords": ["itch.io", "CrazyGames", "Poki", "YouTube Playables", "%keyword.size%"],
-  "appliesTo": ["web-game", "general"],
+  "categories": [
+    "publishing",
+    "testing"
+  ],
+  "keywords": [
+    "itch.io",
+    "CrazyGames",
+    "Poki",
+    "YouTube Playables",
+    "%keyword.size%"
+  ],
+  "appliesTo": [
+    "web-game",
+    "general"
+  ],
   "activation": "project",
   "entrypoints": {
     "native": "./dist/index.mjs"
@@ -41,21 +56,82 @@
       {
         "id": "open",
         "title": "%command.open%",
-        "run": { "openPanel": "launch", "state": { "scan": true } },
+        "run": {
+          "openPanel": "launch",
+          "state": {
+            "scan": true
+          }
+        },
         "slots": [
-          { "slot": "project.publish", "when": "project.type == 'web-game' || project.type == 'general'" },
-          { "slot": "game.more", "when": "project.type == 'web-game' || project.type == 'general'" }
+          {
+            "slot": "project.publish",
+            "when": "project.type == 'web-game' || project.type == 'general'"
+          },
+          {
+            "slot": "game.more",
+            "when": "project.type == 'web-game' || project.type == 'general'"
+          }
+        ]
+      },
+      {
+        "id": "phone",
+        "title": "%command.phone%",
+        "run": {
+          "openPanel": "launch",
+          "state": {
+            "phone": true
+          }
+        },
+        "slots": [
+          {
+            "slot": "game.more",
+            "when": "project.type == 'web-game' || project.type == 'general'"
+          }
         ]
       },
       {
         "id": "scan",
         "title": "%command.scan%",
-        "run": { "native": "scan", "build": "web", "changesFiles": false, "timeoutSeconds": 600 }
+        "run": {
+          "native": "scan",
+          "build": "web",
+          "changesFiles": false,
+          "timeoutSeconds": 600
+        }
       },
       {
         "id": "last",
         "title": "%command.last%",
-        "run": { "native": "last", "changesFiles": false }
+        "run": {
+          "native": "last",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "lan",
+        "title": "%command.lan%",
+        "run": {
+          "native": "lan",
+          "build": "web",
+          "changesFiles": false,
+          "timeoutSeconds": 3600
+        }
+      },
+      {
+        "id": "lan-status",
+        "title": "%command.lanStatus%",
+        "run": {
+          "native": "lanStatus",
+          "changesFiles": false
+        }
+      },
+      {
+        "id": "lan-stop",
+        "title": "%command.lanStop%",
+        "run": {
+          "native": "lanStop",
+          "changesFiles": false
+        }
       }
     ]
   }

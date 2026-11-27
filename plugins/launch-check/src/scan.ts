@@ -17,7 +17,8 @@ export type FindingKind =
   | "case-mismatch" // a reference that only matches a file with different capitals
   | "bare-import" // an import of a package name, which a browser can't load without an import map
   | "unreferenced" // a file no other file names
-  | "source-map"; // a .map file shipped with the game
+  | "source-map" // a .map file shipped with the game
+  | "no-viewport"; // a page without <meta name="viewport">, which phones lay out at desktop width
 
 export interface Finding {
   kind: FindingKind;
@@ -351,6 +352,7 @@ export async function scanBuild(root: string): Promise<ScanResult> {
     if (page !== index) continue;
     entry.add(page);
     const html = texts.get(page) ?? "";
+    if (!/<meta\b[^>]*\bname\s*=\s*["']?viewport\b/i.test(html.replace(/<!--[\s\S]*?-->/g, ""))) findings.add({ kind: "no-viewport", file: page, target: page });
     entryText.push(html);
     const refs = htmlRefs(html);
     for (const { ref, kind } of refs.loads) {

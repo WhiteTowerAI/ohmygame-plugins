@@ -1,5 +1,6 @@
 import { connect } from "/_ohmygame/plugin-ui.js";
-import { STATUS_ORDER, describeValue, findingGroups, fixPrompt, formatBytes } from "./format.js";
+import { STATUS_ORDER, describeValue, deviceName, deviceProblems, findingGroups, fixPrompt, formatBytes, phonePrompt } from "./format.js";
+import qrcode from "./vendor/qrcode.mjs";
 
 const TEXT = {
   en: {
@@ -41,6 +42,7 @@ const TEXT = {
     findings: "Found in the build",
     noFindings: "Nothing that breaks on other hosts.",
     kinds: {
+      "no-viewport": "No viewport tag: phones show it at desktop width",
       "missing-file": "Files that aren't in the build",
       "case-mismatch": "Capitals differ from the file's",
       "bare-import": "Package imports a browser can't load",
@@ -55,6 +57,35 @@ const TEXT = {
     fix: "Ask the AI to fix these",
     nothingToFix: "Nothing to fix for the platforms you ticked.",
     note: "Note",
+    phone: "Test on a phone",
+    phoneHint: "Serves the web build on this computer's local network. Scan the code with a phone on the same Wi-Fi and play; what it sees shows here. The project doesn't change.",
+    phoneStart: "Start",
+    phoneStarting: "Building the game…",
+    phoneStop: "Stop",
+    phoneOpen: "Scan with the phone's camera, or type this address in its browser:",
+    phoneNotes: [
+      "Your computer may ask whether to allow incoming connections; allow it, or phones can't connect.",
+      "Guest and office Wi-Fi often keep devices apart. If the phone can't open it, try a home network or a phone hotspot.",
+      "The address is http on your network, so the browser treats it as not secure: features that need https, such as some sensors, may be off here but work once published.",
+      "It stops after an hour, or when you press Stop.",
+    ],
+    phoneWaiting: "No phone has opened it yet.",
+    devices: "Phones",
+    seen: (when) => `Last heard ${when}`,
+    fps: (current, low) => `${current} fps now, lowest ${low || "–"}`,
+    firstFrame: (ms) => `First frame ${(ms / 1000).toFixed(1)} s`,
+    loaded: (ms) => `Loaded ${(ms / 1000).toFixed(1)} s`,
+    screen: (v) => `${v.width}×${v.height} at ×${v.dpr}${v.orientation ? `, ${v.orientation.replace("-primary", "")}` : ""}`,
+    safeArea: (a) => `Safe area ${a.top}/${a.right}/${a.bottom}/${a.left}`,
+    audio: (states) => `Sound: ${states.join(", ")}`,
+    problems: {
+      errors: (p) => `${p.count} ${p.count === 1 ? "error" : "errors"}`,
+      lowFps: (p) => `Frame rate dropped to ${p.value} fps`,
+      audioSuspended: () => "Sound is off: the game's audio was never unlocked by a tap",
+      slowStart: (p) => `The first frame took ${(p.value / 1000).toFixed(1)} s`,
+    },
+    problemCount: (count) => `${count} to check`,
+    phoneFix: "Ask the AI to fix what phones reported",
     details: "Limits and results",
   },
   "zh-CN": {
@@ -96,6 +127,7 @@ const TEXT = {
     findings: "构建里发现的问题",
     noFindings: "没有发现放到别的主机上会出错的地方。",
     kinds: {
+      "no-viewport": "缺少 viewport 标签：手机会按桌面宽度显示",
       "missing-file": "构建里没有的文件",
       "case-mismatch": "大小写和文件不一致",
       "bare-import": "浏览器无法加载的包名导入",
@@ -110,6 +142,35 @@ const TEXT = {
     fix: "让 AI 修复这些问题",
     nothingToFix: "你勾选的平台没有需要修复的地方。",
     note: "说明",
+    phone: "在手机上测试",
+    phoneHint: "在这台电脑的局域网里提供网页构建。用连着同一个 Wi-Fi 的手机扫码就能玩，手机上看到的情况会显示在这里。项目文件不会改动。",
+    phoneStart: "开始",
+    phoneStarting: "正在构建游戏…",
+    phoneStop: "停止",
+    phoneOpen: "用手机相机扫码，或在手机浏览器里输入这个地址：",
+    phoneNotes: [
+      "电脑可能会问是否允许传入连接，请选允许，否则手机连不上。",
+      "访客网络和公司 Wi-Fi 常常会隔离设备。手机打不开时，换家里的网络或手机热点试试。",
+      "这个地址是局域网里的 http，浏览器会把它当作不安全的页面：一些需要 https 的功能（比如部分传感器）这里可能不可用，发布后正常。",
+      "一小时后或按停止时结束。",
+    ],
+    phoneWaiting: "还没有手机打开。",
+    devices: "手机",
+    seen: (when) => `最后一次收到：${when}`,
+    fps: (current, low) => `当前 ${current} fps，最低 ${low || "–"}`,
+    firstFrame: (ms) => `首帧 ${(ms / 1000).toFixed(1)} 秒`,
+    loaded: (ms) => `加载 ${(ms / 1000).toFixed(1)} 秒`,
+    screen: (v) => `${v.width}×${v.height}，×${v.dpr}${v.orientation ? `，${v.orientation.startsWith("portrait") ? "竖屏" : "横屏"}` : ""}`,
+    safeArea: (a) => `安全区 ${a.top}/${a.right}/${a.bottom}/${a.left}`,
+    audio: (states) => `声音：${states.join("、")}`,
+    problems: {
+      errors: (p) => `${p.count} 个报错`,
+      lowFps: (p) => `帧率掉到 ${p.value} fps`,
+      audioSuspended: () => "没有声音：游戏的音频一直没有被点击解锁",
+      slowStart: (p) => `首帧用了 ${(p.value / 1000).toFixed(1)} 秒`,
+    },
+    problemCount: (count) => `${count} 项需留意`,
+    phoneFix: "让 AI 修复手机上发现的问题",
     details: "限制和结果",
   },
 };
@@ -138,7 +199,7 @@ const root = document.getElementById("launch");
 root.setAttribute("heading", t.title);
 root.setAttribute("description", t.description);
 
-const state = { report: undefined, busy: false, error: undefined, targets: DEFAULT_TARGETS };
+const state = { report: undefined, busy: false, error: undefined, targets: DEFAULT_TARGETS, lan: { running: false, starting: false, devices: [] } };
 
 function h(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -274,6 +335,110 @@ function findingsSection(scan) {
   );
 }
 
+let polling;
+async function pollLan() {
+  try {
+    const status = await run("lan-status");
+    state.lan = { ...state.lan, running: status.running, url: status.url ?? state.lan.url, devices: status.devices ?? [] };
+    if (status.running) state.lan.starting = false;
+  } catch {
+    // The next poll tries again.
+  }
+  renderPhone();
+}
+/** Redraws only the phone section, so sections the person opened elsewhere stay open. */
+function renderPhone() {
+  const current = root.querySelector('[data-section="phone"]');
+  if (current) current.replaceWith(phoneSection());
+  else render();
+}
+function keepPolling(on) {
+  clearInterval(polling);
+  polling = on ? setInterval(pollLan, 2000) : undefined;
+}
+
+function startLan() {
+  if (state.lan.starting || state.lan.running) return;
+  state.lan = { running: false, starting: true, devices: [] };
+  state.error = undefined;
+  render();
+  keepPolling(true);
+  // The command runs as long as the game is served; it ends when it stops.
+  run("lan")
+    .catch((error) => {
+      state.error = error?.message || String(error);
+    })
+    .finally(() => {
+      keepPolling(false);
+      state.lan = { ...state.lan, running: false, starting: false };
+      render();
+    });
+}
+
+function qrSvg(url) {
+  const code = qrcode(0, "M");
+  code.addData(url);
+  code.make();
+  const holder = h("div", { class: "qr", role: "img", "aria-label": url });
+  holder.innerHTML = code.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+  return holder;
+}
+
+function deviceCard(device) {
+  const problems = deviceProblems(device);
+  const facts = [
+    device.viewport ? t.screen(device.viewport) : null,
+    device.safeArea && Object.values(device.safeArea).some(Boolean) ? t.safeArea(device.safeArea) : null,
+    device.fps ? t.fps(device.fps.current, device.fps.low) : null,
+    device.loadMs !== undefined ? t.loaded(device.loadMs) : null,
+    device.firstFrameMs !== undefined ? t.firstFrame(device.firstFrameMs) : null,
+    device.audio?.length ? t.audio(device.audio) : null,
+  ].filter(Boolean);
+  return h(
+    "div",
+    { class: "device", "data-device": device.id },
+    h("div", { class: "platform" }, h("strong", {}, deviceName(device.userAgent)), h("omg-badge", { tone: problems.length ? "warning" : "good" }, problems.length ? t.problemCount(problems.length) : "OK")),
+    problems.length ? h("ul", { class: "problems" }, problems.map((problem) => h("li", {}, t.problems[problem.key](problem)))) : null,
+    h("p", { class: "muted" }, facts.join(" · ")),
+    h("p", { class: "muted small" }, t.seen(dateOf(device.seenAt))),
+    // A plain list: a disclosure here would close at every poll.
+    device.errors?.length
+      ? h("ul", { class: "items" }, device.errors.slice(-5).map((error) => h("li", {}, error)), device.errors.length > 5 ? h("li", {}, t.more(device.errors.length - 5)) : null)
+      : null,
+  );
+}
+
+function phoneSection() {
+  const lan = state.lan;
+  const prompt = phonePrompt(lan.devices);
+  return h(
+    "omg-section",
+    { heading: t.phone, description: t.phoneHint, "data-section": "phone" },
+    h(
+      "div",
+      { class: "toolbar" },
+      lan.running
+        ? h("omg-button", { on: { click: () => run("lan-stop").catch(() => {}) } }, t.phoneStop)
+        : h("omg-button", { busy: lan.starting, on: { click: startLan } }, t.phoneStart),
+      lan.starting ? h("span", { class: "muted", role: "status" }, t.phoneStarting) : null,
+    ),
+    lan.running && lan.url
+      ? [
+          h("p", { class: "muted" }, t.phoneOpen),
+          qrSvg(lan.url),
+          h("p", { class: "items address" }, lan.url),
+          h("ul", { class: "notes muted small" }, t.phoneNotes.map((note) => h("li", {}, note))),
+        ]
+      : null,
+    lan.running || lan.devices.length
+      ? lan.devices.length
+        ? [h("p", { class: "label" }, t.devices), lan.devices.map(deviceCard)]
+        : h("p", { class: "muted" }, t.phoneWaiting)
+      : null,
+    prompt ? h("div", { class: "toolbar" }, h("omg-button", { variant: "primary", on: { click: () => host.request("composer.fill", { text: prompt }).catch(() => {}) } }, t.phoneFix)) : null,
+  );
+}
+
 function render() {
   const report = state.report;
   const titles = Object.fromEntries(Object.keys(PROFILE_TITLES).map((id) => [id, PROFILE_TITLES[id].en]));
@@ -287,6 +452,7 @@ function render() {
       state.busy ? h("span", { class: "muted", role: "status" }, t.scanning) : null,
     ),
     state.error ? h("omg-banner", { tone: "bad" }, state.error) : null,
+    phoneSection(),
     report
       ? [
           platformSection(report),
@@ -310,10 +476,12 @@ function render() {
   root.replaceChildren(...children.flat().filter(Boolean));
 }
 
-// A panel opened from the Publish menu or the Game panel scans at once.
+// A panel opened from the Publish menu scans at once; from "Test on a phone", it serves the game.
 const wantsScan = (opened) => Boolean(opened && typeof opened === "object" && opened.scan);
+const wantsPhone = (opened) => Boolean(opened && typeof opened === "object" && opened.phone);
 host.on?.("open", ({ state: opened }) => {
   if (wantsScan(opened)) void scan();
+  if (wantsPhone(opened)) startLan();
 });
 
 try {
@@ -327,6 +495,17 @@ try {
 } catch (error) {
   state.error = error?.message || String(error);
 }
+// A page reloaded while the game is served picks the session up again.
+try {
+  const status = await run("lan-status");
+  if (status?.running) {
+    state.lan = { running: true, starting: false, url: status.url, devices: status.devices ?? [] };
+    keepPolling(true);
+  }
+} catch {
+  // Not serving.
+}
 render();
 if (wantsScan(host.opened)) void scan();
+if (wantsPhone(host.opened)) startLan();
 

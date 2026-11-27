@@ -65,3 +65,45 @@ a.source {
   color: var(--color-text-link, inherit);
   cursor: pointer;
 }
+.qr {
+  width: 176px;
+  padding: var(--space-2);
+  background: #ffffff;
+  border-radius: 8px;
+}
+.qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.address {
+  padding-left: 0;
+}
+.notes {
+  padding-left: var(--space-4);
+  display: grid;
+  gap: var(--space-1);
+}
+.small {
+  font-size: 12px;
+  line-height: 18px;
+}
+.label {
+  font-weight: 600;
+}
+.device {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+.problems {
+  padding-left: var(--space-4);
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 20px;
+}
+.device .platform strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

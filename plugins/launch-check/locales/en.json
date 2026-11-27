@@ -1,12 +1,16 @@
 {
   "displayName": "Launch Check",
   "description": "Check a web game's build before you publish it elsewhere: first-load size, file counts, paths and requests, against each platform's own limits.",
-  "longDescription": "Builds the game as Export web build does and reads the files, without running them. It works out what a player downloads before the game starts and what loads later, and finds what breaks once the game is hosted somewhere other than OhMyGame: paths that start with \"/\", fonts and libraries fetched from other sites, references to files that aren't there or differ only in capitals, files nothing uses and source maps. It compares the build with the limits of OhMyGame Community, itch.io, CrazyGames, YouTube Playables and Poki, and each limit links to the page it comes from. Ask the AI to fix what it finds in one click. It only reads: the scan changes no files.",
+  "longDescription": "Builds the game as Export web build does and reads the files, without running them. It works out what a player downloads before the game starts and what loads later, and finds what breaks once the game is hosted somewhere other than OhMyGame: paths that start with \"/\", fonts and libraries fetched from other sites, references to files that aren't there or differ only in capitals, files nothing uses and source maps. It compares the build with the limits of OhMyGame Community, itch.io, CrazyGames, YouTube Playables and Poki, and each limit links to the page it comes from. Ask the AI to fix what it finds in one click. Test on a phone serves the build on your local network: scan a QR code, play, and see each phone's errors, frame rate, load time, sound and screen size in the panel. It only reads: the scan changes no files.",
   "example.1": "Check whether this game's build can go on itch.io and CrazyGames, then fix what the Launch check finds.",
   "example.2": "Make the first download smaller: the Launch check says it is over CrazyGames' 20 MB for the mobile homepage.",
   "keyword.size": "build size",
   "panel.title": "Launch check",
   "command.open": "Check before publishing…",
   "command.scan": "Scan the web build",
-  "command.last": "Last scan"
+  "command.last": "Last scan",
+  "command.phone": "Test on a phone…",
+  "command.lan": "Serve the game to phones",
+  "command.lanStatus": "Phone test status",
+  "command.lanStop": "Stop serving to phones"
 }
