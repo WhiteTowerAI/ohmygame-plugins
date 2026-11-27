@@ -3,7 +3,9 @@
 // agent, the web export the game panel plays, and the full editor on request.
 
 import { spawn } from "node:child_process";
-import { lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { constants } from "node:fs";
+import { access, chmod, lstat, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { findGodot as findGodotAt } from "./godot.mjs";
 import { godotBuild, hasWebTemplates, installWebTemplates, isSelfContained, templatesFolder, templatesProblem } from "./templates.mjs";
@@ -80,15 +82,17 @@ async function godotVersion(executable, signal) {
  */
 async function assertNoLinks(project, relative) {
   let current = project;
+  let stats;
   for (const part of relative.split("/")) {
     current = path.join(current, part);
-    const stats = await lstat(current).catch((error) => {
+    stats = await lstat(current).catch((error) => {
       if (error.code === "ENOENT") return undefined;
       throw error;
     });
     if (!stats) return;
     if (stats.isSymbolicLink()) throw new Error(`${path.relative(project, current)} is a link; the web export writes only inside the project`);
   }
+  return stats;
 }
 
 /**
@@ -101,14 +105,42 @@ async function freshBuildFolder(project) {
   await mkdir(path.join(project, WEB_BUILD_FOLDER), { recursive: true });
 }
 
-/** Adds the Web preset the build needs when a project lacks it; other presets are kept. */
-async function ensureWebPreset(folder) {
-  await assertNoLinks(folder, "export_presets.cfg");
+// Replace the config only after the complete new file has been written.
+async function savePreset(file, text, mode) {
+  if (mode !== undefined) await access(file, constants.W_OK);
+  const staging = `${file}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(staging, text, { flag: "wx", mode });
+    if (mode !== undefined) await chmod(staging, mode & 0o777);
+    await rename(staging, file);
+  } catch (error) {
+    if (error.code !== "EEXIST") await rm(staging, { force: true });
+    throw error;
+  }
+}
+
+/** Creates the Web preset or supplies the include filter missing from older presets. */
+export async function ensureWebPreset(folder) {
   const file = path.join(folder, "export_presets.cfg");
-  const text = await readFile(file, "utf8").catch(() => "");
-  if (/^name="Web"$/m.test(text)) return;
-  const indexes = [...text.matchAll(/^\[preset\.(\d+)\]$/gm)].map((match) => Number(match[1]));
-  const next = indexes.length ? Math.max(...indexes) + 1 : 0;
+  const existing = await assertNoLinks(folder, "export_presets.cfg");
+  const text = existing ? new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(await readFile(file)) : "";
+  const newline = text.includes("\r\n") ? "\r\n" : "\n";
+  // Keep the original bytes of other presets, their options, and any explicit filter.
+  const sections = text.split(/\n(?=[ \t]*\[[^\]\r\n]+\])/);
+  const webName = /^[ \t]*name[ \t]*=[ \t]*"Web"[ \t]*(?:;[^\r\n]*)?$/m;
+  let next = 0;
+  for (const [index, section] of sections.entries()) {
+    const header = /^\[preset\.(\d+)\]/.exec(section.trimStart());
+    if (!header) continue;
+    next = Math.max(next, Number(header[1]) + 1);
+    if (!webName.test(section)) continue;
+    if (!/^[ \t]*platform[ \t]*=[ \t]*"Web"/m.test(section)) return;
+    if (!/^[ \t]*include_filter[ \t]*=/m.test(section)) {
+      sections[index] = section.replace(webName, `include_filter=""${newline}$&`);
+      await savePreset(file, sections.join("\n"), existing.mode);
+    }
+    return;
+  }
   const preset = [
     `[preset.${next}]`,
     "",
@@ -116,6 +148,7 @@ async function ensureWebPreset(folder) {
     'platform="Web"',
     "runnable=true",
     'export_filter="all_resources"',
+    'include_filter=""',
     'exclude_filter=".ohmygame/*"',
     `export_path="${WEB_BUILD_FOLDER}/index.html"`,
     "",
@@ -123,8 +156,9 @@ async function ensureWebPreset(folder) {
     "",
     "variant/thread_support=false",
     "",
-  ].join("\n");
-  await writeFile(file, `${text.trimEnd()}${text ? "\n\n" : ""}${preset}`);
+  ].join(newline);
+  const prefix = text.endsWith("\n") ? text : text + newline;
+  await savePreset(file, text ? prefix + newline + preset : preset, existing?.mode);
 }
 
 const MB = (bytes) => (bytes / 1_048_576).toFixed(1);
