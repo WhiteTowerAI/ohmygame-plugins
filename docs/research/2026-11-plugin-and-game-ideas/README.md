@@ -12,3 +12,4 @@ that OhMyGame could be used to make. Written in Chinese.
 - [`idea-lab/experiments/overflow-sort/`](idea-lab/experiments/overflow-sort): the solver experiment for the
   overflow water-sort rule. Raw `results-*.jsonl` are left out; `run.py` regenerates them from fixed seeds.
 - [`idea-lab/BUILD-PLAN.md`](idea-lab/BUILD-PLAN.md): what is being built first.
+- [`issue-drafts.md`](issue-drafts.md): drafts of the two host changes ranked first (H13, H1), not posted.
