@@ -1,1 +1,7 @@
-[]
+[
+  {
+    "repository": "WhiteTowerAI/ohmygame-plugins",
+    "plugin": "ohmygame/claude-code-game-studios",
+    "reason": "OhMyGame no longer takes project templates from plugins."
+  }
+]
