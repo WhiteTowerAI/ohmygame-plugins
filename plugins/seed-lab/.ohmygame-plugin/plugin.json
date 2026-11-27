@@ -1,0 +1,99 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/seed-lab",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.37.0"
+  },
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "longDescription": "%longDescription%",
+  "examples": [
+    "%example.1%",
+    "%example.2%"
+  ],
+  "beta": true,
+  "icon": "./assets/icon.svg",
+  "categories": [
+    "testing"
+  ],
+  "keywords": [
+    "%keyword.levels%",
+    "%keyword.solver%",
+    "%keyword.difficulty%"
+  ],
+  "appliesTo": [
+    "web-game",
+    "general"
+  ],
+  "activation": "project",
+  "entrypoints": {
+    "native": "./dist/index.mjs"
+  },
+  "ui": {
+    "major": 1
+  },
+  "capabilities": {
+    "native": true,
+    "composer": true
+  },
+  "contributes": {
+    "skills": "./skills/",
+    "instructions": "When the project has a seed-lab simulation module (sim/index.ts by default) and you change its level generator, solver or rules, run seedlab_run before saying the levels can be solved or describing their difficulty, and report the solvable rate and the unsolvable, failed and timed-out seeds it lists. Don't claim every level is solvable from a few hand-picked seeds.",
+    "tools": [
+      {
+        "name": "seedlab_run",
+        "description": "Run a range of seeds through the project's simulation module (generate(seed, params) then evaluate(level, params), see the seed-lab skill) on several threads, and answer with the solvable rate, each metric's spread over solvable seeds, difficulty buckets with example seeds, and the seeds that are unsolvable, throw, time out or sit far outside the rest. Reads the project; writes only to the plugin's own data folder.",
+        "input": "./schemas/run.json",
+        "timeoutSeconds": 1800
+      }
+    ],
+    "panels": [
+      {
+        "id": "lab",
+        "title": "%panel.title%",
+        "icon": "./assets/icon.svg",
+        "area": "right",
+        "opens": "onRequest",
+        "entry": "./panel/index.html",
+        "when": "project.type == 'web-game' || project.type == 'general'"
+      }
+    ],
+    "commands": [
+      {
+        "id": "open",
+        "title": "%command.open%",
+        "run": {
+          "openPanel": "lab"
+        },
+        "slots": [
+          {
+            "slot": "game.more",
+            "when": "project.type == 'web-game' || project.type == 'general'"
+          },
+          {
+            "slot": "project.toolbar",
+            "when": "project.type == 'web-game' || project.type == 'general'"
+          }
+        ]
+      },
+      {
+        "id": "run",
+        "title": "%command.run%",
+        "run": {
+          "native": "run",
+          "changesFiles": false,
+          "timeoutSeconds": 1800
+        }
+      },
+      {
+        "id": "last",
+        "title": "%command.last%",
+        "run": {
+          "native": "last",
+          "changesFiles": false
+        }
+      }
+    ]
+  }
+}

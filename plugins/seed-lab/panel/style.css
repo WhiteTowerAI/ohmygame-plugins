@@ -1,0 +1,175 @@
+/* Sections 24px apart; the page's tokens give type and colours. The chart's
+   one series colour is the validated blue step for each surface. */
+:root {
+  --series-1: #257de0;
+  --baseline: #c2c2c2;
+}
+:root[data-scheme="dark"] {
+  --series-1: #338ced;
+  --baseline: #474747;
+}
+p,
+ul,
+figure {
+  margin: 0;
+}
+omg-page::part(body) {
+  gap: var(--space-6);
+}
+omg-section::part(body) {
+  gap: var(--space-3);
+}
+.field {
+  display: grid;
+  gap: var(--space-1);
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.muted {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.message {
+  white-space: pre-wrap;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+}
+.run-meta {
+  display: grid;
+  gap: 2px;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--space-2);
+}
+.tile {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-2) var(--space-3);
+  display: grid;
+  gap: 2px;
+}
+.tile-label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+.tile-value {
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* Status is said in words too (the label), never by colour alone. */
+.tile[data-tone="warning"] {
+  border-color: var(--color-warning);
+}
+.tile[data-tone="bad"] {
+  border-color: var(--color-danger);
+}
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+.chart {
+  display: grid;
+  gap: var(--space-1);
+}
+.chart figcaption {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.chart-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 96px;
+  border-bottom: 1px solid var(--baseline);
+}
+.slot {
+  flex: 1 1 0;
+  max-width: 28px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  /* 2px of surface between neighbouring bars. */
+  padding: 0 1px;
+  outline: none;
+}
+.bar {
+  width: 100%;
+  max-width: 24px;
+  background: var(--series-1);
+  border-radius: 4px 4px 0 0;
+}
+.slot:hover .bar,
+.slot:focus-visible .bar {
+  filter: brightness(1.15);
+  box-shadow: 0 0 0 2px var(--color-focus);
+}
+.spread {
+  font-variant-numeric: tabular-nums;
+}
+.flags {
+  display: grid;
+  gap: var(--space-1);
+}
+.flags dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.flags dd {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+.axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.tooltip {
+  position: fixed;
+  z-index: 10;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--color-surface-raised, var(--color-surface));
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.seeds,
+.items {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.items {
+  padding-left: var(--space-4);
+}
+.file {
+  display: grid;
+  gap: var(--space-1);
+}

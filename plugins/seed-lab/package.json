@@ -1,0 +1,29 @@
+{
+  "name": "@ohmygame/seed-lab",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Run thousands of seeds through a game's level generator and solver: how many can be solved, how hard they are, and which seeds to look at.",
+  "keywords": [
+    "ohmygame-plugin",
+    "testing"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/seed-lab"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "dist",
+    "locales",
+    "panel",
+    "schemas",
+    "skills",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

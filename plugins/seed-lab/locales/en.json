@@ -1,0 +1,14 @@
+{
+  "displayName": "Seed Lab",
+  "description": "Run thousands of seeds through a game's level generator and solver: how many can be solved, how hard they are, and which seeds to look at.",
+  "longDescription": "For games whose levels come from a seed: puzzles, sorting and exit games, roguelike maps, rule-driven board games. The game keeps its level generator and solver in one module without the page (sim/index.ts, which the seed-lab Skill explains how to set up), and Seed Lab runs thousands of seeds through it on several threads. It shows how many can be solved, how each measure (moves, dead ends, anything the solver reports) is spread, difficulty buckets with seeds to pick levels from, and the seeds worth a look: unsolvable, failing, too slow, or far outside the rest. The AI runs it itself after changing the generator, instead of saying the levels work. It only reads the project: results stay in the plugin's own folder.",
+  "example.1": "I changed the level generator. Run the seed lab on 10,000 seeds and tell me how many levels can't be solved.",
+  "example.2": "Split the level generator and solver into sim/index.ts so the seed lab can run them, then pick 30 seeds from easy to hard.",
+  "keyword.levels": "procedural levels",
+  "keyword.solver": "solver",
+  "keyword.difficulty": "difficulty curve",
+  "panel.title": "Seed lab",
+  "command.open": "Seed lab…",
+  "command.run": "Run seeds",
+  "command.last": "Last seed run"
+}

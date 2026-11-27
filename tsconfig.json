@@ -11,5 +11,6 @@
     "types": ["node"],
     "resolveJsonModule": true
   },
-  "include": ["src", "test", "plugins/feishu/src", "plugins/computer-use/src", "plugins/launch-check/src", "plugins/ship-ladder/src"]
+  "include": ["src", "test", "plugins/feishu/src", "plugins/computer-use/src", "plugins/launch-check/src", "plugins/ship-ladder/src", "plugins/seed-lab/src"],
+  "exclude": ["test/seed-lab/fixtures"]
 }

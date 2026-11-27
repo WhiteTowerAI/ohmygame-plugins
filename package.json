@@ -12,11 +12,12 @@
     "test": "tsx --conditions=ohmygame-source --test test/*.test.ts && npm run test:taptap",
     "typecheck": "tsc --noEmit",
     "build:feishu": "node scripts/build-feishu.mjs",
-    "pretest": "npm run build:feishu && npm run build:computer-use && npm run build:launch-check && npm run build:ship-ladder",
+    "pretest": "npm run build:feishu && npm run build:computer-use && npm run build:launch-check && npm run build:ship-ladder && npm run build:seed-lab",
     "build:computer-use": "node scripts/build-computer-use.mjs",
     "build:launch-check": "node scripts/build-launch-check.mjs",
     "build:ship-ladder": "node scripts/build-ship-ladder.mjs",
-    "test:taptap": "vitest run"
+    "test:taptap": "vitest run",
+    "build:seed-lab": "node scripts/build-seed-lab.mjs"
   },
   "dependencies": {
     "tar": "7.5.22",
@@ -30,6 +31,7 @@
     "@types/yauzl": "3.4.0",
     "es-module-lexer": "3.0.5",
     "esbuild": "0.28.2",
+    "esbuild-wasm": "0.28.2",
     "happy-dom": "20.14.6",
     "protobufjs": "7.6.6",
     "typescript": "^5.9.2",

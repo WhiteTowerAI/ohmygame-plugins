@@ -8,3 +8,4 @@ cache.json
 /.runtime/
 /plugins/launch-check/dist/
 /plugins/ship-ladder/dist/
+/plugins/seed-lab/dist/
