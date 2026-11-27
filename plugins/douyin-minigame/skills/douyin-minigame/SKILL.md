@@ -11,7 +11,7 @@ Identify the engine, its Douyin exporter or SDK, the generated game directory, a
 
 Use the engine's own route: Cocos Creator's Douyin mini-game build target, or the platform's Unity conversion SDK, distinguishing its WebGL and native targets. Keep changes in engine source or build configuration, not generated output.
 
-Check `project.config.json`, `game.json`, entry points, subpackages, and resource paths against the exporter's output, and keep the existing AppID. Use `tt` APIs for lifecycle, touch, storage, audio, and networking.
+Check `project.config.json`, `game.json`, entry points, subpackages, and resource paths against the exporter's output, and keep the existing AppID. Use `tt` APIs for lifecycle, touch, storage, audio, and networking. After each build, measure the packages with the `minigame-rewarded-ad` skill's `reference/size-check.mjs --platform douyin` (main package 4 MB; each subpackage and the whole game 20 MB, or 30 MB with virtual payment; the developer tool's own report is the one that counts). For rewarded video ads, follow the `minigame-rewarded-ad` skill.
 
 ## Developer tools
 

@@ -11,7 +11,7 @@ Mini games run on WeChat's own runtime, not a browser DOM, and differ from mini 
 
 Use the engine's own route: Cocos Creator's `wechatgame` build target, or the platform's Unity conversion SDK with its supported Unity versions. A generic Web or WebGL build is not a mini game; do not hand-write a conversion. Keep changes in engine source or build configuration, not generated output.
 
-Keep `game.json`, `project.config.json`, subpackages, and resource paths consistent with the output directory, and keep the existing AppID and developer settings. Use `wx` APIs for lifecycle, touch, storage, audio, and networking. Check package-size limits, domain allowlists, and base-library versions against the current official docs.
+Keep `game.json`, `project.config.json`, subpackages, and resource paths consistent with the output directory, and keep the existing AppID and developer settings. Use `wx` APIs for lifecycle, touch, storage, audio, and networking. After each build, measure the packages with the `minigame-rewarded-ad` skill's `reference/size-check.mjs` (main package 4 MB, independent subpackages 4 MB, all packages 30 MB; DevTools' own report is the one that counts), and check domain allowlists and base-library versions against the current official docs. For rewarded video ads, follow the `minigame-rewarded-ad` skill.
 
 ## DevTools
 
