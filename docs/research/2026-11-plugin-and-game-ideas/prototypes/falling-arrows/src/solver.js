@@ -17,6 +17,37 @@ export function solvableWithoutGravity(board, width, height) {
   }
 }
 
+/**
+ * Simple rules a player could find and stick to, each always taking the free
+ * arrow that comes first in its order. The top-down ones cancel gravity:
+ * taking the highest arrow first leaves nothing above it to fall. On boards
+ * built backwards they clear almost everything (day 0, second table).
+ */
+export const GREEDY = {
+  "top first": (a, b) => a.y - b.y || a.x - b.x,
+  "bottom first": (a, b) => b.y - a.y || b.x - a.x,
+  "left column first": (a, b) => a.x - b.x || a.y - b.y,
+  "right column first": (a, b) => b.x - a.x || a.y - b.y,
+};
+/** The ones that cancel gravity, which shipped gravity levels must defeat. */
+export const TOP_DOWN = ["top first", "left column first", "right column first"];
+
+/** Whether always taking the first free arrow in `order` clears the board. */
+export function greedyClears(board, width, height, order) {
+  let current = board;
+  for (;;) {
+    if (isSolved(current)) return true;
+    const options = moves(current, width, height, true);
+    if (!options.length) return false;
+    current = options.sort(order)[0].board;
+  }
+}
+
+/** The names of the GREEDY rules that clear the board. */
+export function greedyWins(board, width, height, names = Object.keys(GREEDY)) {
+  return names.filter((name) => greedyClears(board, width, height, GREEDY[name]));
+}
+
 /** A seeded generator for the random tapper. */
 function tapper(seed) {
   let state = seed >>> 0 || 1;

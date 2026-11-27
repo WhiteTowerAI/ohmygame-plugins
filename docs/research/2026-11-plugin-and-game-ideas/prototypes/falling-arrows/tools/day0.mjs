@@ -3,10 +3,12 @@
 // For each size, boards built backwards with gravity (so solvable with it):
 // how many can't be solved without gravity ("rescued"), how hard they are for
 // a random tapper, and how much of their map is a dead end; then the same for
-// the hardest of 8 such boards, which is how levels are chosen.
+// the hardest of 8 such boards for a random tapper. A second table: how often
+// a player sticking to one simple rule (GREEDY) clears the boards gravity
+// rescues, which is why shipped levels must also defeat the top-down rules.
 import { random } from "../../spillway-sort/src/generator.js";
 import { construct, level, TIERS } from "../src/generator.js";
-import { analyse, randomWin, solvableWithoutGravity } from "../src/solver.js";
+import { analyse, GREEDY, greedyWins, randomWin, solvableWithoutGravity, TOP_DOWN } from "../src/solver.js";
 
 const count = Number(process.argv[2] ?? 300);
 const percent = (value) => (Number.isFinite(value) ? `${(100 * value).toFixed(1)}%` : "–");
@@ -35,4 +37,22 @@ for (const [name, { width, height, fill }] of Object.entries(TIERS)) {
   console.log(
     `| ${name} ${width}×${height} | ${count} | ${mean(arrows).toFixed(1)} | ${percent(rescued / count)} | ${percent(mean(wins))} | ${percent(mean(rescuedWins))} | ${percent(mean(dead))} | ${percent(mean(chosen.map((item) => item.randomWin)))} (${chosen.length} levels) | ${percent(mean(chosen.filter((item) => item.deadRatio !== undefined).map((item) => item.deadRatio)))} |`,
   );
+}
+
+console.log("\n| Size | Boards that need gravity | " + Object.keys(GREEDY).map((name) => `"${name}" clears`).join(" | ") + " | No top-down rule clears |");
+console.log("|---|---|" + Object.keys(GREEDY).map(() => "---|").join("") + "---|");
+for (const [name, { width, height, fill }] of Object.entries(TIERS)) {
+  if (name === "tutorial") continue;
+  const wins = Object.fromEntries(Object.keys(GREEDY).map((rule) => [rule, 0]));
+  let boards = 0;
+  let beaten = 0;
+  for (let i = 0; i < count * 20 && boards < count; i += 1) {
+    const cells = construct(width, height, Math.round(width * height * fill), random(`day0-greedy-${name}-${i}`), true);
+    if (cells.replace(/\./g, "").length < width * height * fill * 0.85 || solvableWithoutGravity(cells, width, height)) continue;
+    boards += 1;
+    const cleared = greedyWins(cells, width, height);
+    for (const rule of cleared) wins[rule] += 1;
+    if (!cleared.some((rule) => TOP_DOWN.includes(rule))) beaten += 1;
+  }
+  console.log(`| ${name} ${width}×${height} | ${boards} | ${Object.values(wins).map((value) => percent(value / boards)).join(" | ")} | ${beaten} (${percent(beaten / boards)}) |`);
 }

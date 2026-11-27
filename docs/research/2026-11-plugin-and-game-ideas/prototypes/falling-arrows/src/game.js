@@ -1,6 +1,5 @@
-import { createRecorder, levelNumber, localDate, pressable } from "../../shared/record.js";
-import { level as generate } from "./generator.js";
-import { canLeave, isSolved, take } from "./rules.js";
+import { createRecorder, dayNumber, levelNumber, pressable } from "../../shared/record.js";
+import { isSolved, take } from "./rules.js";
 
 // The playable prototype. Tap an arrow: it slides out the way it points, or
 // hits something and costs a heart. With gravity, what's above it falls one
@@ -91,10 +90,15 @@ function open(index, level = levels[index]) {
   render();
 }
 
+/**
+ * Today's level, from a pool built with the levels: a gravity board no
+ * top-down rule clears takes thousands of tries to find, too slow for the
+ * page. The control's is matched to it. Its own kind keeps it out of the
+ * numbered levels on the sheet.
+ */
 function openDaily() {
-  const daily = generate(`day-${localDate()}`, { tier: "main", kind: "rescued" });
-  // The control's daily board: the same size and number of arrows, without gravity.
-  open(-1, control ? generate(`control-day-${localDate()}`, { tier: "main", kind: "control", arrows: daily.arrows }) : daily);
+  const pool = pack.daily[control ? "control" : "main"];
+  open(-1, { ...pool[dayNumber() % pool.length], kind: "daily" });
 }
 
 const over = () => isSolved(game.board) || game.hearts <= 0;
@@ -159,7 +163,6 @@ function render() {
         cell.dataset.press = `arrow-${x}-${y}`;
         cell.setAttribute("role", "button");
         cell.setAttribute("aria-label", `${arrow} at ${x + 1}, ${y + 1}`);
-        if (!preview && canLeave(game.board, width, height, x, y)) cell.classList.add("free");
         if (preview && arrow !== game.board[y * width + x]) cell.classList.add("ghost");
         pressable(cell, {
           onTap: () => tap(x, y),
@@ -170,7 +173,10 @@ function render() {
           },
         });
       }
-      if (preview && preview.from.x === x && preview.from.y === y) cell.classList.add(preview.board ? "leaving" : "blocked");
+      if (preview && preview.from.x === x && preview.from.y === y) {
+        cell.classList.add(preview.board ? "leaving" : "blocked");
+        cell.dataset.taken = GLYPH[game.board[y * width + x]];
+      }
       cells.push(cell);
     }
   }
@@ -179,11 +185,12 @@ function render() {
 
 /** Holding an arrow shows the board after taking it, or that it would bump. Taking nothing. */
 function hold(x, y) {
-  if (over()) return;
+  if (over()) return false;
   const { width, height } = game.level;
-  record.act("previews");
+  record.note("previews");
   game.preview = { board: take(game.board, width, height, x, y, gravity) ?? undefined, from: { x, y } };
   render();
+  return true;
 }
 
 els.undo.addEventListener("click", () => {
@@ -257,6 +264,7 @@ window.__OHMYGAME_PLAYTEST__ = {
   },
 };
 
-// A reload goes back to the level the player was on.
-if (params.get("daily") === "1") openDaily();
-else open((levelNumber(params.get("level"), levels.length) ?? (record.current >= 0 ? record.current + 1 : 1)) - 1);
+// A reload goes back to the level the player was on (starting it over).
+const asked = levelNumber(params.get("level"), levels.length);
+if (params.get("daily") === "1" || (asked === undefined && record.current === -1)) openDaily();
+else open((asked ?? (record.current >= 0 ? record.current + 1 : 1)) - 1);

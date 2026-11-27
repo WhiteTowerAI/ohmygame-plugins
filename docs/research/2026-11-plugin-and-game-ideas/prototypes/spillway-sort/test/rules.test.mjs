@@ -31,6 +31,11 @@ describe("the overflow rule", () => {
     assert.equal(pour(["dd", "dddd", "aaaa", "bbbb"], 0, 1, 4, pipes, "O1"), null);
   });
 
+  it("refuses a pour that would leave every bottle as it was", () => {
+    // Bottle 1 is full of b and its pipe runs back to bottle 0: pouring b from 0 sends it straight back.
+    assert.equal(pour(["ab", "bbbb", ""], 0, 1, 4, { 1: 0 }, "O1"), null);
+  });
+
   it("ignores pipes in the control version", () => {
     assert.equal(pour(["cbb", "abbb", "ca", ""], 0, 1, 4, pipes, "classic"), null);
   });
@@ -85,6 +90,7 @@ describe("levels", () => {
       assert.equal(played.solvable, true, item.seed);
       assert.equal(played.optimal, item.optimal, item.seed);
     }
+    for (const item of pack.main.filter((level) => level.kind === "rescued")) assert.equal(analyse(item.bottles, 4, item.pipes, "classic").solvable, false, `${item.seed} can't be solved without the overflow`);
     for (const item of pack.control) {
       assert.deepEqual(item.pipes, {});
       assert.equal(analyse(item.bottles, 4, {}, "classic").optimal, item.optimal, item.seed);

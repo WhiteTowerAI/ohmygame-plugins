@@ -34,7 +34,9 @@ const done = (bottle, capacity) => bottle.length === capacity && [...bottle].eve
 /**
  * Pours from bottle `from` into bottle `to`. Returns the new state and the
  * path the water took (`to`, then each bottle it overflowed into), or null when
- * the pour isn't allowed. `rule` is "O1" (overflow pipes) or "classic" (pipes
+ * the pour isn't allowed. A pour that would leave every bottle as it was (into
+ * a full bottle whose pipe runs straight back to the source) isn't allowed: it
+ * would show water flowing and count a move, but do nothing. `rule` is "O1" (overflow pipes) or "classic" (pipes
  * ignored), the control version without overflow.
  */
 export function pour(state, from, to, capacity, pipes, rule = "O1") {
@@ -66,6 +68,7 @@ export function pour(state, from, to, capacity, pipes, rule = "O1") {
     path.push(onward);
     current = onward;
   }
+  if (next.every((bottle, index) => bottle === state[index])) return null;
   return { state: next, path, amount: run, overflow: path.length > 1 };
 }
 

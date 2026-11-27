@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import { construct, level } from "../src/generator.js";
 import { canLeave, isSolved, take } from "../src/rules.js";
-import { analyse, findSolution, randomWin, solvableWithoutGravity } from "../src/solver.js";
+import { analyse, findSolution, greedyClears, greedyWins, GREEDY, randomWin, solvableWithoutGravity, TOP_DOWN } from "../src/solver.js";
 import { random } from "../../spillway-sort/src/generator.js";
 
 // Three columns, two rows:  R . L   (the R and the L face each other)
@@ -59,6 +59,15 @@ describe("boards built backwards", () => {
   });
 });
 
+describe("greedy players", () => {
+  it("take the first free arrow in their order", () => {
+    // One column, ↓ above ↑: each blocks the other, so no order clears it.
+    assert.equal(greedyClears("D" + "U" + ".", 1, 3, GREEDY["top first"]), false);
+    // Two left arrows side by side: only the leftmost can leave first; any order clears it.
+    for (const name of Object.keys(GREEDY)) assert.equal(greedyClears("LL", 2, 1, GREEDY[name]), true, name);
+  });
+});
+
 describe("levels", () => {
   it("are the same for the same seed, and fit their kind", () => {
     const rescued = level("check", { tier: "main", kind: "rescued" });
@@ -72,11 +81,12 @@ describe("levels", () => {
     assert.equal(solvableWithoutGravity(control.board, control.width, control.height), true);
   });
 
-  it("in levels.json can be cleared as they are played, and each control matches its level", async () => {
+  it("in levels.json can be cleared as they are played, no top-down habit clears a gravity level, and each control matches its level", async () => {
     const pack = JSON.parse(await readFile(new URL("../levels.json", import.meta.url), "utf8"));
     assert.equal(pack.main.length, pack.control.length);
-    pack.main.forEach((item, i) => {
-      const matched = pack.control[i];
+    assert.equal(pack.daily.main.length, pack.daily.control.length);
+    [...pack.main.map((item, i) => [item, pack.control[i]]), ...pack.daily.main.map((item, i) => [item, pack.daily.control[i]])].forEach(([item, matched]) => {
+      if (item.kind === "rescued") assert.deepEqual(greedyWins(item.board, item.width, item.height, TOP_DOWN), [], item.seed);
       assert.ok(findSolution(item.board, item.width, item.height), item.seed);
       assert.equal(solvableWithoutGravity(item.board, item.width, item.height), item.kind === "plain", item.seed);
       assert.equal(solvableWithoutGravity(matched.board, matched.width, matched.height), true, matched.seed);

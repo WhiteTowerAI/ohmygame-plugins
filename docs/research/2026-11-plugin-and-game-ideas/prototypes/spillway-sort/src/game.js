@@ -83,9 +83,10 @@ function open(index, level = levels[index]) {
   render();
 }
 
+/** Today's level: its own kind, so the sheet can leave it out of the numbered levels. */
 function openDaily() {
   const daily = generate(`day-${localDate()}`, { tier: "rescued", kind: control ? "classic" : "rescued" });
-  open(-1, control ? { ...daily, kind: "control", pipes: {} } : daily);
+  open(-1, { ...daily, kind: "daily", ...(control ? { pipes: {} } : {}) });
 }
 
 function tryPour(from, to) {
@@ -186,14 +187,18 @@ function tap(index) {
   render();
 }
 
-/** Holding the bottle you'd pour into shows where the water goes; only a pour that's allowed counts as a preview. */
+/**
+ * Holding the bottle you'd pour into shows where the water goes. Only a pour
+ * that's allowed shows (and counts as) a preview; otherwise the hold is a tap.
+ */
 function hold(index) {
-  if (game.selected === undefined || index === game.selected || isSolved(game.state, capacity)) return;
+  if (game.selected === undefined || index === game.selected || isSolved(game.state, capacity)) return false;
   const poured = pour(game.state, game.selected, index, capacity, game.level.pipes, rule);
-  if (!poured) return;
-  record.act("previews");
+  if (!poured) return false;
+  record.note("previews");
   game.preview = poured;
   render();
+  return true;
 }
 
 els.undo.addEventListener("click", () => {
@@ -268,6 +273,7 @@ window.__OHMYGAME_PLAYTEST__ = {
   },
 };
 
-// A reload goes back to the level the player was on.
-if (params.get("daily") === "1") openDaily();
-else open((levelNumber(params.get("level"), levels.length) ?? (record.current >= 0 ? record.current + 1 : 1)) - 1);
+// A reload goes back to the level the player was on (starting it over).
+const asked = levelNumber(params.get("level"), levels.length);
+if (params.get("daily") === "1" || (asked === undefined && record.current === -1)) openDaily();
+else open((asked ?? (record.current >= 0 ? record.current + 1 : 1)) - 1);

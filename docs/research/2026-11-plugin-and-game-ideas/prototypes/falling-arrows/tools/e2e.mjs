@@ -56,6 +56,7 @@ try {
   check(level.kind === "rescued", "level 11 needs gravity");
   const { width, height } = level;
   check((await snapshot()).board === level.board, "it opens with the level's board");
+  check((await page.locator(".cell.free").count()) === 0, "it doesn't show which arrows can leave");
   if (shots) await page.screenshot({ path: path.join(shots, "arrows-level.png") });
 
   // A blocked arrow bounces and costs a heart.
@@ -73,7 +74,9 @@ try {
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.waitForTimeout(500);
-  check((await page.locator(".cell.leaving").count()) === 1, "holding an arrow previews taking it");
+  const GLYPH = { U: "↑", D: "↓", L: "←", R: "→" };
+  const leaving = page.locator(".cell.leaving");
+  check((await leaving.count()) === 1 && (await leaving.getAttribute("data-taken")) === GLYPH[level.board[first.y * width + first.x]], "holding an arrow previews taking it, and marks the arrow taken");
   if (shots) await page.screenshot({ path: path.join(shots, "arrows-preview.png") });
   await page.mouse.up();
   check((await snapshot()).moves === 0, "the preview takes nothing");
@@ -84,6 +87,8 @@ try {
   await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: at });
   await cdp.send("Input.dispatchTouchEvent", { type: "touchCancel", touchPoints: [] });
   check((await snapshot()).moves === 0, "a cancelled touch takes nothing");
+  await page.waitForTimeout(650);
+  check((await page.locator(".cell.leaving, .cell.blocked").count()) === 0, "nor turns into a preview");
 
   // Undo and restart.
   await tap(first.x, first.y);
@@ -119,18 +124,18 @@ try {
   check((await snapshot()).level === 14, "a reload resumes the level");
   await page.evaluate(() => window.__OHMYGAME_PLAYTEST__.setSeed(0));
   state = await snapshot();
-  check(state.level === 0 && state.kind === "rescued", "level 0 opens today's level");
+  check(state.level === 0 && state.kind === "daily" && pack.daily.main.some((item) => item.board === state.board), "level 0 opens today's level, from the daily pool");
 
-  // With the preview off, holding takes nothing and shows nothing; the record is kept apart.
+  // With the preview off, a long press is just a slow tap; the record is kept apart.
   await page.goto(`${base}?level=11&preview=0&player=tester-a`);
   await page.waitForFunction(() => window.__OHMYGAME_PLAYTEST__);
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(650);
   check((await page.locator(".cell.leaving, .cell.blocked").count()) === 0, "with the preview off, holding shows nothing");
   await page.mouse.up();
   state = await snapshot();
-  check(state.moves === 0 && state.version === "main-nopreview", "and takes nothing, recorded as its own version");
+  check(state.moves === 1 && state.version === "main-nopreview", "and takes the arrow, recorded as its own version");
   check((await exported("main-nopreview")).levels[level.seed].tries[0].previews === 0, "no previews are counted");
 
   // The control version doesn't fall.

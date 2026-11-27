@@ -75,6 +75,7 @@ button:disabled {
   padding: 8px 0;
 }
 .cell {
+  position: relative;
   width: var(--cell);
   height: var(--cell);
   border-radius: 10px;
@@ -93,16 +94,23 @@ button:disabled {
   color: #eef0f6;
   cursor: pointer;
 }
-.cell.free {
-  color: #9be3a8;
-}
 .cell.ghost {
   opacity: 0.45;
   outline: 2px dashed rgba(255, 255, 255, 0.7);
   outline-offset: -3px;
 }
+/* Where the previewed arrow leaves from. With gravity the arrow above has
+   fallen into this cell, so the arrow taken shows as a badge in the corner. */
 .cell.leaving {
-  outline: 2px solid #6fc3df;
+  box-shadow: inset 0 0 0 3px #6fc3df;
+}
+.cell.leaving::before {
+  content: attr(data-taken);
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 0.42em;
+  color: #6fc3df;
 }
 .cell.blocked {
   outline: 2px solid #e8505b;

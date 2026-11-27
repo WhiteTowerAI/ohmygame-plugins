@@ -3,7 +3,8 @@
 The first game candidate in [`FINAL.md`](../../idea-lab/FINAL.md) §5 that shares a
 pipeline with Falling Arrows. Water sort with overflow pipes: pour into a bottle
 with a pipe and what rises above its rim flows into the next bottle, whatever
-that bottle's top colour; full bottles pass it on. The rule is O1 of the
+that bottle's top colour; full bottles pass it on. A pour that would change
+nothing (into a full bottle whose pipe runs straight back) isn't allowed. The rule is O1 of the
 [solver experiment](../../idea-lab/experiments/overflow-sort/).
 
 **This is a test, not a game yet.** Its job is to find out, with real players,
@@ -23,12 +24,14 @@ npx serve docs/research/2026-11-plugin-and-game-ideas/prototypes
 
 - Tap a bottle, then the bottle to pour into. After choosing where to pour
   from, hold the bottle you'd pour into for half a second to see where the
-  water would go without pouring. A refused pour shakes the bottle.
+  water would go without pouring. A hold with nothing to show is a tap. A
+  refused pour shakes the bottle.
 - `?level=11` opens a level; `?daily=1` today's level (by the device's date);
   `?control=1` the control version. A reload goes back to the level the player
-  was on.
+  was on (the daily one too), starting it over.
 - Each tester gets their own record: `?player=anna`, or **Levels → New player**
-  on a shared test phone.
+  on a shared test phone (which takes `?player=` out of the address, so a
+  reload keeps the new tester).
 - **Levels → Copy results** copies that player's record for the sheet below.
 - The page has OhMyGame's playtest bridge: `window.__OHMYGAME_PLAYTEST__`
   `snapshot()` (player, level, kind, bottles, pipes, moves, solved), `reset()`,
@@ -38,11 +41,20 @@ npx serve docs/research/2026-11-plugin-and-game-ideas/prototypes
 
 It's there to tell whether the pipes, rather than just more water sort, are
 what players like. So its levels are matched to the main version's, level for
-level: of 40 classic-solvable deals with the same bottles and colours, the one
-closest in shortest solution and dead-end ratio. On levels 11–22 the main
-version averages 18.9 moves and 0.71 dead ends; the control 18.3 and 0.60.
-The gap that's left is the pipes' own: a rescued level needs them, so it is a
-little harder by construction.
+level: of 160 classic-solvable deals with the same bottles and colours, the
+one closest in shortest solution and dead-end share, where having fewer dead
+ends counts four times as much as having more (an easier control would flatter
+it). It isn't an exact match:
+
+| Levels | Main: moves | dead ends | Control: moves | dead ends |
+|---|---|---|---|---|
+| 11–22 (6 colours) | 18.9 | 0.71 | 18.3 | 0.64 |
+| 23–30 (8 colours) | 26.4 | 0.71 | 24.8 | 0.66 |
+
+Classic deals have fewer dead ends than rescued ones at the same size, so the
+control stays a little easier. That works against the pipes on the "next
+level" rate, so a main version that still comes out ahead is a fair result.
+One that comes out slightly behind is not a clear loss.
 
 ## What's in it
 
@@ -80,13 +92,18 @@ The e2e needs Playwright; where it is installed globally, set
 |---|---|---|---|
 | Overflow prediction | Before a pour into a piped bottle, the player points at where the water will end up; count right and wrong | ≥70% | <50% |
 | Rescued levels solved | From Copy results: levels of `kind: "rescued"` with a try whose `outcome` is `solved` ÷ rescued levels with any try | 40–80% | <25% |
-| Hesitation at the first overflow | On the first rescued level's solving try: `firstOverflow.pauseMs` (the pause before that pour) and `firstOverflow.previewsBefore` | — | — |
-| Next level rate | From `opens`: solves followed by an open of a different level ÷ solves, main vs control | main ≥ control | main < control |
+| Hesitation at the first overflow | On the first rescued level's solving try: `firstOverflow.pauseMs` (time since the last pour, however many previews came between) and `firstOverflow.previewsBefore` | — | — |
+| Next level rate | From `opens`: solves followed by a try on a different level ÷ solves, main vs control | main ≥ control | main < control |
 | "What's different?" | After both versions, ask in one sentence | ≥3 of 5 can say | ≥3 of 5 can't |
 
-A try ends `solved`, or `abandoned` when the player restarts or opens another
-level; a try still open when results are copied has no `outcome`. Each try
-also has `moves`, `undos`, `previews` and its start and end times.
+A try starts when the player first does something on a level (picks a
+bottle up and pours, or previews), so a level opened and left, or the last
+tester's level on a shared phone, records nothing; `opens` lists the tries in
+order. A try ends `solved`, or `abandoned` when the player restarts or opens
+another level, or with `reason: "reload"` when a reload or a closed tab cut it
+off. A try still open when results are copied has no `outcome`. Each try has
+`moves`, `undos`, `previews` and its start and end times. The daily level has
+`kind: "daily"`; leave it out of the measures above.
 
 If any kill line is crossed, Spillway Sort leaves the shortlist and becomes one
 skin of the shared pipeline; Falling Arrows becomes its only outlet.

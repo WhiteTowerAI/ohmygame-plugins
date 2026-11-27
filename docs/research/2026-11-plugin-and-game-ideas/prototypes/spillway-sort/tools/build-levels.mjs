@@ -31,12 +31,17 @@ function mainLevel(entry) {
   throw new Error(`No level for ${entry.seed}`);
 }
 
+const CONTROL_CANDIDATES = 160;
 function controlLevel(main, index) {
   let best;
-  for (let k = 0; k < 40; k += 1) {
+  // Classic deals tend to have fewer dead ends, and an easier control would
+  // flatter it on the "next level" rate, so falling short on dead ends costs
+  // more than overshooting.
+  for (let k = 0; k < CONTROL_CANDIDATES; k += 1) {
     const found = level(`control-${index}-${k}`, { tier: main.tier, kind: "classic", maxTries: 2000 });
     if (!found) continue;
-    const distance = Math.abs(found.optimal - main.optimal) + 20 * Math.abs(found.deadRatio - main.deadRatio);
+    const short = Math.max(0, main.deadRatio - found.deadRatio);
+    const distance = Math.abs(found.optimal - main.optimal) + 40 * short + 10 * Math.max(0, found.deadRatio - main.deadRatio);
     if (!best || distance < best.distance) best = { ...found, distance };
   }
   const { distance, ...chosen } = best;

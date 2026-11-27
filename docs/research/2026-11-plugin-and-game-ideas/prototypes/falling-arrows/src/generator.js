@@ -1,6 +1,6 @@
 import { random } from "../../spillway-sort/src/generator.js";
 import { canLeave } from "./rules.js";
-import { analyse, findSolution, randomWin, solvableWithoutGravity } from "./solver.js";
+import { analyse, findSolution, greedyWins, randomWin, solvableWithoutGravity, TOP_DOWN } from "./solver.js";
 
 // Seeded boards, on the pipeline Spillway Sort uses: the same seeded
 // generator, a solver, and levels chosen by what the solver says.
@@ -59,8 +59,10 @@ export function construct(width, height, arrows, next, gravity = true) {
  * Boards built this way are easy (a random tapper solves most), so it builds
  * `candidates` that fit and keeps the one a random tapper solves least often.
  * `arrows` asks for exactly that many, to match a control board to a level.
+ * `beatTopDown` also rejects boards a top-down rule clears (see GREEDY):
+ * only about one board in 7,000–20,000 passes, so it's for offline builds.
  */
-export function level(seed, { tier = "main", kind = "rescued", candidates = 8, maxTries = 400, arrows: exactly } = {}) {
+export function level(seed, { tier = "main", kind = "rescued", candidates = 8, maxTries = 400, arrows: exactly, beatTopDown = false } = {}) {
   const { width, height, fill } = TIERS[tier];
   const target = exactly ?? Math.round(width * height * fill);
   let best;
@@ -72,6 +74,8 @@ export function level(seed, { tier = "main", kind = "rescued", candidates = 8, m
     if (exactly ? arrows !== exactly : arrows < target * 0.85) continue;
     const plain = solvableWithoutGravity(cells, width, height);
     if (kind === "control" ? !plain : (kind === "plain") !== plain) continue;
+    // Cheaper first: a rule that clears it also proves it solvable.
+    if (beatTopDown && greedyWins(cells, width, height, TOP_DOWN).length) continue;
     if (kind !== "control" && !findSolution(cells, width, height)) continue;
     found += 1;
     const win = kind === "control" ? 1 : randomWin(cells, width, height, { rollouts: 120, seed: attempt + 1 });
