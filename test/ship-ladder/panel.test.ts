@@ -135,6 +135,18 @@ describe("the Ship ladder panel page", () => {
     expect(JSON.parse(text)).toEqual({ coreProbe: { actions: [{ type: "wait", milliseconds: 1 }], state: "x" }, shipDate: "2026-12-11", core: "Sort the water" });
   });
 
+  it("keeps the field being typed in when the page redraws", async () => {
+    const root = await show();
+    const core = root.querySelector('[data-field="core"]') as HTMLElement & { value: string };
+    core.value = "Sort the water";
+    core.dispatchEvent(new Event("input"));
+    // The agent changes a file: the page reads the state again and redraws.
+    bridge.listeners.get("files")!({ paths: ["design/ship.json"] });
+    await vi.waitFor(() => expect(names().filter((name) => name === "state").length).toBeGreaterThan(1));
+    expect(root.querySelector('[data-field="core"]')).toBe(core);
+    expect(core.value).toBe("Sort the water");
+  });
+
   it("offers the fallback build once when the plugin opens it in a jam's last day", async () => {
     bridge.opened = { jamAlert: true };
     bridge.view.jam = { deadline: new Date(Date.now() + 3 * 3600_000).toISOString(), name: "Mini Jam", left: {} };

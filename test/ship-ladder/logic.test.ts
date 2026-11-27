@@ -18,9 +18,14 @@ describe("reading Game Tests' results", () => {
     });
   });
 
+  it("reads the verdict line of a long report that was cut off at its end", () => {
+    expect(run('40 of 40 game tests passed.\npassed a.json "A" at 390x844\npassed b.json', { truncated: true }).verdict).toBe("passed");
+    expect(run("39 of 40 game tests passed.\npassed a.json", { truncated: true })).toEqual({ verdict: "failed", detail: "1 of 40 game tests failed" });
+  });
+
   it("can't tell from a cut-off, failed, cancelled, empty or unfamiliar answer", () => {
     const unknown = [
-      run("3 of 3 game tests passed.", { truncated: true }),
+      run("3 of 3 game tests pass", { truncated: true }),
       run("3 of 3 game tests passed.", { status: "failed" }),
       run("Cancelled: 1 of 3 game tests passed."),
       run("0 of 0 game tests passed."),

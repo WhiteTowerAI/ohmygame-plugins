@@ -87,9 +87,15 @@ export function activate(context: PluginContext): void {
 
   context.registerHook("turn.completed", async () => {
     const { plan: ship } = await plan();
-    const state = await store.read();
-    if (!ship?.jam || !shouldRemind(ship.jam, state.reminded, now())) return;
-    await store.update((current) => ({ ...current, reminded: [...current.reminded, jamKey(ship.jam!)] }));
+    const jam = ship?.jam;
+    if (!jam) return;
+    // Decided inside the update, so two turns ending together remind once.
+    let due = false;
+    await store.update((current) => {
+      due = shouldRemind(jam, current.reminded, now());
+      return due ? { ...current, reminded: [...current.reminded, jamKey(jam)] } : current;
+    });
+    if (!due) return;
     // Open the panel once, which offers the fallback build; a closed project can't.
     await context.panels?.open("ladder", { state: { jamAlert: true } }).catch(() => {});
     return { notice: JAM_NOTICE, tone: "danger" };

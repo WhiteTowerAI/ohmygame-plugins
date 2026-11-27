@@ -47,3 +47,8 @@ omg-section::part(body) {
   font-weight: 600;
   line-height: 20px;
 }
+.live,
+.plan {
+  display: grid;
+  gap: var(--space-6);
+}

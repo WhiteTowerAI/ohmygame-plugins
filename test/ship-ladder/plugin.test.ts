@@ -117,6 +117,16 @@ describe("the ship-ladder plugin", () => {
     expect(JAM_NOTICE.length).toBeLessThanOrEqual(300);
   });
 
+  it("reminds once when two turns end at the same moment", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-12-06T16:00:00Z"));
+    const plugin = await host({ plan: { jam: { deadline: "2026-12-07T15:00:00Z" } } });
+    const done = { conversationId: "c", status: "completed", changes: [] };
+    const answers = await Promise.all([plugin.hear("turn.completed", done), plugin.hear("turn.completed", { ...done, conversationId: "d" })]);
+    expect(answers.filter(Boolean)).toHaveLength(1);
+    expect(plugin.panels.open).toHaveBeenCalledTimes(1);
+  });
+
   it("ticks and unticks the rungs a person judges, and only those", async () => {
     const plugin = await host();
     expect((await plugin.run("mark", { rung: "loop", done: true })).ladder[2]).toMatchObject({ verdict: "passed", judgement: { source: "person" } });

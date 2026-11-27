@@ -58,8 +58,10 @@ export function standing(state: LadderState): { rung: Rung; verdict: Verdict | "
  */
 export function gameTestVerdict(result: { status: string; text: string; truncated?: boolean }): { verdict: Verdict; detail?: string } {
   if (result.status !== "succeeded") return { verdict: "unknown", detail: "The game_test call failed" };
-  if (result.truncated) return { verdict: "unknown", detail: "The game_test answer was cut off" };
+  // A long report is cut at its end; the verdict is its first line, so only a
+  // failure's detail may be missing. A first line cut off can't be read.
   const [first = "", ...rest] = result.text.split("\n");
+  if (result.truncated && !rest.length) return { verdict: "unknown", detail: "The game_test answer was cut off" };
   if (/^This project has no game tests yet\./.test(first)) return { verdict: "unknown", detail: "There are no game tests yet" };
   if (first.startsWith("Cancelled: ")) return { verdict: "unknown", detail: "The game tests were stopped" };
   const match = /^(\d+) of (\d+) game tests passed\.$/.exec(first.trim());

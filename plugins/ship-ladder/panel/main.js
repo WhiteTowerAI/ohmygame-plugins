@@ -208,6 +208,8 @@ const field = (key, label, hint, multiline = false) =>
       input: (event) => {
         state.form = { ...state.form, [key]: event.target.value ?? event.detail?.value ?? "" };
         state.dirty = true;
+        // The fields on screen are the ones being edited: keep them.
+        planKey = "editing";
         state.saved = false;
       },
     },
@@ -230,7 +232,7 @@ function planSection() {
       field("core", t.core, t.coreHint, true),
       field("notDoing", t.notDoing, t.notDoingHint, true),
       field("jamDeadline", t.jamDeadline, t.jamDeadlineHint),
-      state.form.jamDeadline ? field("jamName", t.jamName) : null,
+      field("jamName", t.jamName),
     ),
     h("div", { class: "row" }, h("omg-button", { variant: "primary", on: { click: save } }, t.save), state.saved ? h("span", { class: "muted", role: "status" }, t.saved) : null),
   );
@@ -287,10 +289,20 @@ function headline() {
   return parts.length ? h("div", { class: "row" }, parts) : null;
 }
 
+// The page has two parts: what changes on its own (the countdown, the ladder)
+// and the plan form. The form is redrawn only when what it shows changes, never
+// while the person is editing it, so typing keeps its focus.
+const live = h("div", { class: "live" });
+const planHolder = h("div", { class: "plan" });
+let planKey;
 function render() {
-  root.replaceChildren(
-    ...[headline(), state.error ? h("omg-banner", { tone: "bad" }, state.error) : null, ladderSection(), planSection()].filter(Boolean),
-  );
+  if (!live.isConnected) root.replaceChildren(live, planHolder);
+  live.replaceChildren(...[headline(), state.error ? h("omg-banner", { tone: "bad" }, state.error) : null, ladderSection()].filter(Boolean));
+  const key = state.dirty ? "editing" : JSON.stringify([state.form, Boolean(state.view?.plan), state.view?.problems ?? [], state.saved]);
+  if (key !== planKey) {
+    planKey = key;
+    planHolder.replaceChildren(planSection());
+  }
 }
 
 // Opened by the plugin at the jam's last day: offer the fallback build.
