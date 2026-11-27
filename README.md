@@ -61,6 +61,12 @@ publisher only this organization can use:
   against OhMyGame Community, itch.io, CrazyGames, YouTube Playables and Poki
   limits, each with its source (requires OhMyGame API 2.37). Build it with
   `npm run build:launch-check` for source development.
+- Finishing a game: [`ship-ladder`](plugins/ship-ladder), an optional Beta that
+  keeps a ship date and a not-doing list in `design/ship.json` for every agent
+  to read, judges three rungs (the game starts, the core loop does something,
+  you can lose and play again) from game tests and its own checks, and counts
+  down a jam deadline with a fallback build (requires OhMyGame API 2.37). Build
+  it with `npm run build:ship-ladder` for source development.
 - Messaging connections: [`feishu`](plugins/feishu), an optional private-chat
   bot with an explicit allowed user, durable delivery tracking and approvals
   kept in OhMyGame (Beta; use desktop Beta 5.8 or newer). Build it with

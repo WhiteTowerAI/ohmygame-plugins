@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "rung": {
+      "enum": [
+        "core",
+        "loop"
+      ],
+      "description": "The rung the person ticks or unticks."
+    },
+    "done": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "rung",
+    "done"
+  ],
+  "additionalProperties": false
+}

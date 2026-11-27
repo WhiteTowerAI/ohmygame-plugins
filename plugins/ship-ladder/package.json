@@ -1,0 +1,28 @@
+{
+  "name": "@ohmygame/ship-ladder",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Keep a game small enough to finish: a ship date and a not-doing list every agent reads, a ladder the game climbs from starting to playable, and a jam countdown with a fallback build.",
+  "keywords": [
+    "ohmygame-plugin",
+    "workflow"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WhiteTowerAI/ohmygame-plugins.git",
+    "directory": "plugins/ship-ladder"
+  },
+  "files": [
+    ".ohmygame-plugin",
+    "assets",
+    "dist",
+    "locales",
+    "panel",
+    "schemas",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

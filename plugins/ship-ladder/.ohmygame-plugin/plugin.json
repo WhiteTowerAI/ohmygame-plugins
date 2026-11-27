@@ -1,0 +1,78 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/ship-ladder",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.37.0"
+  },
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "longDescription": "%longDescription%",
+  "examples": ["%example.1%", "%example.2%"],
+  "beta": true,
+  "icon": "./assets/icon.svg",
+  "categories": ["workflow", "design"],
+  "keywords": ["%keyword.scope%", "%keyword.jam%", "%keyword.ship%"],
+  "appliesTo": ["web-game", "general"],
+  "activation": "project",
+  "entrypoints": {
+    "native": "./dist/index.mjs"
+  },
+  "ui": {
+    "major": 1
+  },
+  "capabilities": {
+    "native": true,
+    "game": true,
+    "composer": true,
+    "project.files": "write"
+  },
+  "projectFiles": ["./design/ship.json"],
+  "contributes": {
+    "instructions": "This project keeps its plan in design/ship.json: the ship date, where the game goes out, its core loop in one sentence (core), what this version leaves out (notDoing), and an optional jam deadline. Read it before planning work and keep the work inside it. When there is no plan yet and the person starts a new game, write one with them first, keeping the first version small. When the person asks for something on the notDoing list, do it as asked, and say in your end-of-turn summary that it was on the not-doing list. Don't stop to ask for approval because of the plan. Don't say a rung of the Ship ladder is reached; the plugin judges that from game tests and its own checks.",
+    "hooks": ["tool.afterCall", "turn.completed"],
+    "panels": [
+      {
+        "id": "ladder",
+        "title": "%panel.title%",
+        "icon": "./assets/icon.svg",
+        "area": "right",
+        "opens": "onRequest",
+        "entry": "./panel/index.html",
+        "when": "project.type == 'web-game' || project.type == 'general'"
+      }
+    ],
+    "commands": [
+      {
+        "id": "starter",
+        "title": "%command.starter%",
+        "run": {
+          "prompt": "Before building, write design/ship.json for a new game with me: a ship date, where it goes out, the core loop in one sentence, and a not-doing list that keeps the first version small enough to finish by that date. Ask me what the game is about first.",
+          "insert": true
+        },
+        "slots": [{ "slot": "home.starters" }]
+      },
+      {
+        "id": "open",
+        "title": "%command.open%",
+        "run": { "openPanel": "ladder" },
+        "slots": [{ "slot": "project.toolbar", "when": "project.type == 'web-game' || project.type == 'general'" }]
+      },
+      {
+        "id": "state",
+        "title": "%command.state%",
+        "run": { "native": "state", "changesFiles": false }
+      },
+      {
+        "id": "check",
+        "title": "%command.check%",
+        "run": { "native": "check", "changesFiles": false, "timeoutSeconds": 180 }
+      },
+      {
+        "id": "mark",
+        "title": "%command.mark%",
+        "run": { "native": "mark", "changesFiles": false, "input": "./schemas/mark.json" }
+      }
+    ]
+  }
+}

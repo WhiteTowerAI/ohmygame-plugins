@@ -1,0 +1,49 @@
+p,
+ul,
+ol {
+  margin: 0;
+}
+omg-page::part(body) {
+  gap: var(--space-6);
+}
+omg-section::part(body) {
+  gap: var(--space-3);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.form {
+  display: grid;
+  gap: var(--space-3);
+}
+.muted {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+.small {
+  font-size: 12px;
+  line-height: 18px;
+}
+.rungs {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.rung {
+  display: grid;
+  grid-template-columns: max-content 1fr auto;
+  align-items: start;
+  gap: var(--space-3);
+}
+.rung omg-status {
+  white-space: nowrap;
+}
+.rung-title {
+  font-weight: 600;
+  line-height: 20px;
+}

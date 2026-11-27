@@ -7,3 +7,4 @@ cache.json
 /plugins/computer-use/dist/
 /.runtime/
 /plugins/launch-check/dist/
+/plugins/ship-ladder/dist/

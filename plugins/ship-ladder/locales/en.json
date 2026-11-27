@@ -1,0 +1,16 @@
+{
+  "displayName": "Ship Ladder",
+  "description": "Keep a game small enough to finish: a ship date and a not-doing list every agent reads, a ladder the game climbs from starting to playable, and a jam countdown with a fallback build.",
+  "longDescription": "About half of game jam drafts are never published, and postmortems name scope, planning and cut features among the most common problems. Ship Ladder keeps the plan in design/ship.json: a ship date, where the game goes out, its core loop in one sentence and what this version leaves out. Every agent reads it, and when you ask for something on the not-doing list, the agent does it and says so. The Ship ladder panel shows three rungs, judged from what can be observed: the game starts (every game test passed, or the plugin's own check found no errors and something on screen), the core loop does something (a probe you describe, or your tick), and you can lose and play again (your tick). With a jam deadline, the panel counts down, and in the last day the plugin reminds you once and offers to ship a fallback build.",
+  "example.1": "Plan this game to ship on Friday on itch.io: write design/ship.json with a small first version and a not-doing list.",
+  "example.2": "We're in a jam that ends on Sunday 23:00. Add the deadline to design/ship.json and tell me what to cut.",
+  "keyword.scope": "scope",
+  "keyword.jam": "game jam",
+  "keyword.ship": "ship date",
+  "panel.title": "Ship ladder",
+  "command.starter": "Start a game with a ship date",
+  "command.open": "Ship ladder",
+  "command.state": "Ladder state",
+  "command.check": "Check that the game starts",
+  "command.mark": "Tick a rung"
+}

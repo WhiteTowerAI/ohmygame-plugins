@@ -1,0 +1,16 @@
+{
+  "displayName": "发布阶梯",
+  "description": "让游戏小到能做完：一个所有 Agent 都会读的发布日和不做清单，一架从能启动到能玩的阶梯，以及带保底版本的 Jam 倒计时。",
+  "longDescription": "Game Jam 里大约一半的草稿从未发布，事后复盘里范围、规划和砍功能也是最常见的问题。发布阶梯把计划放在 design/ship.json：发布日、发到哪里、一句话核心玩法，以及这个版本不做什么。每个 Agent 都会读它；你要求做不做清单上的事时，Agent 会照做并说明。\"发布阶梯\"面板显示三级台阶，都按能观察到的结果判断：游戏能启动（游戏测试全部通过，或插件自己的检查没有报错且画面不是空白），核心循环有反应（你描述的探针，或你自己勾选），可以失败并重开（你自己勾选）。填了 Jam 截止时间后，面板会倒计时；最后一天插件会提醒一次，并提供出保底版本。",
+  "example.1": "计划这个游戏周五发到 itch.io：写好 design/ship.json，第一版做小，并列出不做清单。",
+  "example.2": "我们在参加一个周日 23:00 截止的 Jam。把截止时间写进 design/ship.json，告诉我该砍什么。",
+  "keyword.scope": "范围",
+  "keyword.jam": "Game Jam",
+  "keyword.ship": "发布日",
+  "panel.title": "发布阶梯",
+  "command.starter": "带发布日开始一个新游戏",
+  "command.open": "发布阶梯",
+  "command.state": "阶梯状态",
+  "command.check": "检查游戏能否启动",
+  "command.mark": "勾选一级台阶"
+}
