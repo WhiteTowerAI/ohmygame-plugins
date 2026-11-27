@@ -1,0 +1,26 @@
+tight 经典可解关 随机通关率 P25=0.005 中位=0.020 P75=0.075 | 救活关 P25=0.000 中位=0.005 P75=0.025
+  救活关中随机通关率低于经典中位数的比例 0.6788990825688074
+  救活关最短解溢流次数分布 {0: 0, 1: 68, 2: 31, 3: 6, 4: 3, 5: 1}
+tight8 经典可解关 随机通关率 P25=0.000 中位=0.005 P75=0.025 | 救活关 P25=0.000 中位=0.000 P75=0.000
+  救活关中随机通关率低于经典中位数的比例 0.8325123152709359
+  救活关最短解溢流次数分布 {0: 0, 1: 62, 2: 72, 3: 33, 4: 27, 5: 6}
+
+例子： tight 202 管道（源瓶→目标瓶） {6: 5, 2: 3} O1 最短解 17 步
+ 0 [bbaf] [ceed] [bdcc] [afec] [-] [faae] [fbdd]
+ 1 [bbaf] [ceed] [bdcc] [afec] [e] [faa] [fbdd]
+ 2 [bbaf] [cee] [bdcc] [afec] [e] [faad] [fbdd]
+ 3 [bbaf] [c] [bdcc] [afec] [eee] [faad] [fbdd]
+ 4 [bbaf] [ccc] [bd] [afec] [eee] [faad] [fbdd]
+ 5 [bbaf] [cccc] [bd] [afe] [eee] [faad] [fbdd]
+ 6 [bbaf] [cccc] [bd] [af] [eeee] [faad] [fbdd]
+ 7 [bba] [cccc] [bd] [aff] [eeee] [faad] [fbdd]
+ 8 [bba] [cccc] [bdd] [aff] [eeee] [faa] [fbdd]
+ 9 [bb] [cccc] [bdd] [aff] [eeee] [faaa] [fbdd]
+10 [bb] [cccc] [bddd] [affd] [eeee] [faaa] [fb]
+11 [-] [cccc] [bddd] [affd] [eeee] [faaa] [fbbb]
+12 [ddd] [cccc] [b] [affd] [eeee] [faaa] [fbbb]
+13 [dddd] [cccc] [b] [aff] [eeee] [faaa] [fbbb]
+14 [dddd] [cccc] [bbbb] [aff] [eeee] [faaa] [f]
+15 [dddd] [cccc] [bbbb] [a] [eeee] [faaa] [fff]
+16 [dddd] [cccc] [bbbb] [aaaa] [eeee] [f] [fff]
+17 [dddd] [cccc] [bbbb] [aaaa] [eeee] [-] [ffff]

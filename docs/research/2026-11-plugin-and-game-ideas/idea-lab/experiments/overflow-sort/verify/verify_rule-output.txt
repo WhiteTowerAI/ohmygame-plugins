@@ -1,0 +1,15 @@
+rule cross-check: 9000 (state,rule) successor sets compared, mismatches=0
+actual pipe counts results-tight.jsonl {('tight', 2): 600, ('tight8', 3): 1491, ('tight8', 2): 9}
+actual pipe counts results-easy-medium.jsonl {('easy', 2): 200, ('medium', 2): 80}
+
+[tight] fresh n=1000 classic=13.0% O1=29.9% O2=13.0% rescued=169/870 (19.4%) killed=0/130
+  paired n=130: opt 17.25->17.25; shorter=0; random_win 11.3%->10.9%; dead 38.7%->43.0%; opt uses overflow 12.8%; must-overflow 0.0%
+  rescued: opt 19.41 dead 58.5% random_win mean 2.6% median 1.0% ovf/sol 1.53
+  classic-solvable: opt 17.25 dead 38.7% random_win median 5.5%
+  O2 solvability identical to classic in 1000/1000 deals; actual pipes Counter({2: 1000})
+
+[tight8] fresh n=1500 classic=2.0% O1=16.1% O2=2.0% rescued=212/1470 (14.4%) killed=0/30
+  paired n=30: opt 24.60->24.60; shorter=0; random_win 4.6%->3.0%; dead 42.3%->49.6%; opt uses overflow 8.0%; must-overflow 0.0%
+  rescued: opt 26.91 dead 70.9% random_win mean 0.4% median 0.0% ovf/sol 2.38
+  classic-solvable: opt 24.60 dead 42.3% random_win median 0.8%
+  O2 solvability identical to classic in 1500/1500 deals; actual pipes Counter({3: 1483, 2: 17})

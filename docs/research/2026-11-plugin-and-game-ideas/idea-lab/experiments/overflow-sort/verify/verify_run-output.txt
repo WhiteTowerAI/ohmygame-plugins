@@ -1,0 +1,2 @@
+python3 -I verify_run.py tight:600 tight8:1500 easy:40 medium:10  (2026-11-26, verifier)
+rerun 2150 records in 91.3s; identical=2150 different=0 missing_in_orig=0
