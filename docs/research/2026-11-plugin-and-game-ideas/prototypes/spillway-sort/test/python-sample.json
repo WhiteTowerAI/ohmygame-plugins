@@ -1,0 +1,1526 @@
+[
+ {
+  "tier": "tight",
+  "i": 386,
+  "deal": [
+   "",
+   "ffbf",
+   "bfca",
+   "eecc",
+   "eded",
+   "bbac",
+   "ddaa"
+  ],
+  "pipes": {
+   "2": 3,
+   "5": 6
+  },
+  "res": {
+   "classic": {
+    "states": 39,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 323,
+    "solvable": true,
+    "opt": 15,
+    "dead_ratio": 0.3746031746031746,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 29,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 392,
+  "deal": [
+   "dfea",
+   "",
+   "cbfb",
+   "afba",
+   "aefc",
+   "dddc",
+   "ceeb"
+  ],
+  "pipes": {
+   "0": 1,
+   "4": 3
+  },
+  "res": {
+   "classic": {
+    "states": 16,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 487,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.9192546583850931,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 15,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 371,
+  "deal": [
+   "bebe",
+   "abfd",
+   "fadc",
+   "edba",
+   "cfec",
+   "cdaf",
+   ""
+  ],
+  "pipes": {
+   "4": 3,
+   "5": 4
+  },
+  "res": {
+   "classic": {
+    "states": 33,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 86,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.4523809523809524,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 31,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 84,
+  "deal": [
+   "cdde",
+   "",
+   "faaf",
+   "dccf",
+   "dace",
+   "ebbf",
+   "aebb"
+  ],
+  "pipes": {
+   "3": 2,
+   "5": 4
+  },
+  "res": {
+   "classic": {
+    "states": 19,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 78,
+    "solvable": true,
+    "opt": 18,
+    "dead_ratio": 0.4166666666666667,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 15,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 126,
+  "deal": [
+   "ecab",
+   "cead",
+   "dcbb",
+   "",
+   "afde",
+   "bafd",
+   "fefc"
+  ],
+  "pipes": {
+   "2": 3,
+   "4": 3
+  },
+  "res": {
+   "classic": {
+    "states": 13,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 440,
+    "solvable": true,
+    "opt": 19,
+    "dead_ratio": 0.5081585081585082,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 13,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 503,
+  "deal": [
+   "ecfa",
+   "",
+   "acbb",
+   "fade",
+   "dfca",
+   "bdec",
+   "efdb"
+  ],
+  "pipes": {
+   "1": 2,
+   "0": 1
+  },
+  "res": {
+   "classic": {
+    "states": 33,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 622,
+    "solvable": true,
+    "opt": 21,
+    "dead_ratio": 0.7184466019417476,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 31,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 195,
+  "deal": [
+   "feea",
+   "",
+   "dbbd",
+   "ebea",
+   "fafa",
+   "cdcc",
+   "bdfc"
+  ],
+  "pipes": {
+   "1": 0,
+   "3": 2
+  },
+  "res": {
+   "classic": {
+    "states": 18,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 203,
+    "solvable": true,
+    "opt": 18,
+    "dead_ratio": 0.25139664804469275,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 16,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 168,
+  "deal": [
+   "efde",
+   "fffb",
+   "eccd",
+   "",
+   "adcb",
+   "deaa",
+   "cbab"
+  ],
+  "pipes": {
+   "0": 1,
+   "4": 5
+  },
+  "res": {
+   "classic": {
+    "states": 18,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 143,
+    "solvable": true,
+    "opt": 18,
+    "dead_ratio": 0.48175182481751827,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 18,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 343,
+  "deal": [
+   "cfef",
+   "dcad",
+   "baeb",
+   "",
+   "afce",
+   "fedc",
+   "adbb"
+  ],
+  "pipes": {
+   "2": 3,
+   "5": 6
+  },
+  "res": {
+   "classic": {
+    "states": 112,
+    "solvable": true,
+    "opt": 19,
+    "dead_ratio": 0.5648148148148148,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 1103,
+    "solvable": true,
+    "opt": 19,
+    "dead_ratio": 0.362956033676333,
+    "opt_no_overflow_frac": 0.2948717948717949
+   },
+   "O2": {
+    "states": 112,
+    "solvable": true,
+    "opt": 19,
+    "dead_ratio": 0.5648148148148148,
+    "opt_no_overflow_frac": 0.7666666666666667
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 136,
+  "deal": [
+   "cfef",
+   "becd",
+   "afdd",
+   "",
+   "afae",
+   "abde",
+   "bcbc"
+  ],
+  "pipes": {
+   "3": 4,
+   "0": 1
+  },
+  "res": {
+   "classic": {
+    "states": 63,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.4426229508196721,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 68,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.48484848484848486,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O2": {
+    "states": 63,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.4426229508196721,
+    "opt_no_overflow_frac": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 105,
+  "deal": [
+   "cacf",
+   "bdcd",
+   "cedb",
+   "debf",
+   "",
+   "aefa",
+   "abef"
+  ],
+  "pipes": {
+   "2": 3,
+   "4": 3
+  },
+  "res": {
+   "classic": {
+    "states": 105,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.5825242718446602,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 114,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.5625,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O2": {
+    "states": 102,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.58,
+    "opt_no_overflow_frac": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 469,
+  "deal": [
+   "edbc",
+   "eaeb",
+   "",
+   "cfdc",
+   "eafa",
+   "bfab",
+   "fddc"
+  ],
+  "pipes": {
+   "2": 3,
+   "6": 5
+  },
+  "res": {
+   "classic": {
+    "states": 134,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.4307692307692308,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 151,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.4421768707482993,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O2": {
+    "states": 134,
+    "solvable": true,
+    "opt": 20,
+    "dead_ratio": 0.4307692307692308,
+    "opt_no_overflow_frac": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 523,
+  "deal": [
+   "ebcd",
+   "fefc",
+   "fcbb",
+   "",
+   "dcfa",
+   "eada",
+   "bdea"
+  ],
+  "pipes": {
+   "2": 1,
+   "1": 0
+  },
+  "res": {
+   "classic": {
+    "states": 77,
+    "solvable": true,
+    "opt": 19,
+    "dead_ratio": 0.5333333333333333,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 192,
+    "solvable": true,
+    "opt": 19,
+    "dead_ratio": 0.10555555555555556,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O2": {
+    "states": 74,
+    "solvable": true,
+    "opt": 19,
+    "dead_ratio": 0.5138888888888888,
+    "opt_no_overflow_frac": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 89,
+  "deal": [
+   "dacf",
+   "cffe",
+   "defb",
+   "baba",
+   "edec",
+   "",
+   "abdc"
+  ],
+  "pipes": {
+   "4": 5,
+   "3": 4
+  },
+  "res": {
+   "classic": {
+    "states": 121,
+    "solvable": true,
+    "opt": 18,
+    "dead_ratio": 0.2777777777777778,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 1319,
+    "solvable": true,
+    "opt": 18,
+    "dead_ratio": 0.32131147540983607,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O2": {
+    "states": 121,
+    "solvable": true,
+    "opt": 18,
+    "dead_ratio": 0.2777777777777778,
+    "opt_no_overflow_frac": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 93,
+  "deal": [
+   "bedf",
+   "eced",
+   "aacf",
+   "edcb",
+   "ffda",
+   "babc",
+   ""
+  ],
+  "pipes": {
+   "3": 4,
+   "5": 4
+  },
+  "res": {
+   "classic": {
+    "states": 33,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 33,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 33,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 46,
+  "deal": [
+   "dccd",
+   "aefa",
+   "",
+   "eced",
+   "dbea",
+   "bcbf",
+   "bfaf"
+  ],
+  "pipes": {
+   "6": 5,
+   "5": 4
+  },
+  "res": {
+   "classic": {
+    "states": 74,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 115,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 72,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 73,
+  "deal": [
+   "eefd",
+   "cfdd",
+   "cbfb",
+   "",
+   "cfee",
+   "babd",
+   "aaca"
+  ],
+  "pipes": {
+   "1": 0,
+   "4": 3
+  },
+  "res": {
+   "classic": {
+    "states": 65,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 95,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 65,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 130,
+  "deal": [
+   "eaab",
+   "",
+   "bedf",
+   "fcdb",
+   "eedb",
+   "dfac",
+   "fcca"
+  ],
+  "pipes": {
+   "3": 4,
+   "6": 5
+  },
+  "res": {
+   "classic": {
+    "states": 64,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 63,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 61,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 283,
+  "deal": [
+   "abbe",
+   "dcaf",
+   "ecdf",
+   "afbe",
+   "fcdb",
+   "ecad",
+   ""
+  ],
+  "pipes": {
+   "2": 1,
+   "3": 2
+  },
+  "res": {
+   "classic": {
+    "states": 31,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 102,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 30,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight",
+  "i": 218,
+  "deal": [
+   "fdbb",
+   "bffc",
+   "caed",
+   "",
+   "acdc",
+   "edbe",
+   "aafe"
+  ],
+  "pipes": {
+   "1": 2,
+   "3": 4
+  },
+  "res": {
+   "classic": {
+    "states": 34,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 84,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 34,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 385,
+  "deal": [
+   "cghf",
+   "bchc",
+   "fafd",
+   "edaa",
+   "bfgd",
+   "egae",
+   "bhec",
+   "",
+   "hgbd"
+  ],
+  "pipes": {
+   "7": 8,
+   "6": 7,
+   "1": 2
+  },
+  "res": {
+   "classic": {
+    "states": 32,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 764,
+    "solvable": true,
+    "opt": 28,
+    "dead_ratio": 0.7776315789473685,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 32,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 1150,
+  "deal": [
+   "aeab",
+   "dgea",
+   "cddg",
+   "hcfh",
+   "efgd",
+   "bbch",
+   "gafc",
+   "ebhf",
+   ""
+  ],
+  "pipes": {
+   "6": 5,
+   "1": 0,
+   "7": 8
+  },
+  "res": {
+   "classic": {
+    "states": 165,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 2380,
+    "solvable": true,
+    "opt": 24,
+    "dead_ratio": 0.7343220338983051,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 162,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 993,
+  "deal": [
+   "ghad",
+   "ebff",
+   "hcca",
+   "",
+   "bhdg",
+   "aecf",
+   "efge",
+   "cddb",
+   "ahgb"
+  ],
+  "pipes": {
+   "6": 5,
+   "4": 5,
+   "8": 7
+  },
+  "res": {
+   "classic": {
+    "states": 104,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 220,
+    "solvable": true,
+    "opt": 24,
+    "dead_ratio": 0.6226415094339622,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 95,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 1245,
+  "deal": [
+   "bahd",
+   "aehh",
+   "edfa",
+   "fhcf",
+   "",
+   "gfcg",
+   "abbe",
+   "cddc",
+   "gbge"
+  ],
+  "pipes": {
+   "3": 4,
+   "5": 4,
+   "6": 5
+  },
+  "res": {
+   "classic": {
+    "states": 50,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 3006,
+    "solvable": true,
+    "opt": 25,
+    "dead_ratio": 0.9514725568942436,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 48,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 112,
+  "deal": [
+   "hhge",
+   "geah",
+   "bdcc",
+   "deff",
+   "",
+   "agdf",
+   "habb",
+   "afbg",
+   "cedc"
+  ],
+  "pipes": {
+   "2": 3,
+   "3": 4,
+   "6": 5
+  },
+  "res": {
+   "classic": {
+    "states": 26,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 2301,
+    "solvable": true,
+    "opt": 24,
+    "dead_ratio": 0.8796662274923145,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 26,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 894,
+  "deal": [
+   "fdga",
+   "ecbb",
+   "hbdg",
+   "adaf",
+   "",
+   "cehf",
+   "edeh",
+   "gghb",
+   "fcca"
+  ],
+  "pipes": {
+   "4": 5,
+   "3": 4,
+   "2": 3
+  },
+  "res": {
+   "classic": {
+    "states": 27,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 3832,
+    "solvable": true,
+    "opt": 25,
+    "dead_ratio": 0.7287503330668799,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 27,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 1226,
+  "deal": [
+   "ffbg",
+   "aegb",
+   "caee",
+   "dgdc",
+   "hadb",
+   "bech",
+   "",
+   "ffca",
+   "dhgh"
+  ],
+  "pipes": {
+   "4": 5,
+   "1": 2,
+   "7": 6
+  },
+  "res": {
+   "classic": {
+    "states": 80,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 3294,
+    "solvable": true,
+    "opt": 29,
+    "dead_ratio": 0.875231624459543,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 72,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 1349,
+  "deal": [
+   "ghhc",
+   "fadb",
+   "",
+   "aeab",
+   "hdfb",
+   "ccge",
+   "gcdd",
+   "ffhe",
+   "gabe"
+  ],
+  "pipes": {
+   "5": 6,
+   "6": 7,
+   "8": 7
+  },
+  "res": {
+   "classic": {
+    "states": 38,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 232,
+    "solvable": true,
+    "opt": 26,
+    "dead_ratio": 0.691304347826087,
+    "opt_no_overflow_frac": 0.0
+   },
+   "O2": {
+    "states": 38,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 415,
+  "deal": [
+   "hefg",
+   "",
+   "dddb",
+   "fffg",
+   "gdbc",
+   "hgce",
+   "bahb",
+   "eaaa",
+   "cceh"
+  ],
+  "pipes": {
+   "5": 4,
+   "1": 2,
+   "0": 1
+  },
+  "res": {
+   "classic": {
+    "states": 145,
+    "solvable": true,
+    "opt": 18,
+    "dead_ratio": 0.3971631205673759,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 975,
+    "solvable": true,
+    "opt": 18,
+    "dead_ratio": 0.7440660474716202,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O2": {
+    "states": 139,
+    "solvable": true,
+    "opt": 18,
+    "dead_ratio": 0.4074074074074074,
+    "opt_no_overflow_frac": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 949,
+  "deal": [
+   "gbaf",
+   "",
+   "aheb",
+   "fafa",
+   "ddgd",
+   "ccce",
+   "edbg",
+   "hhch",
+   "bfeg"
+  ],
+  "pipes": {
+   "0": 1,
+   "3": 2,
+   "4": 5
+  },
+  "res": {
+   "classic": {
+    "states": 83,
+    "solvable": true,
+    "opt": 21,
+    "dead_ratio": 0.5061728395061729,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 150,
+    "solvable": true,
+    "opt": 21,
+    "dead_ratio": 0.722972972972973,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O2": {
+    "states": 82,
+    "solvable": true,
+    "opt": 21,
+    "dead_ratio": 0.5125,
+    "opt_no_overflow_frac": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 130,
+  "deal": [
+   "",
+   "aeeg",
+   "fbfg",
+   "fadc",
+   "egch",
+   "hbad",
+   "gdbh",
+   "cecf",
+   "ahdb"
+  ],
+  "pipes": {
+   "7": 8,
+   "4": 5,
+   "6": 7
+  },
+  "res": {
+   "classic": {
+    "states": 174,
+    "solvable": true,
+    "opt": 27,
+    "dead_ratio": 0.6705882352941176,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 525,
+    "solvable": true,
+    "opt": 27,
+    "dead_ratio": 0.504930966469428,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O2": {
+    "states": 158,
+    "solvable": true,
+    "opt": 27,
+    "dead_ratio": 0.6558441558441559,
+    "opt_no_overflow_frac": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 97,
+  "deal": [
+   "gffa",
+   "aaeb",
+   "dbcg",
+   "egbe",
+   "hdda",
+   "",
+   "cchf",
+   "hgcf",
+   "hbed"
+  ],
+  "pipes": {
+   "7": 6,
+   "1": 0,
+   "8": 7
+  },
+  "res": {
+   "classic": {
+    "states": 141,
+    "solvable": true,
+    "opt": 23,
+    "dead_ratio": 0.5985401459854015,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 581,
+    "solvable": true,
+    "opt": 23,
+    "dead_ratio": 0.41284403669724773,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O2": {
+    "states": 137,
+    "solvable": true,
+    "opt": 23,
+    "dead_ratio": 0.6090225563909775,
+    "opt_no_overflow_frac": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 820,
+  "deal": [
+   "cagb",
+   "adhc",
+   "bafe",
+   "hgaf",
+   "gccg",
+   "hbbd",
+   "fedd",
+   "ehfe",
+   ""
+  ],
+  "pipes": {
+   "6": 5,
+   "4": 3,
+   "3": 2
+  },
+  "res": {
+   "classic": {
+    "states": 106,
+    "solvable": true,
+    "opt": 22,
+    "dead_ratio": 0.4230769230769231,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 129,
+    "solvable": true,
+    "opt": 22,
+    "dead_ratio": 0.4881889763779528,
+    "opt_no_overflow_frac": 0.5
+   },
+   "O2": {
+    "states": 106,
+    "solvable": true,
+    "opt": 22,
+    "dead_ratio": 0.4230769230769231,
+    "opt_no_overflow_frac": 0.5
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 1289,
+  "deal": [
+   "bdge",
+   "bhcc",
+   "geha",
+   "efeg",
+   "hdbg",
+   "",
+   "fcaa",
+   "bcdh",
+   "dfaf"
+  ],
+  "pipes": {
+   "3": 2,
+   "8": 7,
+   "5": 4
+  },
+  "res": {
+   "classic": {
+    "states": 167,
+    "solvable": true,
+    "opt": 24,
+    "dead_ratio": 0.4785276073619632,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O1": {
+    "states": 189,
+    "solvable": true,
+    "opt": 24,
+    "dead_ratio": 0.5513513513513514,
+    "opt_no_overflow_frac": 1.0
+   },
+   "O2": {
+    "states": 162,
+    "solvable": true,
+    "opt": 24,
+    "dead_ratio": 0.47468354430379744,
+    "opt_no_overflow_frac": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 1312,
+  "deal": [
+   "",
+   "dfdg",
+   "begc",
+   "fbhh",
+   "cabh",
+   "gcea",
+   "ffae",
+   "dgac",
+   "hedb"
+  ],
+  "pipes": {
+   "1": 2,
+   "5": 6,
+   "2": 3
+  },
+  "res": {
+   "classic": {
+    "states": 62,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 460,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 62,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 723,
+  "deal": [
+   "ehae",
+   "",
+   "gbhh",
+   "ccfe",
+   "abeg",
+   "cgcf",
+   "dhbf",
+   "adad",
+   "bgdf"
+  ],
+  "pipes": {
+   "7": 8,
+   "2": 1,
+   "6": 5
+  },
+  "res": {
+   "classic": {
+    "states": 39,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 41,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 39,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 1332,
+  "deal": [
+   "gfgc",
+   "aceb",
+   "aehf",
+   "fcdd",
+   "habh",
+   "",
+   "gfea",
+   "dbhb",
+   "degc"
+  ],
+  "pipes": {
+   "3": 2,
+   "4": 3,
+   "2": 1
+  },
+  "res": {
+   "classic": {
+    "states": 73,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 144,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 70,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 306,
+  "deal": [
+   "fbgc",
+   "hahh",
+   "abfe",
+   "fhge",
+   "gabe",
+   "",
+   "ddcd",
+   "dfac",
+   "gbce"
+  ],
+  "pipes": {
+   "2": 3,
+   "5": 4,
+   "7": 8
+  },
+  "res": {
+   "classic": {
+    "states": 79,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 91,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 77,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 1119,
+  "deal": [
+   "",
+   "bdgf",
+   "ddbg",
+   "beed",
+   "hfcc",
+   "hgba",
+   "afeg",
+   "afcc",
+   "heah"
+  ],
+  "pipes": {
+   "0": 1,
+   "5": 6,
+   "7": 8
+  },
+  "res": {
+   "classic": {
+    "states": 60,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 74,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 58,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ },
+ {
+  "tier": "tight8",
+  "i": 1260,
+  "deal": [
+   "ffeh",
+   "echc",
+   "aebf",
+   "bgdg",
+   "",
+   "gcab",
+   "dabc",
+   "dfhd",
+   "haeg"
+  ],
+  "pipes": {
+   "7": 6,
+   "2": 1,
+   "5": 4
+  },
+  "res": {
+   "classic": {
+    "states": 26,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O1": {
+    "states": 71,
+    "solvable": false,
+    "dead_ratio": 1.0
+   },
+   "O2": {
+    "states": 26,
+    "solvable": false,
+    "dead_ratio": 1.0
+   }
+  }
+ }
+]

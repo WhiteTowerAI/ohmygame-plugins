@@ -1,0 +1,226 @@
+:root {
+  color-scheme: dark;
+  --bg: #12141c;
+  --panel: #1d2130;
+  --text: #eef0f6;
+  --muted: #9aa1b5;
+  --glass: rgba(255, 255, 255, 0.14);
+  --pipe: #6fc3df;
+  --gap: clamp(6px, 2.4vw, 16px);
+  --layer-h: clamp(26px, 7vh, 44px);
+  font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+#app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: max(12px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0;
+}
+.status,
+.hint {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 18px;
+}
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+button {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid #343a50;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-height: 40px;
+}
+button:disabled {
+  opacity: 0.4;
+}
+.board {
+  /* Fits the row on a narrow phone: nine bottles and their gaps in the width.
+     Set here, not on :root, because --count is set on the board and a custom
+     property's var() is worked out where it's declared. */
+  --bottle-w: min(52px, calc((min(100vw, 720px) - 40px) / var(--count, 7) - var(--gap)));
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: var(--gap);
+  padding: 56px 4px 16px;
+  /* In the middle of whatever height is left. */
+  margin-block: auto;
+}
+.slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.bottle {
+  position: relative;
+  width: var(--bottle-w);
+  height: calc(var(--layer-h) * 4 + 10px);
+  border: 2px solid var(--glass);
+  border-top: none;
+  border-radius: 0 0 16px 16px;
+  display: flex;
+  flex-direction: column-reverse;
+  padding: 3px;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: transform 120ms ease, border-color 120ms ease;
+  cursor: pointer;
+}
+.bottle.selected {
+  transform: translateY(-14px);
+  border-color: #fff;
+}
+.bottle.preview {
+  border-color: var(--pipe);
+  border-style: dashed;
+}
+.bottle.flow {
+  animation: flow 360ms ease;
+}
+.bottle.shake {
+  animation: shake 240ms ease;
+}
+.bottle.done {
+  border-color: #6fd08c;
+}
+.layer {
+  height: var(--layer-h);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+  font-weight: 700;
+}
+.layer.ghost {
+  opacity: 0.45;
+  outline: 2px dashed rgba(255, 255, 255, 0.7);
+  outline-offset: -2px;
+}
+/* A pipe leaves a bottle near its rim and points at its neighbour. */
+.pipe {
+  position: absolute;
+  top: -30px;
+  height: 22px;
+  color: var(--pipe);
+  font-size: 18px;
+  line-height: 22px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.pipe::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  border-top: 3px solid var(--pipe);
+  border-radius: 2px;
+}
+.pipe.right {
+  left: 50%;
+  width: calc(var(--bottle-w) + var(--gap));
+  text-align: right;
+}
+.pipe.left {
+  right: 50%;
+  width: calc(var(--bottle-w) + var(--gap));
+  text-align: left;
+}
+.pipe span {
+  position: relative;
+  top: -1px;
+}
+.done {
+  text-align: center;
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 14px;
+}
+.done p {
+  margin: 0 0 10px;
+}
+dialog {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid #343a50;
+  border-radius: 12px;
+  max-width: 420px;
+  width: calc(100% - 24px);
+}
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.picker-grid button {
+  padding: 6px 0;
+}
+.picker-grid button.solved {
+  border-color: #6fd08c;
+}
+.picker-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+textarea {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 12px/1.4 ui-monospace, monospace;
+}
+@keyframes flow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(111, 195, 223, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(111, 195, 223, 0);
+  }
+}
+@keyframes shake {
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}

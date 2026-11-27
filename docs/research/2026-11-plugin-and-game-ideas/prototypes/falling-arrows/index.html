@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Falling Arrows · prototype</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./src/game.js"></script>
+  </head>
+  <body>
+    <main id="app">
+      <header class="bar">
+        <div>
+          <h1 id="title">Falling Arrows</h1>
+          <p id="status" class="status" data-testid="status"></p>
+        </div>
+        <div class="actions">
+          <button type="button" id="undo" data-testid="undo"></button>
+          <button type="button" id="restart" data-testid="restart"></button>
+          <button type="button" id="levels" data-testid="levels"></button>
+        </div>
+      </header>
+      <p id="hint" class="hint"></p>
+      <section id="board" class="board"></section>
+      <section id="done" class="done" hidden>
+        <p id="done-text" data-testid="done-text"></p>
+        <button type="button" id="next" data-testid="next"></button>
+      </section>
+      <dialog id="picker">
+        <form method="dialog">
+          <h2 id="picker-title"></h2>
+          <div id="picker-grid" class="picker-grid"></div>
+          <p class="picker-row">
+            <button type="button" id="daily" data-testid="daily"></button>
+            <button type="button" id="export" data-testid="export"></button>
+            <button type="button" id="new-player" data-testid="new-player"></button>
+            <button value="close" id="close"></button>
+          </p>
+          <textarea id="export-text" rows="6" readonly hidden></textarea>
+        </form>
+      </dialog>
+    </main>
+  </body>
+</html>
