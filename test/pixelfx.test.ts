@@ -793,7 +793,7 @@ describe("pixelfx native", () => {
     }
   });
 
-  it("offers built-in effects in the Library a page at a time and adds one as a sheet", async () => {
+  it("offers built-in effects as an asset source a page at a time and adds one as a sheet", async () => {
     const data = await mkdtemp(path.join(tmpdir(), "pixelfx-data-"));
     try {
       const { tools, commands } = activated(undefined, data);

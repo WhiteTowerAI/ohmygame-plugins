@@ -24,9 +24,10 @@ built-in effects and the project's own, each drawn by code frame by frame:
   you like as a preset in `pixelfx/presets.json`;
 - see it as a transparent sprite sheet, or read its source, a usage example
   and the sheet's JSON;
-- give it sound, play it alone or with the effect, and add it to the Library;
+- give it sound, play it alone or with the effect, and add it to the project's
+  assets;
 - export it: a transparent sprite sheet or a contact sheet goes to the
-  Library, and a sprite sheet with Aseprite JSON (and its sound), a GIF or
+  project's assets, and a sprite sheet with Aseprite JSON (and its sound), a GIF or
   single frames are saved to `pixelfx/exports/` in the project.
 
 ### The project's effects
@@ -63,8 +64,7 @@ unless a built-in effect of the same name still plays it.
 
 **Make with model** asks the audio model set up in OhMyGame's Settings for a
 sound, from a description the panel writes from the effect and the person
-can change. It may cost them; the sound is kept as a variant and in the
-Library.
+can change. It may cost them; the sound is kept as a variant.
 
 **Play with effect** plays the chosen variant each time the effect starts,
 at the stage's speed. A sprite sheet saved with its JSON takes the chosen
@@ -91,7 +91,7 @@ person sees each one work in it:
 | `write_effect` | writes a project effect, then checks it |
 | `check_effect` | checks an effect |
 | `show_effect` | shows an effect with preview settings, for `panel_screenshot` |
-| `export_effect` | exports what's shown to the Library or `pixelfx/exports/` |
+| `export_effect` | exports what's shown to the project's assets or `pixelfx/exports/` |
 | `read_sfx` | an effect's sound script and variants, and its length and hits |
 | `write_sfx` | writes an effect's sound script and renders it |
 | `make_sfx_with_model` | makes a sound with the person's audio model, when they ask |
@@ -110,12 +110,12 @@ The panel also tells the agent which effect is open, how it's set and what
 sound it has, and the **pixelfx** Skill has the effect and sound contracts
 and the write, check, look and fix loop.
 
-### The Library
+### The project's assets
 
-The Library page gets a **Pixel effects** tab with the built-in effects, found
-by the same words as in the panel's search. Adding one adds its transparent sprite
-sheet at its default settings. Like any Library tab, it shows only while the
-plugin is on for every project.
+A project's Assets panel gets a **Pixel effects** tab with the built-in
+effects, found by the same words as in the panel's search. Adding one adds its
+transparent sprite sheet at its default settings to the project. Like the
+other source tabs, it shows only while the plugin is on for every project.
 
 ## Limits
 
@@ -131,7 +131,7 @@ plugin is on for every project.
 - Settings aren't kept when you change effects or close the panel, besides
   presets; the colour theme, the last effect and whether the assistant is open
   are.
-- The Library tab draws each thumbnail when it first shows, about a tenth of
+- The Pixel effects tab draws each thumbnail when it first shows, about a tenth of
   a second each; a page of 30 takes a few seconds the first time.
 - `render_effect` runs a project effect from a copy of `pixelfx/fx/` and
   `pixelfx/core/`, so it can't import files outside them.

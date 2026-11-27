@@ -1,7 +1,7 @@
 // The Pixel Effects panel: pixelfx's gallery in OhMyGame. It browses the
 // built-in effects, plays one on the stage with the inspector's settings,
-// shows it as a sprite sheet or as code, and exports it to the Library or
-// the project. The project's own effects live in its `pixelfx/` folder, where
+// shows it as a sprite sheet or as code, and exports it to the project's
+// assets or files. The project's own effects live in its `pixelfx/` folder, where
 // the panel copies, writes, checks and plays them, and the agent's tools do
 // the same through it. An effect's sound is a script in the project that the
 // panel renders to WAV files, or a sound a model made; the panel's assistant
@@ -87,7 +87,7 @@ document.title = t.title;
 
 const THEMES = ["amber", "aseprite", "cyber", "crt", "app"];
 const EXPORT_DIR = "pixelfx/exports";
-const LIBRARY_FORMATS = new Set(["sheet-png", "contact"]);
+const ASSET_FORMATS = new Set(["sheet-png", "contact"]);
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -296,7 +296,7 @@ function buildPage() {
         el("select", { id: "sel-sheet-zoom", className: "ctrl-select" }, [option("fit", t.zoomFit), ...[1, 2, 3, 4].map((z) => option(z, `${z}x`))]),
         dotButton("tog-sheet-grid", t.grid, true),
         dotButton("tog-sheet-actor", t.withActor, false),
-        el("button", { type: "button", className: "ctrl-btn", id: "btn-sheet-library", textContent: t.addToLibrary }),
+        el("button", { type: "button", className: "ctrl-btn", id: "btn-sheet-assets", textContent: t.addToAssets }),
         el("button", { type: "button", className: "ctrl-btn", id: "btn-sheet-project", textContent: t.saveToProject }),
       ]),
     ]),
@@ -401,7 +401,7 @@ function buildPage() {
         el("div", { className: "form-row compact-row" }, [
           el("button", { type: "button", className: "ctrl-btn", id: "btn-sfx-play", textContent: t.soundPlay }),
           dotButton("tog-sfx-sync", t.soundSync, false),
-          el("button", { type: "button", className: "ctrl-btn ml-auto", id: "btn-sfx-library", textContent: t.addToLibrary }),
+          el("button", { type: "button", className: "ctrl-btn ml-auto", id: "btn-sfx-assets", textContent: t.addToAssets }),
         ]),
         el("div", { className: "form-row compact-row" }, [
           el("button", { type: "button", className: "ctrl-btn row-fill sfx-ai-btn", id: "btn-sfx-ask", textContent: `✦ ${t.soundAsk}` }),
@@ -973,15 +973,15 @@ function step(delta) {
 }
 
 // ---------------------------------------------------------------------------
-// Export: images the Library takes go there; the rest are project files.
+// Export: images go to the project's assets; the rest are project files.
 
 function updateExportButton() {
   const format = $("#sel-export-fmt").value;
   const button = $("#btn-export");
   button.disabled = state.exporting;
-  button.textContent = state.exporting ? t.working : LIBRARY_FORMATS.has(format) ? t.addToLibrary : t.saveToProject;
+  button.textContent = state.exporting ? t.working : ASSET_FORMATS.has(format) ? t.addToAssets : t.saveToProject;
   $("#export-hint").textContent = t.exportHints[format](`${EXPORT_DIR}/`, !!shownSound());
-  for (const id of ["#btn-sheet-library", "#btn-sheet-project"]) $(id).disabled = state.exporting;
+  for (const id of ["#btn-sheet-assets", "#btn-sheet-project"]) $(id).disabled = state.exporting;
 }
 
 /** The variant of the shown effect's sound that is chosen, with the effect's id, or undefined. */
@@ -990,11 +990,11 @@ function shownSound() {
   return variant && { id: state.sound.id, variant };
 }
 
-async function addToLibrary(blob, name) {
+async function addToAssets(blob, name) {
   try {
-    await host.library.add(blob, { name, prompt: `pixelfx ${state.fx.id}` });
+    await host.assets.add(blob, { name, prompt: `pixelfx ${state.fx.id}` });
   } catch (error) {
-    if (!state.visible) throw uiError(TEXT.en.libraryHidden, t.libraryHidden);
+    if (!state.visible) throw uiError(TEXT.en.assetsHidden, t.assetsHidden);
     throw error;
   }
 }
@@ -1026,7 +1026,7 @@ async function exportFrames(fx, cfg, name, write) {
 
 /**
  * Exports the effect shown with the inspector's settings. Returns the
- * project files saved and what went to the Library; on failure, throws with
+ * project files saved and what went to the project's assets; on failure, throws with
  * `saved` on the error.
  */
 async function runExport(format) {
@@ -1048,17 +1048,17 @@ async function runExport(format) {
   // Lets the button show it is working before the frames are drawn.
   await new Promise((resolve) => setTimeout(resolve, 20));
   const saved = [];
-  const library = [];
+  const assets = [];
   const write = async (path, contents) => saved.push(await host.files.write(path, contents));
-  const toLibrary = async (blob, file) => {
-    await addToLibrary(blob, file);
-    library.push(file);
+  const toAssets = async (blob, file) => {
+    await addToAssets(blob, file);
+    assets.push(file);
   };
   try {
     if (format === "sheet-both" || format === "sheet-png") {
       const sheet = buildSpriteSheet(fx, cfg, { exportActor: state.sheetActor });
       const png = await canvasToPngBlob(sheet.canvas);
-      if (format === "sheet-png") await toLibrary(png, `${name}.png`);
+      if (format === "sheet-png") await toAssets(png, `${name}.png`);
       else {
         // The chosen sound goes beside the sheet, which names it; a sound whose file is gone is left out, and the sheet still saved.
         let audio;
@@ -1079,13 +1079,13 @@ async function runExport(format) {
         await write(`${EXPORT_DIR}/${name}.json`, `${JSON.stringify(sheet.json, null, 2)}\n`);
       }
     } else if (format === "contact") {
-      await toLibrary(await canvasToPngBlob(buildContactSheetCanvas(fx, cfg)), `${name}-contact.png`);
+      await toAssets(await canvasToPngBlob(buildContactSheetCanvas(fx, cfg)), `${name}-contact.png`);
     } else if (format === "gif") {
       await write(`${EXPORT_DIR}/${name}.gif`, buildGifBlob(fx, cfg));
     } else if (format === "frames") {
       await exportFrames(fx, cfg, name, write);
     } else throw new Error(`Unknown format ${format}`);
-    return { fx, cfg, saved, library, warnings };
+    return { fx, cfg, saved, assets, warnings };
   } catch (error) {
     throw Object.assign(error instanceof Error ? error : new Error(String(error)), { saved });
   } finally {
@@ -1098,7 +1098,7 @@ async function exportAs(format) {
   if (state.exporting || !state.fx) return;
   try {
     const { saved, warnings } = await runExport(format);
-    // The app announces what reaches the Library itself.
+    // The app announces what reaches the project's assets itself.
     if (saved.length) toast(t.savedFiles(saved), "success");
     for (const warning of warnings) toast(localText(warning));
   } catch (error) {
@@ -1813,7 +1813,7 @@ function drawSound() {
   $("#sfx-desc").title = variant?.source === "model" ? (variant.prompt ?? "") : "";
   $("#sfx-meta").textContent = variant ? t.soundSummary(variants.length, variant.duration, variant.rmsDb ?? "–") : "";
   $("#btn-sfx-play").disabled = !variant;
-  $("#btn-sfx-library").disabled = !variant;
+  $("#btn-sfx-assets").disabled = !variant;
   $("#btn-sfx-model").disabled = making > 0 || !fx || !!fx.error || !!error;
   $("#btn-sfx-model").textContent = making > 0 ? t.making : t.soundModel;
   $("#btn-sfx-ask").disabled = !fx || !!fx.error;
@@ -2066,10 +2066,10 @@ async function makeModelSound(fx, { prompt, seconds, model }, signal) {
     const path = `${sfxDir(fx.id)}/${name}`;
     await host.files.write(path, file.data);
     const label = t.soundModelLabel(Number(key.slice(6)));
-    const entry = { id: key, label, desc: "", file: name, ...figures, cues: [], ...(madeFor ? { madeFor } : {}), ...(used ? { model: { ...used, ...(model?.name ? { name: model.name } : {}) } } : {}), prompt: prompt.slice(0, 2000), ...(file.assetId ? { assetId: file.assetId } : {}) };
+    const entry = { id: key, label, desc: "", file: name, ...figures, cues: [], ...(madeFor ? { madeFor } : {}), ...(used ? { model: { ...used, ...(model?.name ? { name: model.name } : {}) } } : {}), prompt: prompt.slice(0, 2000) };
     const doc = withModelVariant(prev, fx.id, entry);
     await host.files.write(manifestPath(fx.id), manifestText(doc));
-    return { key, label, path, doc, ...(file.assetId ? { assetId: file.assetId } : {}) };
+    return { key, label, path, doc };
   });
 }
 
@@ -2162,14 +2162,14 @@ async function makeSoundFromPanel() {
   }
 }
 
-async function soundToLibrary() {
+async function soundToAssets() {
   const id = state.sound.id;
   const variant = activeVariant();
   if (!variant || id !== state.fx?.id) return;
   try {
     const blob = await host.files.read(variantPath(id, variant));
     const ext = variant.file.split(".").pop();
-    await addToLibrary(new Blob([blob], { type: audioType(variant.file) }), `${id.split("/")[1]}-${variant.id}.${ext}`);
+    await addToAssets(new Blob([blob], { type: audioType(variant.file) }), `${id.split("/")[1]}-${variant.id}.${ext}`);
   } catch (error) {
     toast(notFound(error) ? t.soundMissing : t.failed(localText(error)), "danger");
   }
@@ -2198,7 +2198,7 @@ $("#tog-sfx-sync").addEventListener("click", () => {
   syncedSound();
 });
 $("#btn-sfx-render").addEventListener("click", () => void renderShown());
-$("#btn-sfx-library").addEventListener("click", () => void soundToLibrary());
+$("#btn-sfx-assets").addEventListener("click", () => void soundToAssets());
 $("#btn-sfx-model").addEventListener("click", () => void makeSoundFromPanel());
 $("#btn-sfx-ask").addEventListener("click", () => {
   setDrawer(true);
@@ -2380,8 +2380,8 @@ function handleTools() {
       if (state.fx?.key !== fx.key) openEffect(fx);
     }
     await soundReady;
-    const { fx, cfg, saved, library, warnings } = await runExport(format);
-    return { effect: fx.id, source: fx.source, format, saved, library, settings: settingsOf(cfg, fx), ...(warnings.length ? { warnings: warnings.map((warning) => warning.message) } : {}) };
+    const { fx, cfg, saved, assets, warnings } = await runExport(format);
+    return { effect: fx.id, source: fx.source, format, saved, assets, settings: settingsOf(cfg, fx), ...(warnings.length ? { warnings: warnings.map((warning) => warning.message) } : {}) };
   });
   host.tools.handle("read_sfx", async ({ effect }) => {
     await projectSettled();
@@ -2433,7 +2433,7 @@ function handleTools() {
     try {
       const made = await makeModelSound(fx, { prompt: words, seconds: modelDuration(durationSeconds ?? shown.seconds, model), model }, signal);
       await loadSound(fx, made.key);
-      return { effect: fx.id, variant: made.key, path: made.path, prompt: words, ...(made.assetId ? { assetId: made.assetId } : {}) };
+      return { effect: fx.id, variant: made.key, path: made.path, prompt: words };
     } finally {
       state.sound.making--;
       drawSound();
@@ -2590,7 +2590,7 @@ $("#tog-sheet-actor").addEventListener("click", () => {
   $("#tog-sheet-actor").setAttribute("aria-pressed", String(state.sheetActor));
   refreshSheet();
 });
-$("#btn-sheet-library").addEventListener("click", () => void exportAs("sheet-png"));
+$("#btn-sheet-assets").addEventListener("click", () => void exportAs("sheet-png"));
 $("#btn-sheet-project").addEventListener("click", () => void exportAs("sheet-both"));
 
 $("#sel-export-fmt").addEventListener("change", updateExportButton);

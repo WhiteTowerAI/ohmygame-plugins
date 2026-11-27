@@ -170,7 +170,7 @@ export function audioExtension(type, name = "") {
   return known[String(type).split(";")[0].trim().toLowerCase()] ?? (fromName && ["mp3", "wav", "ogg", "webm", "aac", "m4a", "flac"].includes(fromName) ? fromName : "mp3");
 }
 
-/** The audio type of a variant file, for playing and adding it to the Library. */
+/** The audio type of a variant file, for playing and adding it to the project's assets. */
 export function audioType(file) {
   const ext = /\.([a-z0-9]+)$/i.exec(file)?.[1]?.toLowerCase();
   return { mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", webm: "audio/webm", aac: "audio/aac", m4a: "audio/mp4", flac: "audio/flac" }[ext] ?? "application/octet-stream";

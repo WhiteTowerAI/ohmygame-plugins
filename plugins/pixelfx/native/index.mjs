@@ -1,5 +1,5 @@
 // Pixel Effects' native code: a tool that renders and checks an effect
-// without the panel, and the Library tab of built-in effects.
+// without the panel, and the asset source of built-in effects.
 
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
