@@ -35,8 +35,10 @@ its checks are judged against people's own view of their games.
   - *The game starts*: the latest [Game Tests](../game-tests) run where every
     test passed, or **Check now**, which opens the game, lets it settle for five
     seconds, and passes it when the console has no errors, no request to the
-    game's own site failed, and something is on screen. An answer it can't read
-    (cut off, cancelled, no tests) never replaces an earlier verdict.
+    game's own site failed, and something is on screen. A long report cut off at
+    its end still counts, since its first line is the verdict; an answer it
+    can't read (cancelled, no tests, an unknown form) never replaces an earlier
+    verdict.
   - *The core loop does something*: the plan's `coreProbe` (game_use actions,
     and a path in the game's playtest snapshot they should change), played
     after a passing check, or the person's tick.
