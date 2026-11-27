@@ -6,3 +6,4 @@ cache.json
 /plugins/feishu/dist/
 /plugins/computer-use/dist/
 /.runtime/
+/plugins/launch-check/dist/

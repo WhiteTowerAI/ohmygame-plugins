@@ -12,8 +12,9 @@
     "test": "tsx --conditions=ohmygame-source --test test/*.test.ts && npm run test:taptap",
     "typecheck": "tsc --noEmit",
     "build:feishu": "node scripts/build-feishu.mjs",
-    "pretest": "npm run build:feishu && npm run build:computer-use",
+    "pretest": "npm run build:feishu && npm run build:computer-use && npm run build:launch-check",
     "build:computer-use": "node scripts/build-computer-use.mjs",
+    "build:launch-check": "node scripts/build-launch-check.mjs",
     "test:taptap": "vitest run"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "@types/node": "^24.3.0",
     "@types/ws": "8.18.1",
     "@types/yauzl": "3.4.0",
+    "es-module-lexer": "3.0.5",
     "esbuild": "0.28.2",
     "happy-dom": "20.14.6",
     "protobufjs": "7.6.6",

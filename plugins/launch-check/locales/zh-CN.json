@@ -1,0 +1,12 @@
+{
+  "displayName": "发布前检查",
+  "description": "把网页游戏发到别处之前先检查构建：首包大小、文件数、路径和外部请求，对照各平台自己的限制。",
+  "longDescription": "按“导出网页构建”的方式构建游戏，只读文件，不运行。它算出玩家在游戏开始前要下载多少、哪些之后才加载，并找出游戏放到 OhMyGame 以外的地方会出问题的地方：以“/”开头的路径、从别的网站加载的字体和库、指向不存在文件或只差大小写的引用、没被用到的文件和 source map。它把构建和 OhMyGame 社区、itch.io、CrazyGames、YouTube Playables、Poki 的限制逐条对照，每条限制都链接到出处。发现的问题可以一键交给 AI 修。扫描只读，不改任何文件。",
+  "example.1": "检查这个游戏的构建能不能发 itch.io 和 CrazyGames，再修好发布前检查发现的问题。",
+  "example.2": "把首包做小：发布前检查说它超过了 CrazyGames 手机首页要求的 20 MB。",
+  "keyword.size": "包体大小",
+  "panel.title": "发布前检查",
+  "command.open": "发布前检查…",
+  "command.scan": "扫描网页构建",
+  "command.last": "上次扫描"
+}

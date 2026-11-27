@@ -1,0 +1,62 @@
+{
+  "$schema": "https://www.ohmygame.ai/schema/plugin-2.json",
+  "id": "ohmygame/launch-check",
+  "version": "0.1.0",
+  "engines": {
+    "ohmygame-api": "^2.37.0"
+  },
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "longDescription": "%longDescription%",
+  "examples": ["%example.1%", "%example.2%"],
+  "beta": true,
+  "icon": "./assets/icon.svg",
+  "categories": ["publishing", "testing"],
+  "keywords": ["itch.io", "CrazyGames", "Poki", "YouTube Playables", "%keyword.size%"],
+  "appliesTo": ["web-game", "general"],
+  "activation": "project",
+  "entrypoints": {
+    "native": "./dist/index.mjs"
+  },
+  "ui": {
+    "major": 1
+  },
+  "capabilities": {
+    "native": true,
+    "composer": true
+  },
+  "contributes": {
+    "panels": [
+      {
+        "id": "launch",
+        "title": "%panel.title%",
+        "icon": "./assets/icon.svg",
+        "area": "right",
+        "opens": "onRequest",
+        "entry": "./panel/index.html",
+        "when": "project.type == 'web-game' || project.type == 'general'"
+      }
+    ],
+    "commands": [
+      {
+        "id": "open",
+        "title": "%command.open%",
+        "run": { "openPanel": "launch", "state": { "scan": true } },
+        "slots": [
+          { "slot": "project.publish", "when": "project.type == 'web-game' || project.type == 'general'" },
+          { "slot": "game.more", "when": "project.type == 'web-game' || project.type == 'general'" }
+        ]
+      },
+      {
+        "id": "scan",
+        "title": "%command.scan%",
+        "run": { "native": "scan", "build": "web", "changesFiles": false, "timeoutSeconds": 600 }
+      },
+      {
+        "id": "last",
+        "title": "%command.last%",
+        "run": { "native": "last", "changesFiles": false }
+      }
+    ]
+  }
+}

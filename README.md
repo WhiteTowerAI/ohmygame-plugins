@@ -55,6 +55,12 @@ publisher only this organization can use:
   [`pixel-sprites`](plugins/pixel-sprites) searches 1.4 million AI-generated
   16×16 pixel art sprites (optional Beta, requires OhMyGame API 2.5;
   collections, previews and cache durations need 2.35).
+- Publishing checks: [`launch-check`](plugins/launch-check), an optional Beta
+  that scans a web game's build before it is published elsewhere: first-load
+  size, file counts, absolute paths, requests to other sites and unused files,
+  against OhMyGame Community, itch.io, CrazyGames, YouTube Playables and Poki
+  limits, each with its source (requires OhMyGame API 2.37). Build it with
+  `npm run build:launch-check` for source development.
 - Messaging connections: [`feishu`](plugins/feishu), an optional private-chat
   bot with an explicit allowed user, durable delivery tracking and approvals
   kept in OhMyGame (Beta; use desktop Beta 5.8 or newer). Build it with

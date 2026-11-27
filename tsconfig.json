@@ -11,5 +11,5 @@
     "types": ["node"],
     "resolveJsonModule": true
   },
-  "include": ["src", "test", "plugins/feishu/src", "plugins/computer-use/src"]
+  "include": ["src", "test", "plugins/feishu/src", "plugins/computer-use/src", "plugins/launch-check/src"]
 }

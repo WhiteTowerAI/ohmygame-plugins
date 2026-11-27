@@ -1,0 +1,67 @@
+/* Sections 24px apart, rows 4px; the page's tokens give colours and type. */
+p,
+ul {
+  margin: 0;
+}
+omg-page::part(body) {
+  gap: var(--space-6);
+}
+omg-section::part(body) {
+  gap: var(--space-2);
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.muted {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 20px;
+}
+.platform {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 32px;
+}
+.checks {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.check {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px var(--space-2);
+  align-items: baseline;
+}
+.check .rule {
+  grid-column: 2;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+.check .value {
+  font-variant-numeric: tabular-nums;
+}
+.figures {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-1) var(--space-4);
+  font-variant-numeric: tabular-nums;
+}
+.items {
+  padding-left: var(--space-4);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+a.source {
+  color: var(--color-text-link, inherit);
+  cursor: pointer;
+}
