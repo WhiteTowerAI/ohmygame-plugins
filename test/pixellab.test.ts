@@ -282,7 +282,6 @@ it("resumes a character job after shutdown without paying again", async (t) => {
     .restart()
     .generateImage(s.model("character"), { prompt: "a knight" }, undefined, {
       journal: await s.journal(),
-      resuming: true,
     });
   assert.equal(image.mediaType, "image/gif");
   assert.equal(

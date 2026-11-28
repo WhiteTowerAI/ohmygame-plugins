@@ -201,7 +201,6 @@ it("recovers the original submission after task-save failure, settings replaceme
     (
       await next.generateImage(s.model, { prompt: "fox" }, undefined, {
         journal: await s.journal(),
-        resuming: true,
       })
     ).bytes,
     PNG,
@@ -240,7 +239,6 @@ it("waits for the original queued prompt, then recovers after local shutdown wit
     (
       await next.generateImage(s.model, { prompt: "fox" }, undefined, {
         journal: await s.journal(),
-        resuming: true,
       })
     ).bytes,
     PNG,
@@ -299,7 +297,6 @@ it("does not resubmit after missing history, a lost response or a failed result 
   await assert.rejects(
     s.media.generateImage(s.model, { prompt: "fox" }, undefined, {
       journal: await s.journal(),
-      resuming: true,
     }),
     /download/,
   );
@@ -308,7 +305,6 @@ it("does not resubmit after missing history, a lost response or a failed result 
     (
       await s.media.generateImage(s.model, { prompt: "fox" }, undefined, {
         journal: await s.journal(),
-        resuming: true,
       })
     ).bytes,
     PNG,
@@ -325,7 +321,6 @@ it("does not resubmit after missing history, a lost response or a failed result 
   await assert.rejects(
     s.media.generateImage(s.model, { prompt: "fox" }, undefined, {
       journal: await s.journal("lost"),
-      resuming: true,
     }),
     /uncertain|confirm|lost/,
   );
@@ -365,11 +360,10 @@ it("retains a successful submission with no prompt ID without submitting again",
   const s = await setup(t, (r) =>
     r.url.endsWith("/prompt") ? Response.json(null) : undefined,
   );
-  for (const resuming of [false, true]) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     await assert.rejects(
       s.media.generateImage(s.model, { prompt: "fox" }, undefined, {
         journal: await s.journal(),
-        resuming,
       }),
       /did not return a prompt ID/,
     );
