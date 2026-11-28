@@ -8,7 +8,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "tsx src/build-index.ts",
+    "build": "tsx --conditions=ohmygame-source src/build-index.ts",
     "test": "tsx --conditions=ohmygame-source --test test/*.test.ts && npm run test:taptap",
     "typecheck": "tsc --noEmit",
     "build:feishu": "node scripts/build-feishu.mjs",
